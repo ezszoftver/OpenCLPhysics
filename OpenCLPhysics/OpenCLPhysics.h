@@ -42,13 +42,7 @@ namespace OpenCLPhysics
 	{
 	public:
 		static const uint8_t HITTYPE_STATICMESH_DYNAMICMESH = 1;
-		static const uint8_t HITTYPE_STATICMESH_SPHERE = 2;
-
-		static const uint8_t HITTYPE_DYNAMICMESH_DYNAMICMESH = 3;
-		static const uint8_t HITTYPE_DYNAMICMESH_SPHERE = 4;
-
-		static const uint8_t HITTYPE_SPHERE_SPHERE = 5;
-		static const uint8_t HITTYPE_SPHERE_DYNAMICMESH = 6;
+		static const uint8_t HITTYPE_DYNAMICMESH_DYNAMICMESH = 2;
 
 		Hit();
 		Hit(uint8_t nType, int32_t nBodyAId, int32_t nBodyBId, glm::vec3 v3WorldPosition, glm::vec3 v3Normal);
