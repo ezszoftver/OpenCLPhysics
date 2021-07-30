@@ -133,68 +133,20 @@ namespace OpenCLPhysics
 		return new BBox(v3Min, v3Max);
 	}
 
-	Sphere::Sphere() 
-	{
-		m_v3Position = glm::vec3(0, 0, 0);
-		m_fRadius = 0.0f;
-
-		m_nNumHits = 0;
-	}
-
-	Sphere::Sphere(glm::vec3 v3Center, float fRadius) 
-	{
-		m_v3Position = v3Center;
-		m_fRadius = fRadius;
-	}
-
-	Sphere::~Sphere() 
-	{
-	}
-
 	Hit::Hit() 
 	{
-		m_nType = 0;
 		m_nBodyAId = -1;
 		m_nBodyBId = -1;
 	}
 
-	Hit::Hit(uint8_t nType, int32_t nBodyAId, int32_t nBodyBId, glm::vec3 v3WorldPosition, glm::vec3 v3Normal)
+	Hit::Hit(int32_t nBodyAId, int32_t nBodyBId, glm::vec3 v3WorldPosition, glm::vec3 v3Normal)
 	{
-		m_nType = nType;
 		m_nBodyAId = nBodyAId;
 		m_nBodyBId = nBodyBId;
 	}
 
 	Hit::~Hit() 
 	{
-	}
-
-	BVHNodeSphere::BVHNodeSphere()
-	{
-		m_pLeft = nullptr;
-		m_pRight = nullptr;
-
-		m_pSphere = nullptr;
-		m_pBBox = nullptr;
-	}
-
-	bool BVHNodeSphere::IsLeaf()
-	{
-		return (m_pLeft == nullptr && m_pRight == nullptr);
-	}
-
-	DynamicMesh::DynamicMesh()
-	{
-		m_nNumHits = 0;
-	}
-
-	DynamicMesh::~DynamicMesh()
-	{
-		for (uint64_t i = 0; i < m_listBVHNodeSpheres.size(); i++)
-		{
-			delete m_listBVHNodeSpheres[i];
-		}
-		m_listBVHNodeSpheres.clear();
 	}
 
 	BVHNodeTriangle::BVHNodeTriangle()
@@ -211,13 +163,13 @@ namespace OpenCLPhysics
 		return (m_pLeft == nullptr && m_pRight == nullptr);
 	}
 
-	StaticMesh::StaticMesh()
+	TriMesh::TriMesh()
 	{
 	}
-		
-	StaticMesh::~StaticMesh() 
+
+	TriMesh::~TriMesh()
 	{
-		for (uint64_t i = 0; i < m_listBVHNodeTriangles.size(); i++) 
+		for (uint64_t i = 0; i < m_listBVHNodeTriangles.size(); i++)
 		{
 			delete m_listBVHNodeTriangles[i];
 		}
@@ -392,24 +344,10 @@ namespace OpenCLPhysics
 	{
 	}
 
-	uint32_t Physics::GenStaticMesh()
+	uint32_t Physics::GenTriMesh()
 	{
-		uint32_t nId = (uint32_t)m_listStaticMeshs.size();
-		m_listStaticMeshs.push_back( new StaticMesh() );
-		return nId;
-	}
-
-	uint32_t Physics::GenDynamicMesh()
-	{
-		uint32_t nId = (uint32_t)m_listDynamicMeshs.size();
-		m_listDynamicMeshs.push_back(new DynamicMesh());
-		return nId;
-	}
-
-	uint32_t Physics::GenSphere() 
-	{
-		uint32_t nId = (uint32_t)m_listSpheres.size();
-		m_listSpheres.push_back(new Sphere());
+		uint32_t nId = (uint32_t)m_listTriMeshs.size();
+		m_listTriMeshs.push_back( new TriMesh() );
 		return nId;
 	}
 
@@ -453,9 +391,9 @@ namespace OpenCLPhysics
 		return min_id;
 	}
 
-	void Physics::SetStaticMesh(uint32_t nId, std::vector<glm::vec3>* listVertices, std::vector<glm::vec3>* listNormals, glm::mat4 matTransform)
+	void Physics::SetTriMesh(uint32_t nId, std::vector<glm::vec3>* listVertices, std::vector<glm::vec3>* listNormals)
 	{
-		StaticMesh *pTheStaticMesh = m_listStaticMeshs.at(nId);
+		TriMesh *pTheTriMesh = m_listTriMeshs.at(nId);
 
 		// vertices to triangles
 		std::vector< Triangle* > listTriangles;
@@ -469,22 +407,13 @@ namespace OpenCLPhysics
 			glm::vec3 nB = listNormals->at(i + 1);
 			glm::vec3 nC = listNormals->at(i + 2);
 
-			// transform
-			vA = glm::vec3(glm::vec4(vA, 1) * matTransform);
-			vB = glm::vec3(glm::vec4(vB, 1) * matTransform);
-			vC = glm::vec3(glm::vec4(vC, 1) * matTransform);
-
-			nA = glm::normalize( glm::vec3(glm::vec4(nA, 0) * matTransform) );
-			nB = glm::normalize( glm::vec3(glm::vec4(nB, 0) * matTransform) );
-			nC = glm::normalize( glm::vec3(glm::vec4(nC, 0) * matTransform) );
-
 			listTriangles.push_back( new Triangle(vA, vB, vC, nA, nB, nC) );
 		}
 
 		// sort
 		std::sort(listTriangles.begin(), listTriangles.end(), SortTrianglesFunc);
 
-		int range = 1000; //(int)listTriangles.size();
+		int range = (int)listTriangles.size();
 		std::vector< BVHNodeTriangle* > *pIN = nullptr;
 		std::vector< BVHNodeTriangle* >* pOUT = new std::vector< BVHNodeTriangle* >();
 
@@ -502,7 +431,7 @@ namespace OpenCLPhysics
 		}
 
 		// copy
-		pTheStaticMesh->m_listBVHNodeTriangles.insert(pTheStaticMesh->m_listBVHNodeTriangles.end(), pOUT->begin(), pOUT->end());
+		pTheTriMesh->m_listBVHNodeTriangles.insert(pTheTriMesh->m_listBVHNodeTriangles.end(), pOUT->begin(), pOUT->end());
 		// reset
 		pIN = pOUT;
 		pOUT = new std::vector< BVHNodeTriangle* >();
@@ -540,7 +469,7 @@ namespace OpenCLPhysics
 			}
 
 			// copy
-			pTheStaticMesh->m_listBVHNodeTriangles.insert(pTheStaticMesh->m_listBVHNodeTriangles.end(), pOUT->begin(), pOUT->end());
+			pTheTriMesh->m_listBVHNodeTriangles.insert(pTheTriMesh->m_listBVHNodeTriangles.end(), pOUT->begin(), pOUT->end());
 			// reset
 			pIN = pOUT;
 			pOUT = new std::vector< BVHNodeTriangle* >();
@@ -554,35 +483,7 @@ namespace OpenCLPhysics
 		pIN->erase(pIN->begin() + 0);
 
 		// add
-		pTheStaticMesh->m_listBVHNodeTriangles.insert(pTheStaticMesh->m_listBVHNodeTriangles.begin(), pRoot);
-	}
-
-	void Physics::SetDynamicMesh(uint32_t nId, std::vector<glm::vec3>* listVertices, std::vector<glm::vec3>* listNormals, float fDistance, float fRadius)
-	{
-		//DynamicMesh* pTheDynamicMesh = m_listDynamicMeshs.at(nId);
-		//
-		//// vertices to triangles
-		//std::vector< Triangle* > listTriangles;
-		//for (uint64_t i = 0; i < listVertices->size(); i += 3)
-		//{
-		//	glm::vec3 vA = listVertices->at(i + 0);
-		//	glm::vec3 vB = listVertices->at(i + 1);
-		//	glm::vec3 vC = listVertices->at(i + 2);
-		//
-		//	glm::vec3 N = glm::normalize(glm::cross(vB - vA, vC - vA));		
-		//
-		//	listTriangles.push_back(new Triangle(vA, vB, vC, N, N, N));
-		//}
-
-		;
-	}
-
-	void Physics::SetSphere(uint32_t nId, glm::vec3 v3Position, float fRadius)
-	{
-		Sphere* pTheSphere = m_listSpheres.at(nId);
-
-		pTheSphere->m_v3Position = v3Position;
-		pTheSphere->m_fRadius = fRadius;
+		pTheTriMesh->m_listBVHNodeTriangles.insert(pTheTriMesh->m_listBVHNodeTriangles.begin(), pRoot);
 	}
 
 	void Physics::SetGravity(glm::vec3 vec3Gravity)

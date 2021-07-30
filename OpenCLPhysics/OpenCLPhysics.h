@@ -41,55 +41,13 @@ namespace OpenCLPhysics
 	class Hit 
 	{
 	public:
-		static const uint8_t HITTYPE_STATICMESH_DYNAMICMESH = 1;
-		static const uint8_t HITTYPE_DYNAMICMESH_DYNAMICMESH = 2;
 
 		Hit();
-		Hit(uint8_t nType, int32_t nBodyAId, int32_t nBodyBId, glm::vec3 v3WorldPosition, glm::vec3 v3Normal);
+		Hit(int32_t nBodyAId, int32_t nBodyBId, glm::vec3 v3WorldPosition, glm::vec3 v3Normal);
 		~Hit();
 
-		uint8_t m_nType;
 		int32_t m_nBodyAId;
 		int32_t m_nBodyBId;
-	};
-
-	class Sphere
-	{
-	public:
-		Sphere();
-		Sphere(glm::vec3 v3Center, float fRadius);
-		~Sphere();
-
-		glm::vec3 m_v3Position;
-		float m_fRadius;
-
-		Hit m_hits[32];
-		uint8_t m_nNumHits;
-	};
-
-	class BVHNodeSphere
-	{
-	public:
-		BVHNodeSphere();
-		bool IsLeaf();
-
-		BVHNodeSphere* m_pLeft;
-		BVHNodeSphere* m_pRight;
-
-		Sphere* m_pSphere;
-		BBox* m_pBBox;
-	};
-
-	class DynamicMesh
-	{
-	public:
-		DynamicMesh();
-		~DynamicMesh();
-
-		std::vector< BVHNodeSphere* > m_listBVHNodeSpheres;
-
-		Hit m_hits[32];
-		uint8_t m_nNumHits;
 	};
 
 	class BVHNodeTriangle
@@ -105,11 +63,11 @@ namespace OpenCLPhysics
 		BBox *m_pBBox;
 	};
 
-	class StaticMesh
+	class TriMesh
 	{
 	public:
-		StaticMesh();
-		~StaticMesh();
+		TriMesh();
+		~TriMesh();
 
 		std::vector< BVHNodeTriangle* > m_listBVHNodeTriangles;
 	};
@@ -124,13 +82,9 @@ namespace OpenCLPhysics
 		bool CreateDevice(std::string strDeviceName);
 		void CloseDevice();
 
-		uint32_t GenStaticMesh();
-		uint32_t GenDynamicMesh();
-		uint32_t GenSphere();
+		uint32_t GenTriMesh();
 
-		void SetStaticMesh(uint32_t nId, std::vector<glm::vec3> *listVertices, std::vector<glm::vec3>* listNormals, glm::mat4 matTransform = glm::mat4(1.0f));
-		void SetDynamicMesh(uint32_t nId, std::vector<glm::vec3>* listVertices, std::vector<glm::vec3>* listNormals, float fDistance, float fRadius);
-		void SetSphere(uint32_t nId, glm::vec3 v3Position, float fRadius);
+		void SetTriMesh(uint32_t nId, std::vector<glm::vec3> *listVertices, std::vector<glm::vec3>* listNormals);
 
 		void SetGravity(glm::vec3 vec3Gravity);
 		glm::vec3 GetGravity();
@@ -174,9 +128,7 @@ namespace OpenCLPhysics
 		cl_context m_context;
 		cl_command_queue m_command_queue;
 
-		std::vector< StaticMesh* > m_listStaticMeshs;
-		std::vector< DynamicMesh* > m_listDynamicMeshs;
-		std::vector< Sphere* > m_listSpheres;
+		std::vector< TriMesh* > m_listTriMeshs;
 	};
 
 }
