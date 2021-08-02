@@ -154,5 +154,8 @@
     <CopyFileToFolders Include="Scene\woodewhite.jpg">
       <Filter>Scene</Filter>
     </CopyFileToFolders>
+    <CopyFileToFolders Include="Scene\Music.wav">
+      <Filter>Scene</Filter>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>

@@ -165,6 +165,7 @@ namespace OpenCLPhysics
 
 	TriMesh::TriMesh()
 	{
+		m_nTop = 0;
 	}
 
 	TriMesh::~TriMesh()

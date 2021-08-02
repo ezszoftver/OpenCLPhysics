@@ -5,6 +5,8 @@
 #include "glm/glm.hpp"
 #include "CL/cl.h"
 
+#define MAX_HITS_COUNT_PER_OBJECTS 16
+
 namespace OpenCLPhysics
 {
 
@@ -70,6 +72,9 @@ namespace OpenCLPhysics
 		~TriMesh();
 
 		std::vector< BVHNodeTriangle* > m_listBVHNodeTriangles;
+
+		uint8_t m_nTop;
+		Hit m_arrHits[MAX_HITS_COUNT_PER_OBJECTS];
 	};
 
 	class Physics

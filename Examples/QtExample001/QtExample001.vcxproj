@@ -55,22 +55,22 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <IncludePath>.\SDKs\Assimp\include;.\SDKs\FreeImage\include;.\SDKs\glew-2.1.0\include;.\SDKs\OpenCL\include;.\SDKs\GLM\include;..\..\OpenCLPhysics;$(IncludePath)</IncludePath>
-    <LibraryPath>.\SDKs\Assimp\lib;.\SDKs\FreeImage\lib;.\SDKs\glew-2.1.0\lib;.\SDKs\OpenCL\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>.\SDKs\FreeALUT\include;.\SDKs\OpenAL\include;.\SDKs\Assimp\include;.\SDKs\FreeImage\include;.\SDKs\glew-2.1.0\include;.\SDKs\OpenCL\include;.\SDKs\GLM\include;..\..\OpenCLPhysics;$(IncludePath)</IncludePath>
+    <LibraryPath>.\SDKs\FreeALUT\lib;.\SDKs\OpenAL\lib;.\SDKs\Assimp\lib;.\SDKs\FreeImage\lib;.\SDKs\glew-2.1.0\lib;.\SDKs\OpenCL\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <IncludePath>.\SDKs\Assimp\include;.\SDKs\FreeImage\include;.\SDKs\glew-2.1.0\include;.\SDKs\OpenCL\include;.\SDKs\GLM\include;..\..\OpenCLPhysics;$(IncludePath)</IncludePath>
-    <LibraryPath>.\SDKs\Assimp\lib;.\SDKs\FreeImage\lib;.\SDKs\glew-2.1.0\lib;.\SDKs\OpenCL\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>.\SDKs\FreeALUT\include;.\SDKs\OpenAL\include;.\SDKs\Assimp\include;.\SDKs\FreeImage\include;.\SDKs\glew-2.1.0\include;.\SDKs\OpenCL\include;.\SDKs\GLM\include;..\..\OpenCLPhysics;$(IncludePath)</IncludePath>
+    <LibraryPath>.\SDKs\FreeALUT\lib;.\SDKs\OpenAL\lib;.\SDKs\Assimp\lib;.\SDKs\FreeImage\lib;.\SDKs\glew-2.1.0\lib;.\SDKs\OpenCL\lib;$(LibraryPath)</LibraryPath>
     <ReferencePath>$(ReferencePath)</ReferencePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Link>
-      <AdditionalDependencies>opengl32.lib;glew32.lib;FreeImage.lib;OpenCL.lib;assimp.lib;IrrXML.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;glew32.lib;FreeImage.lib;OpenAL32.lib;alut.lib;OpenCL.lib;assimp.lib;IrrXML.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Link>
-      <AdditionalDependencies>opengl32.lib;glew32.lib;FreeImage.lib;OpenCL.lib;assimp.lib;IrrXML.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;glew32.lib;FreeImage.lib;OpenAL32.lib;alut.lib;OpenCL.lib;assimp.lib;IrrXML.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="Configuration">
@@ -299,6 +299,17 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <FileType>Document</FileType>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)\Scene</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)\Scene</DestinationFolders>
+    </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="Scene\Music.wav">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <FileType>Document</FileType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)\Scene</DestinationFolders>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)\Scene</DestinationFolders>
     </CopyFileToFolders>
