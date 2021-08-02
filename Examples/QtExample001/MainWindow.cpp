@@ -202,10 +202,25 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event)
 
 void MainWindow::keyPressEvent(QKeyEvent* event) 
 {
+    int id = event->key();
+    if (id >= 0 && id <= 255)
+    {
+        m_bKeys[id] = true;
+    }
+
+    if (Qt::Key_Escape == event->key())
+    {
+        close();
+    }
 }
 
 void MainWindow::keyReleaseEvent(QKeyEvent* event) 
 {
+    int id = event->key();
+    if (id >= 0 && id <= 255)
+    {
+        m_bKeys[id] = false;
+    }
 }
 
 void MainWindow::mousePressEvent(QMouseEvent* event) 
