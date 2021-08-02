@@ -163,8 +163,30 @@ namespace OpenCLPhysics
 		return (m_pLeft == nullptr && m_pRight == nullptr);
 	}
 
+	RigidBody::RigidBody() 
+	{
+		m_fRadius = 0.0f;
+
+		m_fMass = 0.0f;
+		m_fRestitution = 0.0f;
+		m_fFriction = 0.0f;
+		m_fLinearDamping = 0.0f;
+		m_fAngularDamping = 0.0f;
+
+		m_v3Force = glm::vec3(0, 0, 0);
+		m_v3LinearAcceleration = glm::vec3(0, 0, 0);
+		m_v3LinearVelocity = glm::vec3(0, 0, 0);
+		m_v3Position = glm::vec3(0, 0, 0);
+
+		m_v3Torque = glm::vec3(0, 0, 0);
+		m_v3AngularAcceleration = glm::vec3(0, 0, 0);
+		m_v3AngularVelocity = glm::vec3(0, 0, 0);
+		m_v3Rotate = glm::vec3(0, 0, 0);
+	}
+
 	TriMesh::TriMesh()
 	{
+		m_nRigidBodyId = -1;
 		m_nTop = 0;
 	}
 
@@ -347,9 +369,18 @@ namespace OpenCLPhysics
 
 	uint32_t Physics::GenTriMesh()
 	{
-		uint32_t nId = (uint32_t)m_listTriMeshs.size();
+		// new trimesh
+		uint32_t nTriMeshId = (uint32_t)m_listTriMeshs.size();
 		m_listTriMeshs.push_back( new TriMesh() );
-		return nId;
+
+		// new rigidbody
+		uint32_t nRigidBodyId = (uint32_t)m_listRigidBodies.size();
+		m_listRigidBodies.push_back( new RigidBody() );
+
+		// update
+		m_listTriMeshs.at(nTriMeshId)->m_nRigidBodyId = nRigidBodyId;
+
+		return nTriMeshId;
 	}
 
 	bool SortTrianglesFunc(Triangle *a, Triangle *b) 
@@ -622,8 +653,19 @@ namespace OpenCLPhysics
 	{
 	}
 
+	bool SortRigidBodiesFunc(RigidBody* a, RigidBody* b)
+	{
+		if (fabs(a->m_v3Position.x - b->m_v3Position.x) > 0.0001f) { return (a->m_v3Position.x < b->m_v3Position.x); }
+		if (fabs(a->m_v3Position.y - b->m_v3Position.y) > 0.0001f) { return (a->m_v3Position.y < b->m_v3Position.y); }
+		return (a->m_v3Position.z < b->m_v3Position.z);
+	}
+
 	void Physics::Update(float dt)
 	{
+		// sort
+		std::sort(m_listRigidBodies.begin(), m_listRigidBodies.end(), SortRigidBodiesFunc);
+
+		;
 	}
 
 }

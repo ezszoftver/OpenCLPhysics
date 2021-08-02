@@ -65,11 +65,37 @@ namespace OpenCLPhysics
 		BBox *m_pBBox;
 	};
 
+	class RigidBody
+	{
+	public:
+		RigidBody();
+
+		float m_fRadius;
+
+		float m_fMass;
+		float m_fRestitution;
+		float m_fFriction;
+		float m_fLinearDamping;
+		float m_fAngularDamping;
+
+		glm::vec3 m_v3Force;
+		glm::vec3 m_v3LinearAcceleration;
+		glm::vec3 m_v3LinearVelocity;
+		glm::vec3 m_v3Position;
+		
+		glm::vec3 m_v3Torque;
+		glm::vec3 m_v3AngularAcceleration;
+		glm::vec3 m_v3AngularVelocity;
+		glm::vec3 m_v3Rotate;
+	};
+
 	class TriMesh
 	{
 	public:
 		TriMesh();
 		~TriMesh();
+
+		int32_t m_nRigidBodyId;
 
 		std::vector< BVHNodeTriangle* > m_listBVHNodeTriangles;
 
@@ -88,7 +114,6 @@ namespace OpenCLPhysics
 		void CloseDevice();
 
 		uint32_t GenTriMesh();
-
 		void SetTriMesh(uint32_t nId, std::vector<glm::vec3> *listVertices, std::vector<glm::vec3>* listNormals);
 
 		void SetGravity(glm::vec3 vec3Gravity);
@@ -133,6 +158,7 @@ namespace OpenCLPhysics
 		cl_context m_context;
 		cl_command_queue m_command_queue;
 
+		std::vector< RigidBody* > m_listRigidBodies;
 		std::vector< TriMesh* > m_listTriMeshs;
 	};
 

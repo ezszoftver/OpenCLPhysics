@@ -73,6 +73,8 @@ bool MainWindow::Init()
     m_physics.SetTriMesh(dynamic_id, m_dynamicmodel.GetAllVertices(), m_dynamicmodel.GetAllNormals());
     m_physics.SetMass(dynamic_id, 85.0f); // dynamic
 
+    m_physics.SetGravity(glm::vec3(0, -9.81f, 0));
+
     m_elapsedTimer.start();
     m_nElapsedTime = m_nCurrentTime = m_elapsedTimer.nsecsElapsed();
 
@@ -119,14 +121,17 @@ void MainWindow::TimerTick()
         fSec = 0.0f;
     }
 
-    if (dt > 1.0f / 20.0f)
+    if (dt > 1.0f / 10.0f)
     {
-        dt = 1.0f / 20.0f;
+        dt = 1.0f / 10.0f;
     }
     if (dt <= 0.0f)
     {
         dt = 1.0f / 60.0f;
     }
+
+    // physics
+    m_physics.Update(dt);
 
     int nWidth = ui.glWidget->width();
     int nHeight = ui.glWidget->height();
