@@ -105,6 +105,9 @@ namespace OpenCLPhysics
 
 	class Physics
 	{
+		static const int32_t TRIMESH_START = 0;
+		static const int32_t TRIMESH_COUNT = 100000000; // 100 million
+
 	public:
 		Physics();
 		~Physics();
@@ -113,43 +116,41 @@ namespace OpenCLPhysics
 		bool CreateDevice(std::string strDeviceName);
 		void CloseDevice();
 
-		uint32_t GenTriMesh();
-		void SetTriMesh(uint32_t nId, std::vector<glm::vec3> *listVertices, std::vector<glm::vec3>* listNormals);
+		int32_t GenTriMesh();
+		void SetTriMesh(int32_t nId, std::vector<glm::vec3> *listVertices, std::vector<glm::vec3>* listNormals);
 
 		void SetGravity(glm::vec3 vec3Gravity);
 		glm::vec3 GetGravity();
 
-		glm::mat4 GetTransform(uint32_t nId);
+		glm::mat4 GetTransform(int32_t nId);
 
-		void SetPosition(uint32_t nId, glm::vec3 vec3Position);
-		glm::vec3 GetPosition(uint32_t nId);
-		void SetEulerRotate(uint32_t nId, glm::vec3 vec3EulerRotate);
-		glm::vec3 GetEulerRotate(uint32_t nId);
-		void SetLinearVelocity(uint32_t nId, glm::vec3 vec3LinearVelocity);
-		glm::vec3 GetLinearVelocity(uint32_t nId);
-		void SetAngularVelocity(uint32_t nId, glm::vec3 vec3AngularVelocity);
-		glm::vec3 GetAngularVelocity(uint32_t nId);
-		void SetLinearAcceleration(uint32_t nId, glm::vec3 vec3LinearVelocity);
-		glm::vec3 GetLinearAcceleration(uint32_t nId);
-		void SetAngularAcceleration(uint32_t nId, glm::vec3 vec3AngularVelocity);
-		glm::vec3 GetAngularAcceleration(uint32_t nId);
-		void SetForce(uint32_t nId, glm::vec3 vec3LinearVelocity);
-		glm::vec3 GetForce(uint32_t nId);
-		void SetTorque(uint32_t nId, glm::vec3 vec3AngularVelocity);
-		glm::vec3 GetTorque(uint32_t nId);
+		void SetPosition(int32_t nId, glm::vec3 vec3Position);
+		glm::vec3 GetPosition(int32_t nId);
+		void SetEulerRotate(int32_t nId, glm::vec3 vec3EulerRotate);
+		glm::vec3 GetEulerRotate(int32_t nId);
+		void SetLinearVelocity(int32_t nId, glm::vec3 vec3LinearVelocity);
+		glm::vec3 GetLinearVelocity(int32_t nId);
+		void SetAngularVelocity(int32_t nId, glm::vec3 vec3AngularVelocity);
+		glm::vec3 GetAngularVelocity(int32_t nId);
+		void SetLinearAcceleration(int32_t nId, glm::vec3 vec3LinearVelocity);
+		glm::vec3 GetLinearAcceleration(int32_t nId);
+		void SetAngularAcceleration(int32_t nId, glm::vec3 vec3AngularVelocity);
+		glm::vec3 GetAngularAcceleration(int32_t nId);
+		void SetForce(int32_t nId, glm::vec3 vec3LinearVelocity);
+		glm::vec3 GetForce(int32_t nId);
+		void SetTorque(int32_t nId, glm::vec3 vec3AngularVelocity);
+		glm::vec3 GetTorque(int32_t nId);
 
-		void SetMass(uint32_t nId, float fMass);
-		float GetMass(uint32_t nId);
-		void SetRestitution(uint32_t nId, float fRestitution);
-		float GetRestitution(uint32_t nId);
-		void SetFriction(uint32_t nId, float fFriction);
-		float GetFriction(uint32_t nId);
-
-		void SetLinearDamping(uint32_t nId, float fLinearDamping);
-		float GetLinearDamping(uint32_t nId);
-
-		void SetAngularDamping(uint32_t nId, float fAngularDamping);
-		float GetAngularDamping(uint32_t nId);
+		void SetMass(int32_t nId, float fMass);
+		float GetMass(int32_t nId);
+		void SetRestitution(int32_t nId, float fRestitution);
+		float GetRestitution(int32_t nId);
+		void SetFriction(int32_t nId, float fFriction);
+		float GetFriction(int32_t nId);
+		void SetLinearDamping(int32_t nId, float fLinearDamping);
+		float GetLinearDamping(int32_t nId);
+		void SetAngularDamping(int32_t nId, float fAngularDamping);
+		float GetAngularDamping(int32_t nId);
 
 		void Commit();
 		void Update(float dt);

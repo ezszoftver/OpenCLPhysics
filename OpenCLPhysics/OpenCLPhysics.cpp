@@ -367,20 +367,25 @@ namespace OpenCLPhysics
 	{
 	}
 
-	uint32_t Physics::GenTriMesh()
-	{
+	int32_t Physics::GenTriMesh()
+	{		
+		int32_t nTriMeshId = (int32_t)m_listTriMeshs.size();
+		if (nTriMeshId >= TRIMESH_COUNT)
+		{
+			return -1;
+		}
+
 		// new trimesh
-		uint32_t nTriMeshId = (uint32_t)m_listTriMeshs.size();
 		m_listTriMeshs.push_back( new TriMesh() );
 
 		// new rigidbody
-		uint32_t nRigidBodyId = (uint32_t)m_listRigidBodies.size();
+		int32_t nRigidBodyId = (int32_t)m_listRigidBodies.size();
 		m_listRigidBodies.push_back( new RigidBody() );
 
 		// update
 		m_listTriMeshs.at(nTriMeshId)->m_nRigidBodyId = nRigidBodyId;
 
-		return nTriMeshId;
+		return (TRIMESH_START + nTriMeshId);
 	}
 
 	bool SortTrianglesFunc(Triangle *a, Triangle *b) 
@@ -423,7 +428,7 @@ namespace OpenCLPhysics
 		return min_id;
 	}
 
-	void Physics::SetTriMesh(uint32_t nId, std::vector<glm::vec3>* listVertices, std::vector<glm::vec3>* listNormals)
+	void Physics::SetTriMesh(int32_t nId, std::vector<glm::vec3>* listVertices, std::vector<glm::vec3>* listNormals)
 	{
 		TriMesh *pTheTriMesh = m_listTriMeshs.at(nId);
 
@@ -527,124 +532,124 @@ namespace OpenCLPhysics
 		return glm::vec3(0, 0, 0);
 	}
 
-	glm::mat4 Physics::GetTransform(uint32_t nId)
+	glm::mat4 Physics::GetTransform(int32_t nId)
 	{
 		return glm::mat4(1);
 	}
 
-	void Physics::SetPosition(uint32_t nId, glm::vec3 vec3Position)
+	void Physics::SetPosition(int32_t nId, glm::vec3 vec3Position)
 	{
 	}
 
-	glm::vec3 Physics::GetPosition(uint32_t nId)
-	{
-		return glm::vec3(0, 0, 0);
-	}
-
-	void Physics::SetEulerRotate(uint32_t nId, glm::vec3 vec3EulerRotate)
-	{
-	}
-
-	glm::vec3 Physics::GetEulerRotate(uint32_t nId)
+	glm::vec3 Physics::GetPosition(int32_t nId)
 	{
 		return glm::vec3(0, 0, 0);
 	}
 
-	void Physics::SetLinearVelocity(uint32_t nId, glm::vec3 vec3LinearVelocity)
+	void Physics::SetEulerRotate(int32_t nId, glm::vec3 vec3EulerRotate)
 	{
 	}
 
-	glm::vec3 Physics::GetLinearVelocity(uint32_t nId)
-	{
-		return glm::vec3(0, 0, 0);
-	}
-
-	void Physics::SetAngularVelocity(uint32_t nId, glm::vec3 vec3AngularVelocity)
-	{
-	}
-
-	glm::vec3 Physics::GetAngularVelocity(uint32_t nId)
+	glm::vec3 Physics::GetEulerRotate(int32_t nId)
 	{
 		return glm::vec3(0, 0, 0);
 	}
 
-	void Physics::SetLinearAcceleration(uint32_t nId, glm::vec3 vec3LinearVelocity)
+	void Physics::SetLinearVelocity(int32_t nId, glm::vec3 vec3LinearVelocity)
 	{
 	}
 
-	glm::vec3 Physics::GetLinearAcceleration(uint32_t nId)
-	{
-		return glm::vec3(0, 0, 0);
-	}
-
-	void Physics::SetAngularAcceleration(uint32_t nId, glm::vec3 vec3AngularVelocity)
-	{
-	}
-
-	glm::vec3 Physics::GetAngularAcceleration(uint32_t nId)
+	glm::vec3 Physics::GetLinearVelocity(int32_t nId)
 	{
 		return glm::vec3(0, 0, 0);
 	}
 
-	void Physics::SetForce(uint32_t nId, glm::vec3 vec3LinearVelocity)
+	void Physics::SetAngularVelocity(int32_t nId, glm::vec3 vec3AngularVelocity)
 	{
 	}
 
-	glm::vec3 Physics::GetForce(uint32_t nId)
-	{
-		return glm::vec3(0, 0, 0);
-	}
-
-	void Physics::SetTorque(uint32_t nId, glm::vec3 vec3AngularVelocity)
-	{
-	}
-
-	glm::vec3 Physics::GetTorque(uint32_t nId)
+	glm::vec3 Physics::GetAngularVelocity(int32_t nId)
 	{
 		return glm::vec3(0, 0, 0);
 	}
 
-	void Physics::SetMass(uint32_t nId, float fMass)
+	void Physics::SetLinearAcceleration(int32_t nId, glm::vec3 vec3LinearVelocity)
 	{
 	}
 
-	float Physics::GetMass(uint32_t nId)
+	glm::vec3 Physics::GetLinearAcceleration(int32_t nId)
+	{
+		return glm::vec3(0, 0, 0);
+	}
+
+	void Physics::SetAngularAcceleration(int32_t nId, glm::vec3 vec3AngularVelocity)
+	{
+	}
+
+	glm::vec3 Physics::GetAngularAcceleration(int32_t nId)
+	{
+		return glm::vec3(0, 0, 0);
+	}
+
+	void Physics::SetForce(int32_t nId, glm::vec3 vec3LinearVelocity)
+	{
+	}
+
+	glm::vec3 Physics::GetForce(int32_t nId)
+	{
+		return glm::vec3(0, 0, 0);
+	}
+
+	void Physics::SetTorque(int32_t nId, glm::vec3 vec3AngularVelocity)
+	{
+	}
+
+	glm::vec3 Physics::GetTorque(int32_t nId)
+	{
+		return glm::vec3(0, 0, 0);
+	}
+
+	void Physics::SetMass(int32_t nId, float fMass)
+	{
+	}
+
+	float Physics::GetMass(int32_t nId)
 	{
 		return 0.0f;
 	}
 
-	void Physics::SetRestitution(uint32_t nId, float fRestitution)
+	void Physics::SetRestitution(int32_t nId, float fRestitution)
 	{
 	}
 
-	float Physics::GetRestitution(uint32_t nId)
-	{
-		return 0.0f;
-	}
-
-	void Physics::SetFriction(uint32_t nId, float fFriction)
-	{
-	}
-
-	float Physics::GetFriction(uint32_t nId)
+	float Physics::GetRestitution(int32_t nId)
 	{
 		return 0.0f;
 	}
 
-	void Physics::SetLinearDamping(uint32_t nId, float fLinearDamping)
+	void Physics::SetFriction(int32_t nId, float fFriction)
 	{
 	}
 
-	float Physics::GetLinearDamping(uint32_t nId)
+	float Physics::GetFriction(int32_t nId)
 	{
 		return 0.0f;
 	}
 
-	void Physics::SetAngularDamping(uint32_t nId, float fAngularDamping)
+	void Physics::SetLinearDamping(int32_t nId, float fLinearDamping)
 	{
 	}
 
-	float Physics::GetAngularDamping(uint32_t nId)
+	float Physics::GetLinearDamping(int32_t nId)
+	{
+		return 0.0f;
+	}
+
+	void Physics::SetAngularDamping(int32_t nId, float fAngularDamping)
+	{
+	}
+
+	float Physics::GetAngularDamping(int32_t nId)
 	{
 		return 0.0f;
 	}

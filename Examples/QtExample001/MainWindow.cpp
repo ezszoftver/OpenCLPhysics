@@ -110,6 +110,11 @@ void MainWindow::TimerTick()
     m_nCurrentTime = m_elapsedTimer.nsecsElapsed();
     dt = (float)(m_nCurrentTime - m_nElapsedTime) / 1000000000.0f;
 
+    if (dt <= 0.0f)
+    {
+        dt = 1.0f / 60.0f;
+    }
+
     // print fps
     nFPS++;
     fSec += dt;
@@ -124,10 +129,6 @@ void MainWindow::TimerTick()
     if (dt > 1.0f / 10.0f)
     {
         dt = 1.0f / 10.0f;
-    }
-    if (dt <= 0.0f)
-    {
-        dt = 1.0f / 60.0f;
     }
 
     // physics
