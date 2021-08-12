@@ -64,13 +64,13 @@ bool MainWindow::Init()
     // static
     m_staticmodel.Load("Scene", "Scene.obj", glm::mat4(1.0f), false);
     static_id = m_physics.GenTriMesh();
-    m_physics.SetTriMesh(static_id, m_staticmodel.GetAllVertices(), m_staticmodel.GetAllNormals());
+    m_physics.SetTriMesh(static_id, m_staticmodel.GetAllVertices());
     m_physics.SetMass(static_id, 0.0f); // static
 
     // dynamic
     m_dynamicmodel.Load("Scene", "barrel.obj", glm::mat4(1.0f), false);
     dynamic_id = m_physics.GenTriMesh();
-    m_physics.SetTriMesh(dynamic_id, m_dynamicmodel.GetAllVertices(), m_dynamicmodel.GetAllNormals());
+    m_physics.SetTriMesh(dynamic_id, m_dynamicmodel.GetAllVertices());
     m_physics.SetMass(dynamic_id, 85.0f); // dynamic
 
     m_physics.SetGravity(glm::vec3(0, -9.81f, 0));

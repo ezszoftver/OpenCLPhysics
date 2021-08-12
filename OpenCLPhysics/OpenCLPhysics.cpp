@@ -14,20 +14,16 @@ namespace OpenCLPhysics
 		m_v3PosB = glm::vec3(0,0,0);
 		m_v3PosC = glm::vec3(0,0,0);
 
-		m_v3NormalA = glm::vec3(0, 0, 0);
-		m_v3NormalB = glm::vec3(0, 0, 0);
-		m_v3NormalC = glm::vec3(0, 0, 0);
+		m_v3Normal = glm::vec3(1, 0, 0);
 	}
 
-	Triangle::Triangle(glm::vec3 v3PosA, glm::vec3 v3PosB, glm::vec3 v3PosC, glm::vec3 v3NormalA, glm::vec3 v3NormalB, glm::vec3 v3NormalC)
+	Triangle::Triangle(glm::vec3 v3PosA, glm::vec3 v3PosB, glm::vec3 v3PosC, glm::vec3 v3Normal)
 	{
 		m_v3PosA = v3PosA;
 		m_v3PosB = v3PosB;
 		m_v3PosC = v3PosC;
 
-		m_v3NormalA = v3NormalA;
-		m_v3NormalB = v3NormalB;
-		m_v3NormalC = v3NormalC;
+		m_v3Normal = v3Normal;
 	}
 
 	Triangle::~Triangle()
@@ -384,6 +380,7 @@ namespace OpenCLPhysics
 
 		// update
 		m_listTriMeshs.at(nTriMeshId)->m_nRigidBodyId = nRigidBodyId;
+		m_listRigidBodies.at(nRigidBodyId)->m_nTriMeshId = nTriMeshId;
 
 		return (TRIMESH_START + nTriMeshId);
 	}
@@ -428,9 +425,21 @@ namespace OpenCLPhysics
 		return min_id;
 	}
 
-	void Physics::SetTriMesh(int32_t nId, std::vector<glm::vec3>* listVertices, std::vector<glm::vec3>* listNormals)
+	void Physics::SetTriMesh(int32_t nId, std::vector<glm::vec3>* listVertices)
 	{
 		TriMesh *pTheTriMesh = m_listTriMeshs.at(nId);
+		RigidBody *pTheRigidBody = m_listRigidBodies.at( pTheTriMesh->m_nRigidBodyId );
+
+		// calc radius
+		pTheRigidBody->m_fRadius = 0.0f;
+		for (uint64_t i = 0; i < listVertices->size(); i++) 
+		{
+			float fCurrRadius = glm::length(listVertices->at(i));
+			if (pTheRigidBody->m_fRadius < fCurrRadius) 
+			{
+				pTheRigidBody->m_fRadius = fCurrRadius;
+			}
+		}
 
 		// vertices to triangles
 		std::vector< Triangle* > listTriangles;
@@ -440,11 +449,9 @@ namespace OpenCLPhysics
 			glm::vec3 vB = listVertices->at(i + 1);
 			glm::vec3 vC = listVertices->at(i + 2);
 
-			glm::vec3 nA = listNormals->at(i + 0);
-			glm::vec3 nB = listNormals->at(i + 1);
-			glm::vec3 nC = listNormals->at(i + 2);
+			glm::vec3 vN = glm::normalize(glm::cross(vB - vA, vC - vA));
 
-			listTriangles.push_back( new Triangle(vA, vB, vC, nA, nB, nC) );
+			listTriangles.push_back( new Triangle(vA, vB, vC, vN) );
 		}
 
 		// sort
@@ -670,6 +677,11 @@ namespace OpenCLPhysics
 		// sort
 		std::sort(m_listRigidBodies.begin(), m_listRigidBodies.end(), SortRigidBodiesFunc);
 
+		//RefitTree(m_listRigidBodies);
+
+		// CollisionDetection
+		;
+		// CollisionResponse
 		;
 	}
 

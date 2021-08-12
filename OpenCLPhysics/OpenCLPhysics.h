@@ -14,15 +14,13 @@ namespace OpenCLPhysics
 	{
 	public:
 		Triangle();
-		Triangle(glm::vec3 v3PosA, glm::vec3 v3PosB, glm::vec3 v3PosC, glm::vec3 v3NormalA, glm::vec3 v3NormalB, glm::vec3 v3NormalC);
+		Triangle(glm::vec3 v3PosA, glm::vec3 v3PosB, glm::vec3 v3PosC, glm::vec3 v3Normal);
 		~Triangle();
 
 		glm::vec3 m_v3PosA;
 		glm::vec3 m_v3PosB;
 		glm::vec3 m_v3PosC;
-		glm::vec3 m_v3NormalA;
-		glm::vec3 m_v3NormalB;
-		glm::vec3 m_v3NormalC;
+		glm::vec3 m_v3Normal;
 	};
 
 	class BBox 
@@ -70,6 +68,7 @@ namespace OpenCLPhysics
 	public:
 		RigidBody();
 
+		int32_t m_nTriMeshId;
 		float m_fRadius;
 
 		float m_fMass;
@@ -117,7 +116,7 @@ namespace OpenCLPhysics
 		void CloseDevice();
 
 		int32_t GenTriMesh();
-		void SetTriMesh(int32_t nId, std::vector<glm::vec3> *listVertices, std::vector<glm::vec3>* listNormals);
+		void SetTriMesh(int32_t nId, std::vector<glm::vec3> *listVertices);
 
 		void SetGravity(glm::vec3 vec3Gravity);
 		glm::vec3 GetGravity();
