@@ -136,28 +136,28 @@ namespace OpenCLPhysics
 		void CloseDevice();
 
 		int32_t GenTriMesh();
-		void SetTriMesh(int32_t nId, std::vector<glm::vec3> *listVertices);
+		void SetTriMesh(int32_t nId, std::vector<glm::vec3> *pListVertices);
 
-		void SetGravity(glm::vec3 vec3Gravity);
+		void SetGravity(glm::vec3 v3Gravity);
 		glm::vec3 GetGravity();
 
 		glm::mat4 GetTransform(int32_t nId);
 
-		void SetPosition(int32_t nId, glm::vec3 vec3Position);
+		void SetPosition(int32_t nId, glm::vec3 v3Position);
 		glm::vec3 GetPosition(int32_t nId);
-		void SetEulerRotate(int32_t nId, glm::vec3 vec3EulerRotate);
+		void SetEulerRotate(int32_t nId, glm::vec3 v3EulerRotate);
 		glm::vec3 GetEulerRotate(int32_t nId);
-		void SetLinearVelocity(int32_t nId, glm::vec3 vec3LinearVelocity);
+		void SetLinearVelocity(int32_t nId, glm::vec3 v3LinearVelocity);
 		glm::vec3 GetLinearVelocity(int32_t nId);
-		void SetAngularVelocity(int32_t nId, glm::vec3 vec3AngularVelocity);
+		void SetAngularVelocity(int32_t nId, glm::vec3 v3AngularVelocity);
 		glm::vec3 GetAngularVelocity(int32_t nId);
-		void SetLinearAcceleration(int32_t nId, glm::vec3 vec3LinearVelocity);
+		void SetLinearAcceleration(int32_t nId, glm::vec3 v3LinearAcceleration);
 		glm::vec3 GetLinearAcceleration(int32_t nId);
-		void SetAngularAcceleration(int32_t nId, glm::vec3 vec3AngularVelocity);
+		void SetAngularAcceleration(int32_t nId, glm::vec3 v3AngularAcceleration);
 		glm::vec3 GetAngularAcceleration(int32_t nId);
-		void SetForce(int32_t nId, glm::vec3 vec3LinearVelocity);
+		void SetForce(int32_t nId, glm::vec3 v3Force);
 		glm::vec3 GetForce(int32_t nId);
-		void SetTorque(int32_t nId, glm::vec3 vec3AngularVelocity);
+		void SetTorque(int32_t nId, glm::vec3 v3Torque);
 		glm::vec3 GetTorque(int32_t nId);
 
 		void SetMass(int32_t nId, float fMass);

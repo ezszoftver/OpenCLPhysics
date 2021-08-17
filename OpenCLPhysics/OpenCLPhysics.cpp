@@ -429,16 +429,16 @@ namespace OpenCLPhysics
 		return min_id;
 	}
 
-	void Physics::SetTriMesh(int32_t nId, std::vector<glm::vec3>* listVertices)
+	void Physics::SetTriMesh(int32_t nId, std::vector<glm::vec3>* pListVertices)
 	{
 		TriMesh *pTheTriMesh = m_listTriMeshs.at(nId);
 		RigidBody theRigidBody = m_listRigidBodies.at( pTheTriMesh->m_nRigidBodyId );
 
 		// calc radius
 		theRigidBody.m_fRadius = 0.0f;
-		for (uint64_t i = 0; i < listVertices->size(); i++) 
+		for (uint64_t i = 0; i < pListVertices->size(); i++) 
 		{
-			float fCurrRadius = glm::length(listVertices->at(i));
+			float fCurrRadius = glm::length(pListVertices->at(i));
 			if (theRigidBody.m_fRadius < fCurrRadius) 
 			{
 				theRigidBody.m_fRadius = fCurrRadius;
@@ -449,11 +449,11 @@ namespace OpenCLPhysics
 
 		// vertices to triangles
 		std::vector< Triangle* > listTriangles;
-		for (uint64_t i = 0; i < listVertices->size(); i += 3)
+		for (uint64_t i = 0; i < pListVertices->size(); i += 3)
 		{
-			glm::vec3 vA = listVertices->at(i + 0);
-			glm::vec3 vB = listVertices->at(i + 1);
-			glm::vec3 vC = listVertices->at(i + 2);
+			glm::vec3 vA = pListVertices->at(i + 0);
+			glm::vec3 vB = pListVertices->at(i + 1);
+			glm::vec3 vC = pListVertices->at(i + 2);
 
 			glm::vec3 vN = glm::normalize(glm::cross(vB - vA, vC - vA));
 
