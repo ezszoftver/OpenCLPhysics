@@ -11,7 +11,6 @@ Hi!
 I would like write Physics Engine in C++ & OpenCL & Qt Library & OpenGL.
 The source code you can build Windows, Linux (maybe MacOS).
 
-This is own product.
 If source code have Bug, please write email here:
 erdoszoltan256@gmail.com
 Thank you. :)
