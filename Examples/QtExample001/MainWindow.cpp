@@ -73,7 +73,11 @@ bool MainWindow::Init()
     m_physics.SetTriMesh(dynamic_id, m_dynamicmodel.GetAllVertices());
     m_physics.SetMass(dynamic_id, 85.0f); // dynamic
 
+    // gravity
     m_physics.SetGravity(glm::vec3(0, -9.81f, 0));
+
+    // Copy RAM to GPU
+    m_physics.Commit();
 
     m_elapsedTimer.start();
     m_nElapsedTime = m_nCurrentTime = m_elapsedTimer.nsecsElapsed();

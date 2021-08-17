@@ -8,7 +8,6 @@
 
 namespace OpenCLPhysics 
 {
-
 	Triangle::Triangle()
 	{
 		m_v3PosA = glm::vec3(0,0,0);
@@ -158,27 +157,6 @@ namespace OpenCLPhysics
 	bool BVHNodeTriangle::IsLeaf()
 	{
 		return (m_pLeft == nullptr && m_pRight == nullptr);
-	}
-
-	RigidBody::RigidBody() 
-	{
-		m_fRadius = 0.0f;
-
-		m_fMass = 0.0f;
-		m_fRestitution = 0.0f;
-		m_fFriction = 0.0f;
-		m_fLinearDamping = 0.0f;
-		m_fAngularDamping = 0.0f;
-
-		m_v3Force = glm::vec3(0, 0, 0);
-		m_v3LinearAcceleration = glm::vec3(0, 0, 0);
-		m_v3LinearVelocity = glm::vec3(0, 0, 0);
-		m_v3Position = glm::vec3(0, 0, 0);
-
-		m_v3Torque = glm::vec3(0, 0, 0);
-		m_v3AngularAcceleration = glm::vec3(0, 0, 0);
-		m_v3AngularVelocity = glm::vec3(0, 0, 0);
-		m_v3Rotate = glm::vec3(0, 0, 0);
 	}
 
 	TriMesh::TriMesh()
@@ -370,8 +348,8 @@ namespace OpenCLPhysics
 					}
 
 					// create kernels
-					kernelRefitTree = clCreateKernel(m_program, "RefitTree", &status);
-					if (!kernelRefitTree || status != CL_SUCCESS) { return false; }
+					m_kernelRefitTree = clCreateKernel(m_program, "RefitTree", &status);
+					if (!m_kernelRefitTree || status != CL_SUCCESS) { return false; }
 
 					return true;
 				}
@@ -398,11 +376,12 @@ namespace OpenCLPhysics
 
 		// new rigidbody
 		int32_t nRigidBodyId = (int32_t)m_listRigidBodies.size();
-		m_listRigidBodies.push_back( new RigidBody() );
+		RigidBody newRigidBody;
+		m_listRigidBodies.push_back(newRigidBody);
 
 		// update
 		m_listTriMeshs.at(nTriMeshId)->m_nRigidBodyId = nRigidBodyId;
-		m_listRigidBodies.at(nRigidBodyId)->m_nTriMeshId = nTriMeshId;
+		m_listRigidBodies.at(nRigidBodyId).m_nTriMeshId = nTriMeshId;
 
 		return (TRIMESH_START + nTriMeshId);
 	}
@@ -450,18 +429,20 @@ namespace OpenCLPhysics
 	void Physics::SetTriMesh(int32_t nId, std::vector<glm::vec3>* listVertices)
 	{
 		TriMesh *pTheTriMesh = m_listTriMeshs.at(nId);
-		RigidBody *pTheRigidBody = m_listRigidBodies.at( pTheTriMesh->m_nRigidBodyId );
+		RigidBody theRigidBody = m_listRigidBodies.at( pTheTriMesh->m_nRigidBodyId );
 
 		// calc radius
-		pTheRigidBody->m_fRadius = 0.0f;
+		theRigidBody.m_fRadius = 0.0f;
 		for (uint64_t i = 0; i < listVertices->size(); i++) 
 		{
 			float fCurrRadius = glm::length(listVertices->at(i));
-			if (pTheRigidBody->m_fRadius < fCurrRadius) 
+			if (theRigidBody.m_fRadius < fCurrRadius) 
 			{
-				pTheRigidBody->m_fRadius = fCurrRadius;
+				theRigidBody.m_fRadius = fCurrRadius;
 			}
 		}
+
+		m_listRigidBodies[pTheTriMesh->m_nRigidBodyId] = theRigidBody;
 
 		// vertices to triangles
 		std::vector< Triangle* > listTriangles;
@@ -640,10 +621,19 @@ namespace OpenCLPhysics
 
 	void Physics::SetMass(int32_t nId, float fMass)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			m_listRigidBodies[nId - TRIMESH_START].m_fMass = fMass;
+		}
 	}
 
 	float Physics::GetMass(int32_t nId)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			return m_listRigidBodies[nId - TRIMESH_START].m_fMass;
+		}
+
 		return 0.0f;
 	}
 
@@ -683,15 +673,27 @@ namespace OpenCLPhysics
 		return 0.0f;
 	}
 
-	void Physics::Commit()
+	bool Physics::Commit()
 	{
+		cl_int err;
+
+		// create rigidBodies buffer
+		m_clmem_RigidBodies = clCreateBuffer(m_context, CL_MEM_READ_WRITE, sizeof(RigidBody) * m_listRigidBodies.size(), NULL, NULL);
+		if (!m_clmem_RigidBodies) { return false; }
+		// -> copy
+		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_RigidBodies, CL_TRUE, 0, sizeof(RigidBody) * m_listRigidBodies.size(), m_listRigidBodies.data(), 0, NULL, NULL);
+		if (err != CL_SUCCESS) { return false; }
+
+		;
+
+		return true;
 	}
 
-	bool SortRigidBodiesFunc(RigidBody* a, RigidBody* b)
+	bool SortRigidBodiesFunc(RigidBody &a, RigidBody &b)
 	{
-		if (fabs(a->m_v3Position.x - b->m_v3Position.x) > 0.0001f) { return (a->m_v3Position.x < b->m_v3Position.x); }
-		if (fabs(a->m_v3Position.y - b->m_v3Position.y) > 0.0001f) { return (a->m_v3Position.y < b->m_v3Position.y); }
-		return (a->m_v3Position.z < b->m_v3Position.z);
+		if (fabs(a.m_v3PositionX - b.m_v3PositionX) > 0.0001f) { return (a.m_v3PositionX < b.m_v3PositionX); }
+		if (fabs(a.m_v3PositionY - b.m_v3PositionY) > 0.0001f) { return (a.m_v3PositionY < b.m_v3PositionY); }
+		return (a.m_v3PositionZ < b.m_v3PositionZ);
 	}
 
 	void Physics::Update(float dt)

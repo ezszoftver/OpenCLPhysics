@@ -63,31 +63,6 @@ namespace OpenCLPhysics
 		BBox *m_pBBox;
 	};
 
-	class RigidBody
-	{
-	public:
-		RigidBody();
-
-		int32_t m_nTriMeshId;
-		float m_fRadius;
-
-		float m_fMass;
-		float m_fRestitution;
-		float m_fFriction;
-		float m_fLinearDamping;
-		float m_fAngularDamping;
-
-		glm::vec3 m_v3Force;
-		glm::vec3 m_v3LinearAcceleration;
-		glm::vec3 m_v3LinearVelocity;
-		glm::vec3 m_v3Position;
-		
-		glm::vec3 m_v3Torque;
-		glm::vec3 m_v3AngularAcceleration;
-		glm::vec3 m_v3AngularVelocity;
-		glm::vec3 m_v3Rotate;
-	};
-
 	class TriMesh
 	{
 	public:
@@ -101,6 +76,51 @@ namespace OpenCLPhysics
 		uint8_t m_nTop;
 		Hit m_arrHits[MAX_HITS_COUNT_PER_OBJECTS];
 	};
+
+	typedef struct structRigidBody
+	{
+		int32_t m_nTriMeshId = -1;
+		float m_fRadius = 0;
+
+		float m_fMass = 0;
+		float m_fRestitution = 0;
+		float m_fFriction = 0;
+		float m_fLinearDamping = 0;
+		float m_fAngularDamping = 0;
+
+		float m_v3ForceX = 0;
+		float m_v3ForceY = 0;
+		float m_v3ForceZ = 0;
+
+		float m_v3LinearAccelerationX = 0;
+		float m_v3LinearAccelerationY = 0;
+		float m_v3LinearAccelerationZ = 0;
+
+		float m_v3LinearVelocityX = 0;
+		float m_v3LinearVelocityY = 0;
+		float m_v3LinearVelocityZ = 0;
+
+		float m_v3PositionX = 0;
+		float m_v3PositionY = 0;
+		float m_v3PositionZ = 0;
+
+		float m_v3TorqueX = 0;
+		float m_v3TorqueY = 0;
+		float m_v3TorqueZ = 0;
+
+		float m_v3AngularAccelerationX = 0;
+		float m_v3AngularAccelerationY = 0;
+		float m_v3AngularAccelerationZ = 0;
+
+		float m_v3AngularVelocityX = 0;
+		float m_v3AngularVelocityY = 0;
+		float m_v3AngularVelocityZ = 0;
+
+		float m_v3RotateX = 0;
+		float m_v3RotateY = 0;
+		float m_v3RotateZ = 0;
+	}
+	RigidBody;
 
 	class Physics
 	{
@@ -151,7 +171,7 @@ namespace OpenCLPhysics
 		void SetAngularDamping(int32_t nId, float fAngularDamping);
 		float GetAngularDamping(int32_t nId);
 
-		void Commit();
+		bool Commit();
 		void Update(float dt);
 
 	private:
@@ -160,9 +180,10 @@ namespace OpenCLPhysics
 		cl_context m_context;
 		cl_command_queue m_command_queue;
 		cl_program m_program;
-		cl_kernel kernelRefitTree;
+		cl_kernel m_kernelRefitTree;
+		cl_mem m_clmem_RigidBodies;
 
-		std::vector< RigidBody* > m_listRigidBodies;
+		std::vector< RigidBody > m_listRigidBodies;
 		std::vector< TriMesh* > m_listTriMeshs;
 	};
 
