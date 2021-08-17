@@ -8,8 +8,8 @@ You don't get money for it.
 
 Hi!
 
-I would like write Physics Engine in C++ & OpenCL & Qt Library & OpenGL.
-The source code you can build Windows, Linux (maybe MacOS).
+I would like write Physics Engine in C++ & OpenCL.
+You can build the source code Windows, Linux (maybe MacOS).
 
 If source code have Bug, please write email here:
 erdoszoltan256@gmail.com
