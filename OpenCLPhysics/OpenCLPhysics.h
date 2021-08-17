@@ -9,6 +9,72 @@
 
 namespace OpenCLPhysics
 {
+	typedef struct _structBBox
+	{
+		// min
+		float v3MinX = 0;
+		float v3MinY = 0;
+		float v3MinZ = 0;
+		// max
+		float v3MaxX = 0;
+		float v3MaxY = 0;
+		float v3MaxZ = 0;
+	}
+	structBBox;
+
+	typedef struct _structBVHObject 
+	{
+		structBBox m_BBox;
+		int32_t m_nLeft = -1;
+		int32_t m_nRight = -1;
+	}
+	structBVHObject;
+
+	typedef struct _structRigidBody
+	{
+		int32_t m_nTriMeshId = -1;
+
+		structBBox m_BBox;
+
+		float m_fMass = 0;
+		float m_fRestitution = 0;
+		float m_fFriction = 0;
+		float m_fLinearDamping = 0;
+		float m_fAngularDamping = 0;
+
+		float m_v3ForceX = 0;
+		float m_v3ForceY = 0;
+		float m_v3ForceZ = 0;
+
+		float m_v3LinearAccelerationX = 0;
+		float m_v3LinearAccelerationY = 0;
+		float m_v3LinearAccelerationZ = 0;
+
+		float m_v3LinearVelocityX = 0;
+		float m_v3LinearVelocityY = 0;
+		float m_v3LinearVelocityZ = 0;
+
+		float m_v3PositionX = 0;
+		float m_v3PositionY = 0;
+		float m_v3PositionZ = 0;
+
+		float m_v3TorqueX = 0;
+		float m_v3TorqueY = 0;
+		float m_v3TorqueZ = 0;
+
+		float m_v3AngularAccelerationX = 0;
+		float m_v3AngularAccelerationY = 0;
+		float m_v3AngularAccelerationZ = 0;
+
+		float m_v3AngularVelocityX = 0;
+		float m_v3AngularVelocityY = 0;
+		float m_v3AngularVelocityZ = 0;
+
+		float m_v3RotateX = 0;
+		float m_v3RotateY = 0;
+		float m_v3RotateZ = 0;
+	}
+	structRigidBody;
 
 	class Triangle
 	{
@@ -33,6 +99,10 @@ namespace OpenCLPhysics
 		static BBox* Create(Triangle *pTriangle1, Triangle* pTriangle2);
 		static BBox* Create(BBox* pBBox);
 		static BBox* Create(BBox *pBBox1, BBox *pBBox2);
+
+		void Add(structBBox bbox);
+		void Add(glm::vec3 v);
+		structBBox GetStructBBox();
 
 		glm::vec3 m_v3Min;
 		glm::vec3 m_v3Max;
@@ -76,51 +146,6 @@ namespace OpenCLPhysics
 		uint8_t m_nTop;
 		Hit m_arrHits[MAX_HITS_COUNT_PER_OBJECTS];
 	};
-
-	typedef struct structRigidBody
-	{
-		int32_t m_nTriMeshId = -1;
-		float m_fRadius = 0;
-
-		float m_fMass = 0;
-		float m_fRestitution = 0;
-		float m_fFriction = 0;
-		float m_fLinearDamping = 0;
-		float m_fAngularDamping = 0;
-
-		float m_v3ForceX = 0;
-		float m_v3ForceY = 0;
-		float m_v3ForceZ = 0;
-
-		float m_v3LinearAccelerationX = 0;
-		float m_v3LinearAccelerationY = 0;
-		float m_v3LinearAccelerationZ = 0;
-
-		float m_v3LinearVelocityX = 0;
-		float m_v3LinearVelocityY = 0;
-		float m_v3LinearVelocityZ = 0;
-
-		float m_v3PositionX = 0;
-		float m_v3PositionY = 0;
-		float m_v3PositionZ = 0;
-
-		float m_v3TorqueX = 0;
-		float m_v3TorqueY = 0;
-		float m_v3TorqueZ = 0;
-
-		float m_v3AngularAccelerationX = 0;
-		float m_v3AngularAccelerationY = 0;
-		float m_v3AngularAccelerationZ = 0;
-
-		float m_v3AngularVelocityX = 0;
-		float m_v3AngularVelocityY = 0;
-		float m_v3AngularVelocityZ = 0;
-
-		float m_v3RotateX = 0;
-		float m_v3RotateY = 0;
-		float m_v3RotateZ = 0;
-	}
-	RigidBody;
 
 	class Physics
 	{
@@ -172,19 +197,24 @@ namespace OpenCLPhysics
 		float GetAngularDamping(int32_t nId);
 
 		bool Commit();
-		void Update(float dt);
+		bool Update(float dt);
 
 	private:
-		void OpenCL_RefitTree();
+		void CreateBVHObjects();
+		void UpdateBVHObjects();
 
 		cl_context m_context;
 		cl_command_queue m_command_queue;
 		cl_program m_program;
 		cl_kernel m_kernelRefitTree;
 		cl_mem m_clmem_RigidBodies;
+		cl_mem m_clmem_BVHObjects;
 
-		std::vector< RigidBody > m_listRigidBodies;
+		std::vector< structRigidBody > m_listRigidBodies;
 		std::vector< TriMesh* > m_listTriMeshs;
+
+		std::vector< std::vector< structBVHObject >* > m_BVHObjectsLevels; // ebbõl kiszámítható a "count", és az "offset"
+		std::vector< structBVHObject > m_BVHObjects;
 	};
 
 }
