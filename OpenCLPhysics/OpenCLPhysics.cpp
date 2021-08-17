@@ -6,6 +6,9 @@
 #include <algorithm>    // std::sort
 #include <vector>       // std::vector
 
+#include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtx/euler_angles.hpp"
+
 namespace OpenCLPhysics 
 {
 	Triangle::Triangle()
@@ -544,78 +547,200 @@ namespace OpenCLPhysics
 
 	glm::mat4 Physics::GetTransform(int32_t nId)
 	{
-		return glm::mat4(1);
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+
+			glm::vec3 v3Rotate = glm::vec3(m_listRigidBodies[nRigidBodyId].m_v3RotateX, m_listRigidBodies[nRigidBodyId].m_v3RotateY, m_listRigidBodies[nRigidBodyId].m_v3RotateZ);
+			glm::vec3 v3Position = glm::vec3(m_listRigidBodies[nRigidBodyId].m_v3PositionX, m_listRigidBodies[nRigidBodyId].m_v3PositionY, m_listRigidBodies[nRigidBodyId].m_v3PositionZ);
+
+			return (glm::translate(glm::mat4(1.0f), v3Position) * glm::eulerAngleXYZ(v3Rotate.x, v3Rotate.y, v3Rotate.z));			
+		}
+
+		return glm::mat4(1.0f);
 	}
 
-	void Physics::SetPosition(int32_t nId, glm::vec3 vec3Position)
+	void Physics::SetPosition(int32_t nId, glm::vec3 v3Position)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			m_listRigidBodies[nRigidBodyId].m_v3PositionX = v3Position.x;
+			m_listRigidBodies[nRigidBodyId].m_v3PositionY = v3Position.y;
+			m_listRigidBodies[nRigidBodyId].m_v3PositionZ = v3Position.z;
+		}
 	}
 
 	glm::vec3 Physics::GetPosition(int32_t nId)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			glm::vec3 ret = glm::vec3(m_listRigidBodies[nRigidBodyId].m_v3PositionX, m_listRigidBodies[nRigidBodyId].m_v3PositionY, m_listRigidBodies[nRigidBodyId].m_v3PositionZ);
+			return ret;
+		}
+
 		return glm::vec3(0, 0, 0);
 	}
 
-	void Physics::SetEulerRotate(int32_t nId, glm::vec3 vec3EulerRotate)
+	void Physics::SetEulerRotate(int32_t nId, glm::vec3 v3EulerRotate)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			m_listRigidBodies[nRigidBodyId].m_v3RotateX = v3EulerRotate.x;
+			m_listRigidBodies[nRigidBodyId].m_v3RotateY = v3EulerRotate.y;
+			m_listRigidBodies[nRigidBodyId].m_v3RotateZ = v3EulerRotate.z;
+		}
 	}
 
 	glm::vec3 Physics::GetEulerRotate(int32_t nId)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			glm::vec3 ret = glm::vec3(m_listRigidBodies[nRigidBodyId].m_v3RotateX, m_listRigidBodies[nRigidBodyId].m_v3RotateY, m_listRigidBodies[nRigidBodyId].m_v3RotateZ);
+			return ret;
+		}
+
 		return glm::vec3(0, 0, 0);
 	}
 
-	void Physics::SetLinearVelocity(int32_t nId, glm::vec3 vec3LinearVelocity)
+	void Physics::SetLinearVelocity(int32_t nId, glm::vec3 v3LinearVelocity)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			m_listRigidBodies[nRigidBodyId].m_v3LinearVelocityX = v3LinearVelocity.x;
+			m_listRigidBodies[nRigidBodyId].m_v3LinearVelocityY = v3LinearVelocity.y;
+			m_listRigidBodies[nRigidBodyId].m_v3LinearVelocityZ = v3LinearVelocity.z;
+		}
 	}
 
 	glm::vec3 Physics::GetLinearVelocity(int32_t nId)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			glm::vec3 ret = glm::vec3(m_listRigidBodies[nRigidBodyId].m_v3LinearVelocityX, m_listRigidBodies[nRigidBodyId].m_v3LinearVelocityY, m_listRigidBodies[nRigidBodyId].m_v3LinearVelocityZ);
+			return ret;
+		}
+
 		return glm::vec3(0, 0, 0);
 	}
 
-	void Physics::SetAngularVelocity(int32_t nId, glm::vec3 vec3AngularVelocity)
+	void Physics::SetAngularVelocity(int32_t nId, glm::vec3 v3AngularVelocity)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			m_listRigidBodies[nRigidBodyId].m_v3AngularVelocityX = v3AngularVelocity.x;
+			m_listRigidBodies[nRigidBodyId].m_v3AngularVelocityY = v3AngularVelocity.y;
+			m_listRigidBodies[nRigidBodyId].m_v3AngularVelocityZ = v3AngularVelocity.z;
+		}
 	}
 
 	glm::vec3 Physics::GetAngularVelocity(int32_t nId)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			glm::vec3 ret = glm::vec3(m_listRigidBodies[nRigidBodyId].m_v3AngularVelocityX, m_listRigidBodies[nRigidBodyId].m_v3AngularVelocityY, m_listRigidBodies[nRigidBodyId].m_v3AngularVelocityZ);
+			return ret;
+		}
+
 		return glm::vec3(0, 0, 0);
 	}
 
-	void Physics::SetLinearAcceleration(int32_t nId, glm::vec3 vec3LinearVelocity)
+	void Physics::SetLinearAcceleration(int32_t nId, glm::vec3 v3LinearAcceleration)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			m_listRigidBodies[nRigidBodyId].m_v3LinearAccelerationX = v3LinearAcceleration.x;
+			m_listRigidBodies[nRigidBodyId].m_v3LinearAccelerationY = v3LinearAcceleration.y;
+			m_listRigidBodies[nRigidBodyId].m_v3LinearAccelerationZ = v3LinearAcceleration.z;
+		}
 	}
 
 	glm::vec3 Physics::GetLinearAcceleration(int32_t nId)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			glm::vec3 ret = glm::vec3(m_listRigidBodies[nRigidBodyId].m_v3LinearAccelerationX, m_listRigidBodies[nRigidBodyId].m_v3LinearAccelerationY, m_listRigidBodies[nRigidBodyId].m_v3LinearAccelerationZ);
+			return ret;
+		}
+
 		return glm::vec3(0, 0, 0);
 	}
 
-	void Physics::SetAngularAcceleration(int32_t nId, glm::vec3 vec3AngularVelocity)
+	void Physics::SetAngularAcceleration(int32_t nId, glm::vec3 v3AngularAcceleration)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			m_listRigidBodies[nRigidBodyId].m_v3AngularAccelerationX = v3AngularAcceleration.x;
+			m_listRigidBodies[nRigidBodyId].m_v3AngularAccelerationY = v3AngularAcceleration.y;
+			m_listRigidBodies[nRigidBodyId].m_v3AngularAccelerationZ = v3AngularAcceleration.z;
+		}
 	}
 
 	glm::vec3 Physics::GetAngularAcceleration(int32_t nId)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			glm::vec3 ret = glm::vec3(m_listRigidBodies[nRigidBodyId].m_v3AngularAccelerationX, m_listRigidBodies[nRigidBodyId].m_v3AngularAccelerationY, m_listRigidBodies[nRigidBodyId].m_v3AngularAccelerationZ);
+			return ret;
+		}
+
 		return glm::vec3(0, 0, 0);
 	}
 
-	void Physics::SetForce(int32_t nId, glm::vec3 vec3LinearVelocity)
+	void Physics::SetForce(int32_t nId, glm::vec3 v3Force)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			m_listRigidBodies[nRigidBodyId].m_v3ForceX = v3Force.x;
+			m_listRigidBodies[nRigidBodyId].m_v3ForceY = v3Force.y;
+			m_listRigidBodies[nRigidBodyId].m_v3ForceZ = v3Force.z;
+		}
 	}
 
 	glm::vec3 Physics::GetForce(int32_t nId)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			glm::vec3 ret = glm::vec3(m_listRigidBodies[nRigidBodyId].m_v3ForceX, m_listRigidBodies[nRigidBodyId].m_v3ForceY, m_listRigidBodies[nRigidBodyId].m_v3ForceZ);
+			return ret;
+		}
+
 		return glm::vec3(0, 0, 0);
 	}
 
-	void Physics::SetTorque(int32_t nId, glm::vec3 vec3AngularVelocity)
+	void Physics::SetTorque(int32_t nId, glm::vec3 v3Torque)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			m_listRigidBodies[nRigidBodyId].m_v3TorqueX = v3Torque.x;
+			m_listRigidBodies[nRigidBodyId].m_v3TorqueY = v3Torque.y;
+			m_listRigidBodies[nRigidBodyId].m_v3TorqueZ = v3Torque.z;
+		}
 	}
 
 	glm::vec3 Physics::GetTorque(int32_t nId)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			glm::vec3 ret = glm::vec3(m_listRigidBodies[nRigidBodyId].m_v3TorqueX, m_listRigidBodies[nRigidBodyId].m_v3TorqueY, m_listRigidBodies[nRigidBodyId].m_v3TorqueZ);
+			return ret;
+		}
+
 		return glm::vec3(0, 0, 0);
 	}
 
@@ -623,7 +748,8 @@ namespace OpenCLPhysics
 	{
 		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
 		{
-			m_listRigidBodies[nId - TRIMESH_START].m_fMass = fMass;
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			m_listRigidBodies[nRigidBodyId].m_fMass = fMass;
 		}
 	}
 
@@ -631,7 +757,8 @@ namespace OpenCLPhysics
 	{
 		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
 		{
-			return m_listRigidBodies[nId - TRIMESH_START].m_fMass;
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			return m_listRigidBodies[nRigidBodyId].m_fMass;
 		}
 
 		return 0.0f;
@@ -639,37 +766,81 @@ namespace OpenCLPhysics
 
 	void Physics::SetRestitution(int32_t nId, float fRestitution)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			m_listRigidBodies[nRigidBodyId].m_fRestitution = fRestitution;
+		}
 	}
 
 	float Physics::GetRestitution(int32_t nId)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			return m_listRigidBodies[nRigidBodyId].m_fRestitution;
+		}
+
 		return 0.0f;
 	}
 
 	void Physics::SetFriction(int32_t nId, float fFriction)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			m_listRigidBodies[nRigidBodyId].m_fFriction = fFriction;
+		}
 	}
 
 	float Physics::GetFriction(int32_t nId)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			return m_listRigidBodies[nRigidBodyId].m_fFriction;
+		}
+
 		return 0.0f;
 	}
 
 	void Physics::SetLinearDamping(int32_t nId, float fLinearDamping)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			m_listRigidBodies[nRigidBodyId].m_fLinearDamping = fLinearDamping;
+		}
 	}
 
 	float Physics::GetLinearDamping(int32_t nId)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			return m_listRigidBodies[nRigidBodyId].m_fLinearDamping;
+		}
+
 		return 0.0f;
 	}
 
 	void Physics::SetAngularDamping(int32_t nId, float fAngularDamping)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			m_listRigidBodies[nRigidBodyId].m_fAngularDamping = fAngularDamping;
+		}
 	}
 
 	float Physics::GetAngularDamping(int32_t nId)
 	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			return m_listRigidBodies[nRigidBodyId].m_fAngularDamping;
+		}
+
 		return 0.0f;
 	}
 
