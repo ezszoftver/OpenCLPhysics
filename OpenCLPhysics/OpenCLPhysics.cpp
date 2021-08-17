@@ -1,4 +1,5 @@
 #include "OpenCLPhysics.h"
+#include "Script.h"
 
 // sort algorithm example
 #include <iostream>     // std::cout
@@ -351,6 +352,27 @@ namespace OpenCLPhysics
 					m_command_queue = clCreateCommandQueue(m_context, deviceId, 0, &status);
 					if (status != CL_SUCCESS) { return false; }
 
+					// create program
+					const char* strText = Script::GetText();
+					m_program = clCreateProgramWithSource(m_context, 1, (const char**)&strText, NULL, &status);
+					if (status != CL_SUCCESS) { return false; }
+
+					// build program
+					status = clBuildProgram(m_program, 0, NULL, NULL, NULL, NULL);
+					if (status != CL_SUCCESS)
+					{
+						size_t len;
+						char buffer[2048];
+
+						clGetProgramBuildInfo(m_program, deviceId, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
+						printf("%s\n", buffer);
+						return false;
+					}
+
+					// create kernels
+					kernelRefitTree = clCreateKernel(m_program, "RefitTree", &status);
+					if (!kernelRefitTree || status != CL_SUCCESS) { return false; }
+
 					return true;
 				}
 			}
@@ -676,8 +698,7 @@ namespace OpenCLPhysics
 	{
 		// sort
 		std::sort(m_listRigidBodies.begin(), m_listRigidBodies.end(), SortRigidBodiesFunc);
-
-		//RefitTree(m_listRigidBodies);
+		OpenCL_RefitTree();
 
 		// CollisionDetection
 		;
@@ -685,4 +706,8 @@ namespace OpenCLPhysics
 		;
 	}
 
+	void Physics::OpenCL_RefitTree()
+	{
+		//m_listRigidBodies;
+	}
 }

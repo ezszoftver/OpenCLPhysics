@@ -155,8 +155,12 @@ namespace OpenCLPhysics
 		void Update(float dt);
 
 	private:
+		void OpenCL_RefitTree();
+
 		cl_context m_context;
 		cl_command_queue m_command_queue;
+		cl_program m_program;
+		cl_kernel kernelRefitTree;
 
 		std::vector< RigidBody* > m_listRigidBodies;
 		std::vector< TriMesh* > m_listTriMeshs;
