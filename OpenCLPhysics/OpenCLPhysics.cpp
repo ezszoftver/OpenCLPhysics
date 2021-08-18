@@ -902,7 +902,7 @@ namespace OpenCLPhysics
 		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), m_listRigidBodies.data(), 0, NULL, NULL);
 		if (err != CL_SUCCESS) { return false; }
 		// update BVHObjects
-		UpdateBVHObjects();
+		if (false == UpdateBVHObjects()) { return false; }
 
 		// CollisionDetection
 		;
@@ -1050,7 +1050,7 @@ namespace OpenCLPhysics
 		}
 	}
 
-	void Physics::UpdateBVHObjects()
+	bool Physics::UpdateBVHObjects()
 	{
 		// update leafs
 		int32_t nOffset = 1;
@@ -1080,14 +1080,15 @@ namespace OpenCLPhysics
 			// debug check
 			/*std::vector<structBVHObject> results;
 			results.resize(m_listBVHObjects.size());
-			err != clEnqueueReadBuffer(m_command_queue, m_clmem_inoutBVHObjects, CL_TRUE, 0, sizeof(structBVHObject) * m_listBVHObjects.size(), &(results[0]), 0, NULL, NULL);
+			err != clEnqueueReadBuffer(m_command_queue, m_clmem_inoutBVHObjects, CL_TRUE, 0, sizeof(structBVHObject) * m_listBVHObjects.size(), &(results[0]), 0, NULL, NULL);*/
 			if (err != CL_SUCCESS) 
 			{ 
-				;
-			}*/
+				return false;
+			}
 
 			nOffset += nCount;
 		}
 		
+		return true;
 	}
 }

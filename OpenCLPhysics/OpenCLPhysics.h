@@ -201,7 +201,7 @@ namespace OpenCLPhysics
 
 	private:
 		void CreateBVHObjects();
-		void UpdateBVHObjects();
+		bool UpdateBVHObjects();
 
 		cl_context m_context;
 		cl_command_queue m_command_queue;

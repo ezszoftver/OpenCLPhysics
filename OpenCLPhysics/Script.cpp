@@ -126,7 +126,7 @@ __kernel void UpdateBVHObjects(__global BVHObject *inoutBVHObjects, __global Rig
 
 	BVHObject bvhObject = inoutBVHObjects[nOffset + id];
 	
-	if (bvhObject.nLeft == -1 && bvhObject.nRight == -1)
+	if (bvhObject.nLeft == -1 && bvhObject.nRight == -1) // is Leaf?
 	{
 		RigidBody rigidBody = inoutRigidBodies[id];
 		BBox bbox = rigidBody.bbox;
@@ -141,19 +141,19 @@ __kernel void UpdateBVHObjects(__global BVHObject *inoutBVHObjects, __global Rig
 		bvhObject.bbox = bbox;
 		inoutBVHObjects[nOffset + id] = bvhObject;
 	}
-	else if (bvhObject.nLeft > -1 && bvhObject.nRight == -1) 
+	else if (bvhObject.nLeft > -1 && bvhObject.nRight == -1) // is bbox?
 	{
 		BVHObject bvhLeftObject = inoutBVHObjects[bvhObject.nLeft];
 		bvhObject.bbox = bvhLeftObject.bbox;
 		inoutBVHObjects[nOffset + id] = bvhObject;
 	}
-	else if (bvhObject.nLeft == -1 && bvhObject.nRight > -1) 
+	else if (bvhObject.nLeft == -1 && bvhObject.nRight > -1) // is bbox?
 	{
 		BVHObject bvhRightObject = inoutBVHObjects[bvhObject.nRight];
 		bvhObject.bbox = bvhRightObject.bbox;
 		inoutBVHObjects[nOffset + id] = bvhObject;
 	}
-	else if (bvhObject.nLeft > -1 && bvhObject.nRight > -1) 
+	else if (bvhObject.nLeft > -1 && bvhObject.nRight > -1) // is bbox?
 	{
 		BVHObject bvhLeftObject = inoutBVHObjects[bvhObject.nLeft];
 		BVHObject bvhRightObject = inoutBVHObjects[bvhObject.nRight];
