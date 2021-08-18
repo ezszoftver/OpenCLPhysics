@@ -2,7 +2,7 @@
 !!! THIS IS UNDER DEVELOPING. NOT STABLE. !!!
 !!! VERSION: 0.0 !!!
 
-Website: https://ezszoftver.hu
+Website: https://ezszoftver.hu/eng.html
 
 License:
 The "OpenCLPhysics" source code is free.
