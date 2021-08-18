@@ -206,15 +206,15 @@ namespace OpenCLPhysics
 		cl_context m_context;
 		cl_command_queue m_command_queue;
 		cl_program m_program;
-		cl_kernel m_kernelRefitTree;
-		cl_mem m_clmem_RigidBodies;
-		cl_mem m_clmem_BVHObjects;
+		cl_kernel m_kernelUpdateBVHObjects;
+		cl_mem m_clmem_inoutRigidBodies;
+		cl_mem m_clmem_inoutBVHObjects;
 
 		std::vector< structRigidBody > m_listRigidBodies;
 		std::vector< TriMesh* > m_listTriMeshs;
 
 		std::vector< std::vector< structBVHObject >* > m_BVHObjectsLevels; // ebbõl kiszámítható a "count", és az "offset"
-		std::vector< structBVHObject > m_BVHObjects;
+		std::vector< structBVHObject > m_listBVHObjects;
 	};
 
 }

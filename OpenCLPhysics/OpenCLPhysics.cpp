@@ -366,8 +366,8 @@ namespace OpenCLPhysics
 					}
 
 					// create kernels
-					m_kernelRefitTree = clCreateKernel(m_program, "RefitTree", &status);
-					if (!m_kernelRefitTree || status != CL_SUCCESS) { return false; }
+					m_kernelUpdateBVHObjects = clCreateKernel(m_program, "UpdateBVHObjects", &status);
+					if (!m_kernelUpdateBVHObjects || status != CL_SUCCESS) { return false; }
 
 					return true;
 				}
@@ -868,18 +868,18 @@ namespace OpenCLPhysics
 		cl_int err;
 
 		// create rigidBodies buffer
-		m_clmem_RigidBodies = clCreateBuffer(m_context, CL_MEM_READ_WRITE, sizeof(structRigidBody) * m_listRigidBodies.size(), NULL, NULL);
-		if (!m_clmem_RigidBodies) { return false; }
+		m_clmem_inoutRigidBodies = clCreateBuffer(m_context, CL_MEM_READ_WRITE, sizeof(structRigidBody) * m_listRigidBodies.size(), NULL, NULL);
+		if (!m_clmem_inoutRigidBodies) { return false; }
 		// -> copy
-		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_RigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), m_listRigidBodies.data(), 0, NULL, NULL);
+		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), m_listRigidBodies.data(), 0, NULL, NULL);
 		if (err != CL_SUCCESS) { return false; }
 
 		// create BVHObjects buffer
 		CreateBVHObjects();
-		m_clmem_BVHObjects = clCreateBuffer(m_context, CL_MEM_READ_WRITE, sizeof(structBVHObject) * m_BVHObjects.size(), NULL, NULL);
-		if (!m_clmem_BVHObjects) { return false; }
+		m_clmem_inoutBVHObjects = clCreateBuffer(m_context, CL_MEM_READ_WRITE, sizeof(structBVHObject) * m_listBVHObjects.size(), NULL, NULL);
+		if (!m_clmem_inoutBVHObjects) { return false; }
 		// -> copy
-		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_BVHObjects, CL_TRUE, 0, sizeof(structBVHObject) * m_BVHObjects.size(), m_BVHObjects.data(), 0, NULL, NULL);
+		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutBVHObjects, CL_TRUE, 0, sizeof(structBVHObject) * m_listBVHObjects.size(), m_listBVHObjects.data(), 0, NULL, NULL);
 		if (err != CL_SUCCESS) { return false; }
 
 		return true;
@@ -899,7 +899,7 @@ namespace OpenCLPhysics
 		// sort
 		std::sort(m_listRigidBodies.begin(), m_listRigidBodies.end(), SortRigidBodiesFunc);
 		// copy
-		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_RigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), m_listRigidBodies.data(), 0, NULL, NULL);
+		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), m_listRigidBodies.data(), 0, NULL, NULL);
 		if (err != CL_SUCCESS) { return false; }
 		// update BVHObjects
 		UpdateBVHObjects();
@@ -935,14 +935,6 @@ namespace OpenCLPhysics
 					structRigidBody theRigidBody = m_listRigidBodies.at(i);
 					element.m_BBox = theRigidBody.m_BBox;
 
-					// cheat
-					element.m_BBox.v3MinX -= epsilon;
-					element.m_BBox.v3MinY -= epsilon;
-					element.m_BBox.v3MinZ -= epsilon;
-					element.m_BBox.v3MaxX += epsilon;
-					element.m_BBox.v3MaxY += epsilon;
-					element.m_BBox.v3MaxZ += epsilon;
-
 					element.m_nLeft = -1;
 					element.m_nRight = -1;
 					pCurrentLevel->push_back(element);
@@ -977,14 +969,6 @@ namespace OpenCLPhysics
 					}
 					j++;
 					element.m_BBox = bbox.GetStructBBox();
-
-					// cheat
-					element.m_BBox.v3MinX -= epsilon;
-					element.m_BBox.v3MinY -= epsilon;
-					element.m_BBox.v3MinZ -= epsilon;
-					element.m_BBox.v3MaxX += epsilon;
-					element.m_BBox.v3MaxY += epsilon;
-					element.m_BBox.v3MaxZ += epsilon;
 
 					pCurrentLevel->push_back(element);
 				}
@@ -1024,31 +1008,23 @@ namespace OpenCLPhysics
 		}
 		element.m_BBox = bbox.GetStructBBox();
 
-		// cheat
-		element.m_BBox.v3MinX -= epsilon;
-		element.m_BBox.v3MinY -= epsilon;
-		element.m_BBox.v3MinZ -= epsilon;
-		element.m_BBox.v3MaxX += epsilon;
-		element.m_BBox.v3MaxY += epsilon;
-		element.m_BBox.v3MaxZ += epsilon;
-
 		pLastLevel->push_back(element);
 
 		// add to tree, the last level
 		m_BVHObjectsLevels.push_back(pLastLevel);
 
 		// 2/2 - LEVELS TO ONE LIST
-		m_BVHObjects.clear();
+		m_listBVHObjects.clear();
 		
 		// ROOT element
 		structBVHObject root;
-		m_BVHObjects.push_back(root);
+		m_listBVHObjects.push_back(root);
 		uint32_t nElapsedOffset;
 		uint32_t nOffset = 1;
 
 		for (uint32_t i = 0; i < m_BVHObjectsLevels.size(); i++)
 		{
-			nElapsedOffset = (uint32_t)m_BVHObjects.size();
+			nElapsedOffset = (uint32_t)m_listBVHObjects.size();
 
 			std::vector< structBVHObject >* pLevel = m_BVHObjectsLevels.at(i);
 
@@ -1057,7 +1033,7 @@ namespace OpenCLPhysics
 				structBVHObject element = pLevel->at(0);
 				if (element.m_nLeft > -1) { element.m_nLeft += nOffset; }
 				if (element.m_nRight > -1) { element.m_nRight += nOffset; }
-				m_BVHObjects[0] = element;
+				m_listBVHObjects[0] = element;
 			}
 			else
 			{
@@ -1066,7 +1042,7 @@ namespace OpenCLPhysics
 					structBVHObject element = pLevel->at(j);
 					if (element.m_nLeft > -1) { element.m_nLeft += nOffset; }
 					if (element.m_nRight > -1) { element.m_nRight += nOffset; }
-					m_BVHObjects.push_back(element);
+					m_listBVHObjects.push_back(element);
 				}
 
 				nOffset = nElapsedOffset;
@@ -1076,6 +1052,42 @@ namespace OpenCLPhysics
 
 	void Physics::UpdateBVHObjects()
 	{
-		// m_BVHObjects
+		// update leafs
+		int32_t nOffset = 1;
+		int32_t nCount = 0;
+		size_t nLocal = 1;
+		for (uint32_t i = 0; i < m_BVHObjectsLevels.size(); i++)
+		{
+			std::vector< structBVHObject > *pCurrentLevel = m_BVHObjectsLevels.at(i);
+
+			if (i == (m_BVHObjectsLevels.size() - 1))
+			{
+				nOffset = 0;
+			}
+
+			nCount = (int32_t)pCurrentLevel->size();
+			size_t nGlobal = nCount;
+
+			cl_int err = 0;
+
+			err |= clSetKernelArg(m_kernelUpdateBVHObjects, 0, sizeof(cl_mem), &m_clmem_inoutBVHObjects);
+			err |= clSetKernelArg(m_kernelUpdateBVHObjects, 1, sizeof(cl_mem), &m_clmem_inoutRigidBodies);
+			err |= clSetKernelArg(m_kernelUpdateBVHObjects, 2, sizeof(int32_t), &nOffset);
+			err |= clSetKernelArg(m_kernelUpdateBVHObjects, 3, sizeof(int32_t), &nCount);
+			err |= clEnqueueNDRangeKernel(m_command_queue, m_kernelUpdateBVHObjects, 1, NULL, &nGlobal, &nLocal, 0, NULL, NULL);
+			clFinish(m_command_queue);
+
+			// debug check
+			/*std::vector<structBVHObject> results;
+			results.resize(m_listBVHObjects.size());
+			err != clEnqueueReadBuffer(m_command_queue, m_clmem_inoutBVHObjects, CL_TRUE, 0, sizeof(structBVHObject) * m_listBVHObjects.size(), &(results[0]), 0, NULL, NULL);
+			if (err != CL_SUCCESS) 
+			{ 
+				;
+			}*/
+
+			nOffset += nCount;
+		}
+		
 	}
 }
