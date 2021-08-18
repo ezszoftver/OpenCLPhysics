@@ -2,7 +2,7 @@
 !!! THIS IS UNDER DEVELOPING. NOT STABLE. !!!
 !!! VERSION: 0.0 !!!
 
-Website: https://ezszoftver.hu/eng.html
+Website: https://ezszoftver.hu/eng.html (You click to "Progs & learn" -> "Physics Engine, with VGA" submenu)
 
 License:
 The "OpenCLPhysics" source code is free.
