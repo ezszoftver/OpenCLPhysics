@@ -368,6 +368,8 @@ namespace OpenCLPhysics
 					// create kernels
 					m_kernelUpdateBVHObjects = clCreateKernel(m_program, "UpdateBVHObjects", &status);
 					if (!m_kernelUpdateBVHObjects || status != CL_SUCCESS) { return false; }
+					m_kernelIntegrate = clCreateKernel(m_program, "Integrate", &status);
+					if (!m_kernelIntegrate || status != CL_SUCCESS) { return false; }
 
 					return true;
 				}
@@ -868,6 +870,7 @@ namespace OpenCLPhysics
 		cl_int err;
 
 		// create rigidBodies buffer
+		// -> ealpsed
 		m_clmem_inoutRigidBodies = clCreateBuffer(m_context, CL_MEM_READ_WRITE, sizeof(structRigidBody) * m_listRigidBodies.size(), NULL, NULL);
 		if (!m_clmem_inoutRigidBodies) { return false; }
 		// -> copy
@@ -894,7 +897,10 @@ namespace OpenCLPhysics
 
 	bool Physics::Update(float dt)
 	{
-		cl_int err;
+		cl_int err = 0;
+
+		// integrate
+		if (false == Integrate(dt)) { return false; }
 
 		// sort
 		std::sort(m_listRigidBodies.begin(), m_listRigidBodies.end(), SortRigidBodiesFunc);
@@ -1080,7 +1086,7 @@ namespace OpenCLPhysics
 			// debug check
 			/*std::vector<structBVHObject> results;
 			results.resize(m_listBVHObjects.size());
-			err != clEnqueueReadBuffer(m_command_queue, m_clmem_inoutBVHObjects, CL_TRUE, 0, sizeof(structBVHObject) * m_listBVHObjects.size(), &(results[0]), 0, NULL, NULL);*/
+			err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutBVHObjects, CL_TRUE, 0, sizeof(structBVHObject) * m_listBVHObjects.size(), &(results[0]), 0, NULL, NULL);*/
 			if (err != CL_SUCCESS) 
 			{ 
 				return false;
@@ -1089,6 +1095,29 @@ namespace OpenCLPhysics
 			nOffset += nCount;
 		}
 		
+		return true;
+	}
+
+	bool Physics::Integrate(float dt)
+	{
+		cl_int err = 0;
+
+		int32_t nCount = 0;
+		size_t nLocal = 1;
+		nCount = (int32_t)m_listRigidBodies.size();
+		size_t nGlobal = nCount;
+
+		err |= clSetKernelArg(m_kernelIntegrate, 0, sizeof(cl_mem), &m_clmem_inoutRigidBodies);
+		err |= clSetKernelArg(m_kernelIntegrate, 1, sizeof(int32_t), &nCount);
+		err |= clSetKernelArg(m_kernelIntegrate, 2, sizeof(float), &dt);
+		err |= clEnqueueNDRangeKernel(m_command_queue, m_kernelIntegrate, 1, NULL, &nGlobal, &nLocal, 0, NULL, NULL);
+		clFinish(m_command_queue);
+
+		if (err != CL_SUCCESS)
+		{
+			return false;
+		}
+
 		return true;
 	}
 }

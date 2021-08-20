@@ -73,6 +73,14 @@ namespace OpenCLPhysics
 		float m_v3RotateX = 0;
 		float m_v3RotateY = 0;
 		float m_v3RotateZ = 0;
+
+		float m_v3ElapsedPositionX = 0;
+		float m_v3ElapsedPositionY = 0;
+		float m_v3ElapsedPositionZ = 0;
+
+		float m_v3ElapsedRotateX = 0;
+		float m_v3ElapsedRotateY = 0;
+		float m_v3ElapsedRotateZ = 0;
 	}
 	structRigidBody;
 
@@ -202,11 +210,13 @@ namespace OpenCLPhysics
 	private:
 		void CreateBVHObjects();
 		bool UpdateBVHObjects();
+		bool Integrate(float dt);
 
 		cl_context m_context;
 		cl_command_queue m_command_queue;
 		cl_program m_program;
 		cl_kernel m_kernelUpdateBVHObjects;
+		cl_kernel m_kernelIntegrate;
 		cl_mem m_clmem_inoutRigidBodies;
 		cl_mem m_clmem_inoutBVHObjects;
 

@@ -66,6 +66,14 @@ typedef struct
 	float v3RotateX;
 	float v3RotateY;
 	float v3RotateZ;
+
+	float m_v3ElapsedPositionX;
+	float m_v3ElapsedPositionY;
+	float m_v3ElapsedPositionZ;
+
+	float m_v3ElapsedRotateX;
+	float m_v3ElapsedRotateY;
+	float m_v3ElapsedRotateZ;
 }
 RigidBody;
 
@@ -170,6 +178,10 @@ __kernel void UpdateBVHObjects(__global BVHObject *inoutBVHObjects, __global Rig
 
 	// save
 	inoutBVHObjects[nOffset + id] = bvhObject;
+}
+
+__kernel void Integrate(__global RigidBody* inoutRigidBodies, int nCount, float dt) 
+{
 }
 
 );
