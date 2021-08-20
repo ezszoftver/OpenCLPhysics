@@ -110,12 +110,12 @@ BBox CreateBBox(BBox a, BBox b)
 	fMaxZ = max(fMaxZ, b.fMaxZ);
 
 	BBox bbox;
-	bbox.fMinX = fMinX - 0.0001f; // cheat
-	bbox.fMinY = fMinY - 0.0001f;
-	bbox.fMinZ = fMinZ - 0.0001f;
-	bbox.fMaxX = fMaxX + 0.0001f;
-	bbox.fMaxY = fMaxY + 0.0001f;
-	bbox.fMaxZ = fMaxZ + 0.0001f;
+	bbox.fMinX = fMinX;
+	bbox.fMinY = fMinY;
+	bbox.fMinZ = fMinZ;
+	bbox.fMaxX = fMaxX;
+	bbox.fMaxY = fMaxY;
+	bbox.fMaxZ = fMaxZ;
 
 	return bbox;
 }
@@ -139,19 +139,16 @@ __kernel void UpdateBVHObjects(__global BVHObject *inoutBVHObjects, __global Rig
 		bbox.fMaxZ += rigidBody.v3PositionZ;
 
 		bvhObject.bbox = bbox;
-		inoutBVHObjects[nOffset + id] = bvhObject;
 	}
 	else if (bvhObject.nLeft > -1 && bvhObject.nRight == -1) // is bbox?
 	{
 		BVHObject bvhLeftObject = inoutBVHObjects[bvhObject.nLeft];
 		bvhObject.bbox = bvhLeftObject.bbox;
-		inoutBVHObjects[nOffset + id] = bvhObject;
 	}
 	else if (bvhObject.nLeft == -1 && bvhObject.nRight > -1) // is bbox?
 	{
 		BVHObject bvhRightObject = inoutBVHObjects[bvhObject.nRight];
 		bvhObject.bbox = bvhRightObject.bbox;
-		inoutBVHObjects[nOffset + id] = bvhObject;
 	}
 	else if (bvhObject.nLeft > -1 && bvhObject.nRight > -1) // is bbox?
 	{
@@ -161,8 +158,18 @@ __kernel void UpdateBVHObjects(__global BVHObject *inoutBVHObjects, __global Rig
 		BBox bbox = CreateBBox(bvhLeftObject.bbox, bvhRightObject.bbox);
 
 		bvhObject.bbox = bbox;
-		inoutBVHObjects[nOffset + id] = bvhObject;
 	}
+
+	// cheat
+	bvhObject.bbox.fMinX -= 0.0001f;
+	bvhObject.bbox.fMinY -= 0.0001f;
+	bvhObject.bbox.fMinZ -= 0.0001f;
+	bvhObject.bbox.fMaxX += 0.0001f;
+	bvhObject.bbox.fMaxY += 0.0001f;
+	bvhObject.bbox.fMaxZ += 0.0001f;
+
+	// save
+	inoutBVHObjects[nOffset + id] = bvhObject;
 }
 
 );
