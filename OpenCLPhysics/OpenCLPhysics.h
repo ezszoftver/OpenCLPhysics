@@ -73,14 +73,6 @@ namespace OpenCLPhysics
 		float m_v3RotateX = 0;
 		float m_v3RotateY = 0;
 		float m_v3RotateZ = 0;
-
-		float m_v3ElapsedPositionX = 0;
-		float m_v3ElapsedPositionY = 0;
-		float m_v3ElapsedPositionZ = 0;
-
-		float m_v3ElapsedRotateX = 0;
-		float m_v3ElapsedRotateY = 0;
-		float m_v3ElapsedRotateZ = 0;
 	}
 	structRigidBody;
 
