@@ -10,11 +10,19 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui.setupUi(this);
 
+    for (int i = 0; i < 256; i++) 
+    {
+        m_bKeys[i] = false;
+    }
+
     ui.glWidget->installEventFilter(this);
 }
 
 bool MainWindow::Init() 
 {
+    // randomize
+    srand(time(NULL));
+
     // openal
     alutInit(&__argc, __argv);
 
@@ -61,36 +69,67 @@ bool MainWindow::Init()
     wglSwapIntervalEXT(0);
 
     // init
+    m_shaderDraw.Load("Shaders/Draw.vs.txt", "Shaders/Draw.fs.txt");
+    m_shaderShadowMap.Load("Shaders/DrawToDepthTexture.vs.txt", "Shaders/DrawToDepthTexture.fs.txt");
+    std::vector<int> listTypes;
+    listTypes.push_back(GL_RGBA32F);
+    m_RenderToShadowTexture.Load(listTypes, nShadowWidth, nShadowWidth);
+    m_SkyBox.Load("Scene/", "barren_bk.jpg", "barren_dn.jpg", "barren_ft.jpg", "barren_lf.jpg", "barren_rt.jpg", "barren_up.jpg");
+
     // static
-    m_staticmodel.Load("Scene", "Scene.obj", glm::mat4(1.0f), false);
+    // 1/2 - draw
+    m_staticmodel.Load("Scene", "Scene.obj", glm::mat4(1.0f));
+    m_staticmodel.CreateOpenGLBuffers();
+    // 2/2 - physics
     static_id = m_physics.GenTriMesh();
     m_physics.SetTriMesh(static_id, m_staticmodel.GetAllVertices());
-    m_physics.SetMass(static_id, 0.0f); // static
+    m_physics.SetMass(static_id, -1.0f); // static
 
     // dynamic
-    m_dynamicmodel.Load("Scene", "barrel.obj", glm::mat4(1.0f), false);
-    //for (int x = -5; x < 5; x++) 
+    // 1/2 - draw
+    m_dynamicmodel.Load("Scene", "barrel.obj", glm::scale(glm::vec3(0.015f, 0.015f, 0.015f)), false);
+    m_dynamicmodel.CreateOpenGLBuffers();
+    for (int i = 0; i < numTextures; i++)
     {
-        //for (int y = 10; y < 20; y++) 
+        QString strFilename = "Scene/" + strFilenames[i];
+
+        Texture texture;
+        texture.Load(strFilename.toStdString());
+        textures[i] = texture.ID();
+    }
+    // 2/2 - physics
+    for (int x = -5; x <= 5; x++)
+    {
+        for (int z = -5; z <= 5; z++)
         {
-            //for (int z = -5; z < 5; z++) 
-            for (int x = 0; x < 100; x++)
+            for (int y = 0; y < (1/*100db*/ * 50/*5000db*/); y++)
             {
-                dynamic_id = m_physics.GenTriMesh();
+                int dynamic_id = m_physics.GenTriMesh();
                 m_physics.SetTriMesh(dynamic_id, m_dynamicmodel.GetAllVertices());
 
-                m_physics.SetPosition(dynamic_id, glm::vec3(/*x, y, z*/x, 0, 0));
+                float fScale = 2.1f;
+                m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 20 + (y * fScale), z * fScale));
                 m_physics.SetMass(dynamic_id, 85.0f); // dynamic
+
+                m_listDynamicIds.push_back(dynamic_id);
+
+                int id = rand() % numTextures;
+                m_listRigidBodiesTextureId.push_back(textures[id]);
             }
         }
-        
     }
 
     // gravity
-    m_physics.SetGravity(glm::vec3(0, -9.81f, 0));
+    m_physics.SetGravity(glm::vec3(0, -0.1, 0));
 
     // Copy RAM to GPU
     m_physics.Commit();
+
+    // Avatar
+    m_Camera.Init(glm::vec3(15, 3, 15), glm::vec3(0, 0, 0));
+
+    showMaximized();
+    QApplication::setOverrideCursor(Qt::BlankCursor);
 
     m_elapsedTimer.start();
     m_nElapsedTime = m_nCurrentTime = m_elapsedTimer.nsecsElapsed();
@@ -151,22 +190,134 @@ void MainWindow::TimerTick()
     // physics
     m_physics.Update(dt);
 
-    //glm::vec3 v3Pos = m_physics.GetPosition(50);
-    //this->setWindowTitle("FPS: " + QString::number(nFPS) + "; pos: " + QString::number(v3Pos.x) + "; " + QString::number(v3Pos.y) + "; " + QString::number(v3Pos.z));
-
     int nWidth = ui.glWidget->width();
     int nHeight = ui.glWidget->height();
     if (nWidth < 1) { nWidth = 1; }
     if (nHeight < 1) { nHeight = 1; }
 
+    // mouse rotate
+    QPoint pointDiff = cursor().pos() - QPoint(width() / 2, height() / 2);
+    cursor().setPos(QPoint(width() / 2, height() / 2));
+    m_Camera.Rotate(pointDiff.x(), pointDiff.y());
+    m_Camera.Update(dt);
+
+    glm::vec3 v3CameraPos = m_Camera.GetPos();
+    glm::vec3 v3CameraAt = m_Camera.GetAt();
+    glm::vec3 v3CameraDir = glm::normalize(v3CameraAt - v3CameraPos);
+
+    // move
+    float speed = 4.0f;
+    glm::vec3 vel(0, 0, 0);
+    if (true == m_bKeys[Qt::Key_W])
+    {
+        vel += v3CameraDir;
+    }
+    if (true == m_bKeys[Qt::Key_S])
+    {
+        vel += -v3CameraDir;
+    }
+    if (true == m_bKeys[Qt::Key_D])
+    {
+        vel += glm::cross(v3CameraDir, glm::vec3(0, 1, 0));
+    }
+    if (true == m_bKeys[Qt::Key_A])
+    {
+        vel += -glm::cross(v3CameraDir, glm::vec3(0, 1, 0));
+    }
+
+    if (glm::length(vel) > 0.0001f)
+    {
+        vel = glm::normalize(vel);
+        vel *= speed;
+
+        glm::vec3 v3CameraPos = m_Camera.GetPos();
+        v3CameraPos += vel * dt;
+        m_Camera.SetPos(v3CameraPos);
+    }
+
+    glm::vec3 v3LightPos = glm::vec3(32.6785f, 85.7038f, -39.8369f);
+    glm::vec3 v3LightAt = glm::vec3(0, 0, 0);
+    glm::vec3 v3LightDir = glm::normalize(v3LightAt - v3LightPos);
+
+    //glm::mat4 mLightWorld = glm::mat4(1.0f);
+    glm::mat4 mLightView = glm::lookAtRH(v3LightPos, v3LightAt, glm::vec3(0, 1, 0));
+    glm::mat4 mLightProj = glm::orthoRH(-50.0f, 50.0f, -50.0f, 50.0f, 1.0f, 200.0f);
+
     // draw
-    glClearColor(100.0f / 255.0f, 150 / 255.0f, 240 / 255.0f, 1.0f);
+    // 1/2 - draw to shadow texture
+    m_RenderToShadowTexture.Bind();
+
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glViewport(0, 0, nShadowWidth, nShadowWidth);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    m_shaderShadowMap.Begin();
+    glm::mat4 mWorld = m_physics.GetTransform(static_id);
+    m_shaderShadowMap.SetMatrix("matWorld", &mWorld);
+    m_shaderShadowMap.SetMatrix("matView", &mLightView);
+    m_shaderShadowMap.SetMatrix("matProj", &mLightProj);
+
+    m_staticmodel.Draw(&m_shaderShadowMap);
+
+    for (int i = 0; i < m_listDynamicIds.size(); i++)
+    {
+        int dynamic_id = m_listDynamicIds.at(i);
+    
+        glm::mat4 mWorld = m_physics.GetTransform(dynamic_id);
+        m_shaderShadowMap.SetMatrix("matWorld", &mWorld);
+    
+        m_shaderShadowMap.SetTexture("g_Texture", m_listRigidBodiesTextureId.at(i), 0);
+        m_dynamicmodel.Draw(&m_shaderShadowMap);
+    }
+
+    m_shaderShadowMap.End();
+    m_RenderToShadowTexture.Unbind();
+
+    // 2/2 - draw to screen with shadow
+    glm::mat4 mCameraView = glm::lookAtRH(v3CameraPos, v3CameraAt, glm::vec3(0, 1, 0));
+    glm::mat4 mCameraProj = glm::perspectiveRH(glm::radians(45.0f), (float)nWidth / (float)nHeight, 0.1f, 1000.0f);
+
+    glClearColor(0.5f, 0.5f, 1.0f, 1.0f);
     glViewport(0, 0, nWidth, nHeight);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    ;
+    m_shaderDraw.Begin();
+    mWorld = m_physics.GetTransform(static_id);
+    m_shaderDraw.SetMatrix("matWorld", &mWorld);
+    m_shaderDraw.SetMatrix("matView", &mCameraView);
+    m_shaderDraw.SetMatrix("matProj", &mCameraProj);
+    m_shaderDraw.SetMatrix("matLightView", &mLightView);
+    m_shaderDraw.SetMatrix("matLightProj", &mLightProj);
+    m_shaderDraw.SetVector3("lightDir", &v3LightDir);
+    m_shaderDraw.SetTexture("g_DepthTexture", m_RenderToShadowTexture.GetTextureID(0), 1);
+
+    m_staticmodel.Draw(&m_shaderDraw);
+
+    for (int i = 0; i < m_listDynamicIds.size(); i++)
+    {
+        int dynamic_id = m_listDynamicIds.at(i);
+
+        glm::mat4 mWorld = m_physics.GetTransform(dynamic_id);
+        m_shaderDraw.SetMatrix("matWorld", &mWorld);
+
+        m_shaderDraw.SetTexture("g_Texture", m_listRigidBodiesTextureId.at(i), 0);
+        m_dynamicmodel.Draw(&m_shaderDraw);
+    }
+
+    m_shaderDraw.DisableTexture(1);
+    m_shaderDraw.End();
+
+    // sky
+    glMatrixMode(GL_PROJECTION);
+    glLoadMatrixf(glm::value_ptr(mCameraProj));
+    glMatrixMode(GL_MODELVIEW);
+    mWorld = glm::mat4(1.0f);
+    glLoadMatrixf(glm::value_ptr(mCameraView * mWorld));
+
+    m_SkyBox.Draw(v3CameraPos, 300.0f);
 
     SwapBuffers(hDC);
+
 }
 
 bool MainWindow::ExitPhysics()

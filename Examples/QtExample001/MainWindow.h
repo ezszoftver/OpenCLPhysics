@@ -18,7 +18,11 @@
 #include "glm/ext.hpp"
 #include "AL/alut.h"
 
+#include "Shader.h"
 #include "Model.h"
+#include "Camera.h"
+#include "SkyBox.h"
+#include "RenderTarget.h"
 
 #include "OpenCLPhysics.h"
 using namespace OpenCLPhysics;
@@ -52,9 +56,20 @@ private:
     HDC hDC;
     HGLRC hRC;
 
+    // SkyBox
+    SkyBox m_SkyBox;
+
+    // Shader
+    Shader m_shaderDraw;
+    Shader m_shaderShadowMap;
+
+    // RenderTarget
+    RenderTarget m_RenderToShadowTexture;
+    int nShadowWidth = 2048;
+
     // SYSTEM
     QTimer m_Timer;
-    //Camera m_Camera;
+    Camera m_Camera;
     bool   m_bKeys[256];
     //bool m_bMouseButtonDown = false;
     QPoint m_pointElapsedMousePos;
@@ -72,8 +87,16 @@ private:
     bool ExitPhysics();
     Physics m_physics;
     int static_id;
-    int dynamic_id;
+    std::vector<int> m_listDynamicIds;
 
+    // Static Stage
     Model m_staticmodel;
+
+    // Dynamic Barrel
     Model m_dynamicmodel;
+    std::vector<GLuint> m_listRigidBodiesTextureId;
+    // Barrel Textures
+    int numTextures = 6;
+    QString strFilenames[6] = { "diffus_black.tga", "diffus_blue.tga", "diffus_green.tga", "diffus_red.tga", "diffus_rust.tga", "diffus_yellow.tga" };
+    GLuint textures[6];
 };

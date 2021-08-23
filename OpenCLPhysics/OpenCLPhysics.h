@@ -40,6 +40,7 @@ namespace OpenCLPhysics
 
 	typedef struct _structRigidBody
 	{
+		int32_t m_nRigidBodyId = -1;
 		int32_t m_nTriMeshId = -1;
 
 		structBBox m_BBox;

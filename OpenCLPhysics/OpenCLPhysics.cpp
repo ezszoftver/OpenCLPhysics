@@ -410,6 +410,7 @@ namespace OpenCLPhysics
 		// new rigidbody
 		int32_t nRigidBodyId = (int32_t)m_listRigidBodies.size();
 		structRigidBody newRigidBody;
+		newRigidBody.m_nRigidBodyId = nRigidBodyId;
 		m_listRigidBodies.push_back(newRigidBody);
 
 		// update
@@ -581,10 +582,10 @@ namespace OpenCLPhysics
 		{
 			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
 
-			glm::vec3 v3Rotate = ToVector3(m_listRigidBodies[nRigidBodyId].m_v3Rotate); //glm::vec3(m_listRigidBodies[nRigidBodyId].m_v3RotateX, m_listRigidBodies[nRigidBodyId].m_v3RotateY, m_listRigidBodies[nRigidBodyId].m_v3RotateZ);
-			glm::vec3 v3Position = ToVector3(m_listRigidBodies[nRigidBodyId].m_v3Position); // glm::vec3(m_listRigidBodies[nRigidBodyId].m_v3PositionX, m_listRigidBodies[nRigidBodyId].m_v3PositionY, m_listRigidBodies[nRigidBodyId].m_v3PositionZ);
+			glm::vec3 v3Rotate = ToVector3(m_listRigidBodies[nRigidBodyId].m_v3Rotate);
+			glm::vec3 v3Position = ToVector3(m_listRigidBodies[nRigidBodyId].m_v3Position);
 
-			return (glm::translate(glm::mat4(1.0f), v3Position) * glm::eulerAngleXYZ(v3Rotate.x, v3Rotate.y, v3Rotate.z));			
+			return (glm::translate(glm::mat4(1.0f), v3Position) * glm::eulerAngleXYZ(v3Rotate.x, v3Rotate.y, v3Rotate.z));
 		}
 
 		return glm::mat4(1.0f);
@@ -886,32 +887,51 @@ namespace OpenCLPhysics
 		return true;
 	}
 
-	bool SortRigidBodiesFunc(structRigidBody &a, structRigidBody &b)
+	bool SortRigidBodiesFunc_BVH(structRigidBody &a, structRigidBody &b)
 	{
 		if (fabs(a.m_v3Position.x - b.m_v3Position.x) > 0.0001f) { return (a.m_v3Position.x < b.m_v3Position.x); }
 		if (fabs(a.m_v3Position.y - b.m_v3Position.y) > 0.0001f) { return (a.m_v3Position.y < b.m_v3Position.y); }
 		return (a.m_v3Position.z < b.m_v3Position.z);
 	}
 
+	bool SortRigidBodiesFunc_Inc(structRigidBody& a, structRigidBody& b)
+	{
+		return (a.m_nRigidBodyId < b.m_nRigidBodyId);
+	}
+
 	bool Physics::Update(float dt)
 	{
 		cl_int err = 0;
 
-		// integrate
+		// write to GPU the current dta
+		err |= clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), &(m_listRigidBodies[0]), 0, NULL, NULL);
+		if (err != CL_SUCCESS) { return false; }
+		// 1. INTEGRATE with GPU
 		if (false == Integrate(dt)) { return false; }
+		// read to RAM for CPU
+		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), &(m_listRigidBodies[0]), 0, NULL, NULL);
+		if (err != CL_SUCCESS) { return false; }
 
-		// sort
-		std::sort(m_listRigidBodies.begin(), m_listRigidBodies.end(), SortRigidBodiesFunc);
-		// copy
+		// 2. SORT to BVH
+		std::sort(m_listRigidBodies.begin(), m_listRigidBodies.end(), SortRigidBodiesFunc_BVH);
+		// write to GPU
 		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), m_listRigidBodies.data(), 0, NULL, NULL);
 		if (err != CL_SUCCESS) { return false; }
-		// update BVHObjects
+
+		// 3. UPDATE BVHObjects with GPU
 		if (false == UpdateBVHObjects()) { return false; }
 
 		// CollisionDetection
 		;
 		// CollisionResponse
 		;
+
+		// read to RAM for CPU
+		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), &(m_listRigidBodies[0]), 0, NULL, NULL);
+		if (err != CL_SUCCESS) { return false; }
+
+		// SORT to Original
+		std::sort(m_listRigidBodies.begin(), m_listRigidBodies.end(), SortRigidBodiesFunc_Inc);
 
 		return true;
 	}
@@ -1105,9 +1125,6 @@ namespace OpenCLPhysics
 		nCount = (int32_t)m_listRigidBodies.size();
 		size_t nGlobal = nCount;
 		
-		// write buffer
-		err |= clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), &(m_listRigidBodies[0]), 0, NULL, NULL);
-
 		// calc
 		err |= clSetKernelArg(m_kernelIntegrate, 0, sizeof(cl_mem), &m_clmem_inoutRigidBodies);
 		err |= clSetKernelArg(m_kernelIntegrate, 1, sizeof(int32_t), &nCount);
@@ -1116,9 +1133,6 @@ namespace OpenCLPhysics
 		err |= clEnqueueNDRangeKernel(m_command_queue, m_kernelIntegrate, 1, NULL, &nGlobal, &nLocal, 0, NULL, NULL);
 		clFinish(m_command_queue);
 		
-		// read buffer
-		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), &(m_listRigidBodies[0]), 0, NULL, NULL);
-
 		/*std::vector<structRigidBody> results;
 		results.resize(m_listRigidBodies.size());
 		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), &(results[0]), 0, NULL, NULL);*/

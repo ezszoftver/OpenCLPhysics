@@ -24,6 +24,9 @@
     <Filter Include="Scene">
       <UniqueIdentifier>{9f63cac8-e262-4b98-9930-d7b179efc5ba}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{b195cb4f-3bcc-4eef-82e7-99303c6779a4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="MainWindow.ui">
@@ -49,6 +52,15 @@
     <ClCompile Include="Model.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderTarget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SkyBox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shader.h">
@@ -58,6 +70,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Model.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderTarget.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SkyBox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -157,5 +178,19 @@
     <CopyFileToFolders Include="Scene\Music.wav">
       <Filter>Scene</Filter>
     </CopyFileToFolders>
+    <CopyFileToFolders Include="Shaders\Draw.fs.txt">
+      <Filter>Shaders</Filter>
+    </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Shaders\Draw.vs.txt">
+      <Filter>Shaders</Filter>
+    </Text>
+    <Text Include="Shaders\DrawToDepthTexture.fs.txt">
+      <Filter>Shaders</Filter>
+    </Text>
+    <Text Include="Shaders\DrawToDepthTexture.vs.txt">
+      <Filter>Shaders</Filter>
+    </Text>
   </ItemGroup>
 </Project>
