@@ -1105,6 +1105,10 @@ namespace OpenCLPhysics
 		nCount = (int32_t)m_listRigidBodies.size();
 		size_t nGlobal = nCount;
 		
+		// write buffer
+		err |= clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), &(m_listRigidBodies[0]), 0, NULL, NULL);
+
+		// calc
 		err |= clSetKernelArg(m_kernelIntegrate, 0, sizeof(cl_mem), &m_clmem_inoutRigidBodies);
 		err |= clSetKernelArg(m_kernelIntegrate, 1, sizeof(int32_t), &nCount);
 		err |= clSetKernelArg(m_kernelIntegrate, 2, sizeof(float), &dt);
@@ -1112,6 +1116,12 @@ namespace OpenCLPhysics
 		err |= clEnqueueNDRangeKernel(m_command_queue, m_kernelIntegrate, 1, NULL, &nGlobal, &nLocal, 0, NULL, NULL);
 		clFinish(m_command_queue);
 		
+		// read buffer
+		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), &(m_listRigidBodies[0]), 0, NULL, NULL);
+
+		/*std::vector<structRigidBody> results;
+		results.resize(m_listRigidBodies.size());
+		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), &(results[0]), 0, NULL, NULL);*/
 		if (err != CL_SUCCESS)
 		{
 			return false;

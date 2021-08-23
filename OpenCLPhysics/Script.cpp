@@ -188,7 +188,47 @@ __kernel void UpdateBVHObjects(__global BVHObject *inoutBVHObjects, __global Rig
 
 __kernel void Integrate(__global RigidBody* inoutRigidBodies, int nCount, float dt, Vector3 v3Gravity)
 {
+	int id = get_global_id(0);
 
+	RigidBody rigidBody = inoutRigidBodies[id];
+
+	// init
+	float fMass = rigidBody.fMass;
+
+	// if static mesh ?
+	if (fMass <= 0.0f)
+	{
+		return;
+	}
+
+	// get
+	float3 f3Gravity = Vector3ToFloat3(v3Gravity);
+
+	float3 f3Force          = Vector3ToFloat3(rigidBody.v3Force);
+	float3 f3LinearVelocity = Vector3ToFloat3(rigidBody.v3LinearVelocity);
+	float3 f3Position       = Vector3ToFloat3(rigidBody.v3Position);
+	
+	float3 f3Torque          = Vector3ToFloat3(rigidBody.v3Torque);
+	float3 f3AngularVelocity = Vector3ToFloat3(rigidBody.v3AngularVelocity);
+	float3 f3Rotate          = Vector3ToFloat3(rigidBody.v3Rotate);
+
+	// calc - Euler method (deprecated)
+	float3 f3LinearAcceleration = f3Gravity + (f3Force / fMass);
+	f3LinearVelocity           += f3LinearAcceleration * dt;
+	f3Position                 += f3LinearVelocity * dt;
+	
+	float3 f3AngularAcceleration = (f3Torque / fMass);
+	f3AngularVelocity           += f3AngularAcceleration * dt;
+	f3Rotate                    += f3AngularVelocity * dt;
+
+	// set	
+	inoutRigidBodies[id].v3LinearAcceleration = Float3ToVector3(f3LinearAcceleration);
+	inoutRigidBodies[id].v3LinearVelocity     = Float3ToVector3(f3LinearVelocity);
+	inoutRigidBodies[id].v3Position           = Float3ToVector3(f3Position);
+
+	inoutRigidBodies[id].v3AngularAcceleration = Float3ToVector3(f3AngularAcceleration);
+	inoutRigidBodies[id].v3AngularVelocity     = Float3ToVector3(f3AngularVelocity);
+	inoutRigidBodies[id].v3Rotate              = Float3ToVector3(f3Rotate);
 }
 
 );

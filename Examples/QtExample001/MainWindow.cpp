@@ -151,6 +151,9 @@ void MainWindow::TimerTick()
     // physics
     m_physics.Update(dt);
 
+    //glm::vec3 v3Pos = m_physics.GetPosition(50);
+    //this->setWindowTitle("FPS: " + QString::number(nFPS) + "; pos: " + QString::number(v3Pos.x) + "; " + QString::number(v3Pos.y) + "; " + QString::number(v3Pos.z));
+
     int nWidth = ui.glWidget->width();
     int nHeight = ui.glWidget->height();
     if (nWidth < 1) { nWidth = 1; }
