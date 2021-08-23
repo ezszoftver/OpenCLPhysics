@@ -100,9 +100,9 @@ bool MainWindow::Init()
         textures[i] = texture.ID();
     }
     // 2/2 - physics
-    for (int x = -5; x <= 5; x++)
+    for (int x = -5; x < 5; x++)
     {
-        for (int z = -5; z <= 5; z++)
+        for (int z = -5; z < 5; z++)
         {
             for (int y = 0; y < (1/*100db*/ * 50/*5000db*/); y++)
             {
