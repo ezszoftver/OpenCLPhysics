@@ -38,8 +38,11 @@ public:
     ~Model();
 
     void Load(std::string strDir, std::string strFilename, glm::mat4 matTransform = glm::mat4(1.0f), bool bIsLoadTextures = true);
-    void Draw(Shader *shader);
     void Release();
+
+    void Begin(Shader* shader);
+    void Draw(Shader* shader);
+    void End(Shader* shader);
 
     void CreateOpenGLBuffers();
     std::vector< Vertex >* GetAllGLVertices();

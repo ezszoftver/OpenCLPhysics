@@ -259,18 +259,30 @@ void MainWindow::TimerTick()
     m_shaderShadowMap.SetMatrix("matView", &mLightView);
     m_shaderShadowMap.SetMatrix("matProj", &mLightProj);
     
+    m_staticmodel.Begin(&m_shaderShadowMap);
     m_staticmodel.Draw(&m_shaderShadowMap);
+    m_staticmodel.End(&m_shaderShadowMap);
     
-    for (int i = 0; i < m_listDynamicIds.size(); i++)
+    m_dynamicmodel.Begin(&m_shaderShadowMap);
+    for (int j = 0; j < numTextures; j++)
     {
-        int dynamic_id = m_listDynamicIds.at(i);
-    
-        glm::mat4 mWorld = m_physics.GetTransform(dynamic_id);
-        m_shaderShadowMap.SetMatrix("matWorld", &mWorld);
-    
-        m_shaderShadowMap.SetTexture("g_Texture", m_listRigidBodiesTextureId.at(i), 0);
-        m_dynamicmodel.Draw(&m_shaderShadowMap);
+        m_shaderShadowMap.SetTexture("g_Texture", textures[j], 0);
+
+        for (int i = 0; i < m_listDynamicIds.size(); i++)
+        {
+            if (m_listRigidBodiesTextureId.at(i) != textures[j])
+            {
+                continue;
+            }
+
+            int dynamic_id = m_listDynamicIds.at(i);
+            glm::mat4 mWorld = m_physics.GetTransform(dynamic_id);
+            m_shaderShadowMap.SetMatrix("matWorld", &mWorld);
+
+            m_dynamicmodel.Draw(&m_shaderShadowMap);
+        }
     }
+    m_dynamicmodel.End(&m_shaderShadowMap);
     
     m_shaderShadowMap.End();
     m_RenderToShadowTexture.Unbind();
@@ -293,18 +305,30 @@ void MainWindow::TimerTick()
     m_shaderDraw.SetVector3("lightDir", &v3LightDir);
     m_shaderDraw.SetTexture("g_DepthTexture", m_RenderToShadowTexture.GetTextureID(0), 1);
     
+    m_staticmodel.Begin(&m_shaderDraw);
     m_staticmodel.Draw(&m_shaderDraw);
+    m_staticmodel.End(&m_shaderDraw);
     
-    for (int i = 0; i < m_listDynamicIds.size(); i++)
+    m_dynamicmodel.Begin(&m_shaderDraw);
+    for (int j = 0; j < numTextures; j++)
     {
-        int dynamic_id = m_listDynamicIds.at(i);
-    
-        glm::mat4 mWorld = m_physics.GetTransform(dynamic_id);
-        m_shaderDraw.SetMatrix("matWorld", &mWorld);
-    
-        m_shaderDraw.SetTexture("g_Texture", m_listRigidBodiesTextureId.at(i), 0);
-        m_dynamicmodel.Draw(&m_shaderDraw);
+        m_shaderDraw.SetTexture("g_Texture", textures[j], 0);
+
+        for (int i = 0; i < m_listDynamicIds.size(); i++)
+        {
+            if (m_listRigidBodiesTextureId.at(i) != textures[j])
+            {
+                continue;
+            }
+
+            int dynamic_id = m_listDynamicIds.at(i);
+            glm::mat4 mWorld = m_physics.GetTransform(dynamic_id);
+            m_shaderDraw.SetMatrix("matWorld", &mWorld);
+
+            m_dynamicmodel.Draw(&m_shaderDraw);
+        }
     }
+    m_dynamicmodel.End(&m_shaderDraw);
     
     m_shaderDraw.DisableTexture(1);
     m_shaderDraw.End();

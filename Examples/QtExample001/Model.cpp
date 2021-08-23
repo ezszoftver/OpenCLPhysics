@@ -108,7 +108,7 @@ void Model::CreateOpenGLBuffers()
     }
 }
 
-void Model::Draw(Shader *shader)
+void Model::Begin(Shader* shader)
 {
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -117,9 +117,12 @@ void Model::Draw(Shader *shader)
     glEnableVertexAttribArray(2);
     glBindBuffer(GL_ARRAY_BUFFER, m_glVertexBuffer);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(sizeof(glm::vec3)) );
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(sizeof(glm::vec3) + sizeof(glm::vec3)) );
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(sizeof(glm::vec3)));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(sizeof(glm::vec3) + sizeof(glm::vec3)));
+}
 
+void Model::Draw(Shader *shader)
+{
     for(unsigned int m = 0; m < m_listMaterials.size(); m++)
     {
         Material &material = m_listMaterials[m];
@@ -142,9 +145,12 @@ void Model::Draw(Shader *shader)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, material.m_glIndexBuffer);
         glDrawElements(GL_TRIANGLES, (int)material.m_listIndices.size(), GL_UNSIGNED_INT, nullptr);
     }
+}
 
+void Model::End(Shader* shader)
+{
     shader->DisableTexture(0);
-
+    
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(2);
