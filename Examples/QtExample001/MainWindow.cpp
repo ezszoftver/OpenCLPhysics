@@ -81,9 +81,11 @@ bool MainWindow::Init()
     m_staticmodel.Load("Scene", "Scene.obj", glm::mat4(1.0f));
     m_staticmodel.CreateOpenGLBuffers();
     // 2/2 - physics
+    Model physicsmodel;
+    physicsmodel.Load("Scene", "Physics.obj", glm::mat4(1.0f), false);
     static_id = m_physics.GenTriMesh();
-    m_physics.SetTriMesh(static_id, m_staticmodel.GetAllVertices());
-    m_physics.SetMass(static_id, -1.0f); // static
+    m_physics.SetTriMesh(static_id, physicsmodel.GetAllVertices());
+    m_physics.SetMass(static_id, 0.0f); // static
 
     // dynamic
     // 1/2 - draw
@@ -246,19 +248,19 @@ void MainWindow::TimerTick()
     // draw
     // 1/2 - draw to shadow texture
     m_RenderToShadowTexture.Bind();
-
+    
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glViewport(0, 0, nShadowWidth, nShadowWidth);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+    
     m_shaderShadowMap.Begin();
     glm::mat4 mWorld = m_physics.GetTransform(static_id);
     m_shaderShadowMap.SetMatrix("matWorld", &mWorld);
     m_shaderShadowMap.SetMatrix("matView", &mLightView);
     m_shaderShadowMap.SetMatrix("matProj", &mLightProj);
-
+    
     m_staticmodel.Draw(&m_shaderShadowMap);
-
+    
     for (int i = 0; i < m_listDynamicIds.size(); i++)
     {
         int dynamic_id = m_listDynamicIds.at(i);
@@ -269,18 +271,18 @@ void MainWindow::TimerTick()
         m_shaderShadowMap.SetTexture("g_Texture", m_listRigidBodiesTextureId.at(i), 0);
         m_dynamicmodel.Draw(&m_shaderShadowMap);
     }
-
+    
     m_shaderShadowMap.End();
     m_RenderToShadowTexture.Unbind();
-
+    
     // 2/2 - draw to screen with shadow
     glm::mat4 mCameraView = glm::lookAtRH(v3CameraPos, v3CameraAt, glm::vec3(0, 1, 0));
     glm::mat4 mCameraProj = glm::perspectiveRH(glm::radians(45.0f), (float)nWidth / (float)nHeight, 0.1f, 1000.0f);
-
+    
     glClearColor(0.5f, 0.5f, 1.0f, 1.0f);
     glViewport(0, 0, nWidth, nHeight);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+    
     m_shaderDraw.Begin();
     mWorld = m_physics.GetTransform(static_id);
     m_shaderDraw.SetMatrix("matWorld", &mWorld);
@@ -290,34 +292,33 @@ void MainWindow::TimerTick()
     m_shaderDraw.SetMatrix("matLightProj", &mLightProj);
     m_shaderDraw.SetVector3("lightDir", &v3LightDir);
     m_shaderDraw.SetTexture("g_DepthTexture", m_RenderToShadowTexture.GetTextureID(0), 1);
-
+    
     m_staticmodel.Draw(&m_shaderDraw);
-
+    
     for (int i = 0; i < m_listDynamicIds.size(); i++)
     {
         int dynamic_id = m_listDynamicIds.at(i);
-
+    
         glm::mat4 mWorld = m_physics.GetTransform(dynamic_id);
         m_shaderDraw.SetMatrix("matWorld", &mWorld);
-
+    
         m_shaderDraw.SetTexture("g_Texture", m_listRigidBodiesTextureId.at(i), 0);
         m_dynamicmodel.Draw(&m_shaderDraw);
     }
-
+    
     m_shaderDraw.DisableTexture(1);
     m_shaderDraw.End();
-
+    
     // sky
     glMatrixMode(GL_PROJECTION);
     glLoadMatrixf(glm::value_ptr(mCameraProj));
     glMatrixMode(GL_MODELVIEW);
     mWorld = glm::mat4(1.0f);
     glLoadMatrixf(glm::value_ptr(mCameraView * mWorld));
-
+    
     m_SkyBox.Draw(v3CameraPos, 300.0f);
-
+    
     SwapBuffers(hDC);
-
 }
 
 bool MainWindow::ExitPhysics()

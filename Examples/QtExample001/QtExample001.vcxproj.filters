@@ -181,16 +181,14 @@
     <CopyFileToFolders Include="Shaders\Draw.fs.txt">
       <Filter>Shaders</Filter>
     </CopyFileToFolders>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Shaders\Draw.vs.txt">
-      <Filter>Shaders</Filter>
-    </Text>
-    <Text Include="Shaders\DrawToDepthTexture.fs.txt">
-      <Filter>Shaders</Filter>
-    </Text>
-    <Text Include="Shaders\DrawToDepthTexture.vs.txt">
-      <Filter>Shaders</Filter>
-    </Text>
+    <CopyFileToFolders Include="Shaders\Draw.vs.txt" />
+    <CopyFileToFolders Include="Shaders\DrawToDepthTexture.fs.txt" />
+    <CopyFileToFolders Include="Shaders\DrawToDepthTexture.vs.txt" />
+    <CopyFileToFolders Include="Scene\Physics.mtl">
+      <Filter>Scene</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Scene\Physics.obj">
+      <Filter>Scene</Filter>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>
