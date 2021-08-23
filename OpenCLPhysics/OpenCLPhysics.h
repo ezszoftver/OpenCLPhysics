@@ -9,6 +9,14 @@
 
 namespace OpenCLPhysics
 {
+	typedef struct _structVector3
+	{
+		float x = 0;
+		float y = 0;
+		float z = 0;
+	}
+	structVector3;
+
 	typedef struct _structBBox
 	{
 		// min
@@ -42,37 +50,15 @@ namespace OpenCLPhysics
 		float m_fLinearDamping = 0;
 		float m_fAngularDamping = 0;
 
-		float m_v3ForceX = 0;
-		float m_v3ForceY = 0;
-		float m_v3ForceZ = 0;
+		structVector3 m_v3Force;
+		structVector3 m_v3LinearAcceleration;
+		structVector3 m_v3LinearVelocity;
+		structVector3 m_v3Position;
 
-		float m_v3LinearAccelerationX = 0;
-		float m_v3LinearAccelerationY = 0;
-		float m_v3LinearAccelerationZ = 0;
-
-		float m_v3LinearVelocityX = 0;
-		float m_v3LinearVelocityY = 0;
-		float m_v3LinearVelocityZ = 0;
-
-		float m_v3PositionX = 0;
-		float m_v3PositionY = 0;
-		float m_v3PositionZ = 0;
-
-		float m_v3TorqueX = 0;
-		float m_v3TorqueY = 0;
-		float m_v3TorqueZ = 0;
-
-		float m_v3AngularAccelerationX = 0;
-		float m_v3AngularAccelerationY = 0;
-		float m_v3AngularAccelerationZ = 0;
-
-		float m_v3AngularVelocityX = 0;
-		float m_v3AngularVelocityY = 0;
-		float m_v3AngularVelocityZ = 0;
-
-		float m_v3RotateX = 0;
-		float m_v3RotateY = 0;
-		float m_v3RotateZ = 0;
+		structVector3 m_v3Torque;
+		structVector3 m_v3AngularAcceleration;
+		structVector3 m_v3AngularVelocity;
+		structVector3 m_v3Rotate;
 	}
 	structRigidBody;
 
@@ -212,6 +198,7 @@ namespace OpenCLPhysics
 		cl_mem m_clmem_inoutRigidBodies;
 		cl_mem m_clmem_inoutBVHObjects;
 
+		structVector3 m_v3Gravity;
 		std::vector< structRigidBody > m_listRigidBodies;
 		std::vector< TriMesh* > m_listTriMeshs;
 

@@ -3,15 +3,63 @@
 const char* Script::strOpenCLScript = TOSTRING
 (
 
+typedef struct 
+{
+	float x;
+	float y;
+	float z;
+}
+Vector3;
+
+Vector3 XYZToVector3(float x, float y, float z) 
+{
+	Vector3 ret;
+	ret.x = x;
+	ret.y = y;
+	ret.z = z;
+	return ret;
+}
+
+Vector3 Float3ToVector3(float3 v) 
+{
+	Vector3 ret;
+	ret.x = v.x;
+	ret.y = v.y;
+	ret.z = v.z;
+	return ret;
+}
+
+float3 XYZToFloat3(float x, float y, float z) 
+{
+	float3 ret;
+	ret.x = x;
+	ret.y = y;
+	ret.z = z;
+	return ret;
+}
+
+float3 Vector3ToFloat3(Vector3 v)
+{
+	float3 ret;
+	ret.x = v.x;
+	ret.y = v.y;
+	ret.z = v.z;
+	return ret;
+}
+
+Vector3 Vector3_Add(Vector3 a, Vector3 b)
+{
+	Vector3 ret;
+	ret.x = a.x + b.x;
+	ret.y = a.y + b.y;
+	ret.z = a.z + b.z;
+	return ret;
+}
+
 typedef struct
 {
-    float fMinX;
-    float fMinY;
-    float fMinZ;
-    
-    float fMaxX;
-    float fMaxY;
-    float fMaxZ;
+	Vector3 v3Min;
+	Vector3 v3Max;
 }
 BBox;
 
@@ -35,37 +83,15 @@ typedef struct
 	float fLinearDamping;
 	float fAngularDamping;
 
-	float v3ForceX;
-	float v3ForceY;
-	float v3ForceZ;
+	Vector3 v3Force;
+	Vector3 v3LinearAcceleration;
+	Vector3 v3LinearVelocity;
+	Vector3 v3Position;
 
-	float v3LinearAccelerationX;
-	float v3LinearAccelerationY;
-	float v3LinearAccelerationZ;
-
-	float v3LinearVelocityX;
-	float v3LinearVelocityY;
-	float v3LinearVelocityZ;
-
-	float v3PositionX;
-	float v3PositionY;
-	float v3PositionZ;
-
-	float v3TorqueX;
-	float v3TorqueY;
-	float v3TorqueZ;
-
-	float v3AngularAccelerationX;
-	float v3AngularAccelerationY;
-	float v3AngularAccelerationZ;
-
-	float v3AngularVelocityX;
-	float v3AngularVelocityY;
-	float v3AngularVelocityZ;
-
-	float v3RotateX;
-	float v3RotateY;
-	float v3RotateZ;
+	Vector3 v3Torque;
+	Vector3 v3AngularAcceleration;
+	Vector3 v3AngularVelocity;
+	Vector3 v3Rotate;
 }
 RigidBody;
 
@@ -75,47 +101,43 @@ BBox CreateBBox(BBox a, BBox b)
 	float fMinY = +1000000000.0f;
 	float fMinZ = +1000000000.0f;
 
-	fMinX = min(fMinX, a.fMinX);
-	fMinX = min(fMinX, a.fMaxX);
-	fMinX = min(fMinX, b.fMinX);
-	fMinX = min(fMinX, b.fMaxX);
+	fMinX = min(fMinX, a.v3Min.x);
+	fMinX = min(fMinX, a.v3Max.x);
+	fMinX = min(fMinX, b.v3Min.x);
+	fMinX = min(fMinX, b.v3Max.x);
 
-	fMinY = min(fMinY, a.fMinY);
-	fMinY = min(fMinY, a.fMaxY);
-	fMinY = min(fMinY, b.fMinY);
-	fMinY = min(fMinY, b.fMaxY);
+	fMinY = min(fMinY, a.v3Min.y);
+	fMinY = min(fMinY, a.v3Max.y);
+	fMinY = min(fMinY, b.v3Min.y);
+	fMinY = min(fMinY, b.v3Max.y);
 
-	fMinZ = min(fMinZ, a.fMinZ);
-	fMinZ = min(fMinZ, a.fMaxZ);
-	fMinZ = min(fMinZ, b.fMinZ);
-	fMinZ = min(fMinZ, b.fMaxZ);
+	fMinZ = min(fMinZ, a.v3Min.z);
+	fMinZ = min(fMinZ, a.v3Max.z);
+	fMinZ = min(fMinZ, b.v3Min.z);
+	fMinZ = min(fMinZ, b.v3Max.z);
 
 	float fMaxX = -1000000000.0f;
 	float fMaxY = -1000000000.0f;
 	float fMaxZ = -1000000000.0f;
 
-	fMaxX = max(fMaxX, a.fMinX);
-	fMaxX = max(fMaxX, a.fMaxX);
-	fMaxX = max(fMaxX, b.fMinX);
-	fMaxX = max(fMaxX, b.fMaxX);
+	fMaxX = max(fMaxX, a.v3Min.x);
+	fMaxX = max(fMaxX, a.v3Max.x);
+	fMaxX = max(fMaxX, b.v3Min.x);
+	fMaxX = max(fMaxX, b.v3Max.x);
 	
-	fMaxY = max(fMaxY, a.fMinY);
-	fMaxY = max(fMaxY, a.fMaxY);
-	fMaxY = max(fMaxY, b.fMinY);
-	fMaxY = max(fMaxY, b.fMaxY);
+	fMaxY = max(fMaxY, a.v3Min.y);
+	fMaxY = max(fMaxY, a.v3Max.y);
+	fMaxY = max(fMaxY, b.v3Min.y);
+	fMaxY = max(fMaxY, b.v3Max.y);
 	
-	fMaxZ = max(fMaxZ, a.fMinZ);
-	fMaxZ = max(fMaxZ, a.fMaxZ);
-	fMaxZ = max(fMaxZ, b.fMinZ);
-	fMaxZ = max(fMaxZ, b.fMaxZ);
+	fMaxZ = max(fMaxZ, a.v3Min.z);
+	fMaxZ = max(fMaxZ, a.v3Max.z);
+	fMaxZ = max(fMaxZ, b.v3Min.z);
+	fMaxZ = max(fMaxZ, b.v3Max.z);
 
 	BBox bbox;
-	bbox.fMinX = fMinX;
-	bbox.fMinY = fMinY;
-	bbox.fMinZ = fMinZ;
-	bbox.fMaxX = fMaxX;
-	bbox.fMaxY = fMaxY;
-	bbox.fMaxZ = fMaxZ;
+	bbox.v3Min = XYZToVector3(fMinX, fMinY, fMinZ);
+	bbox.v3Max = XYZToVector3(fMaxX, fMaxY, fMaxZ);
 
 	return bbox;
 }
@@ -131,12 +153,8 @@ __kernel void UpdateBVHObjects(__global BVHObject *inoutBVHObjects, __global Rig
 		RigidBody rigidBody = inoutRigidBodies[id];
 		BBox bbox = rigidBody.bbox;
 
-		bbox.fMinX += rigidBody.v3PositionX;
-		bbox.fMinY += rigidBody.v3PositionY;
-		bbox.fMinZ += rigidBody.v3PositionZ;
-		bbox.fMaxX += rigidBody.v3PositionX;
-		bbox.fMaxY += rigidBody.v3PositionY;
-		bbox.fMaxZ += rigidBody.v3PositionZ;
+		bbox.v3Min = Vector3_Add(bbox.v3Min, rigidBody.v3Position);
+		bbox.v3Max = Vector3_Add(bbox.v3Max, rigidBody.v3Position);
 
 		bvhObject.bbox = bbox;
 	}
@@ -161,19 +179,16 @@ __kernel void UpdateBVHObjects(__global BVHObject *inoutBVHObjects, __global Rig
 	}
 
 	// cheat
-	bvhObject.bbox.fMinX -= 0.0001f;
-	bvhObject.bbox.fMinY -= 0.0001f;
-	bvhObject.bbox.fMinZ -= 0.0001f;
-	bvhObject.bbox.fMaxX += 0.0001f;
-	bvhObject.bbox.fMaxY += 0.0001f;
-	bvhObject.bbox.fMaxZ += 0.0001f;
+	bvhObject.bbox.v3Min = Vector3_Add(bvhObject.bbox.v3Min, XYZToVector3(-0.0001f, -0.0001f, -0.0001f));
+	bvhObject.bbox.v3Max = Vector3_Add(bvhObject.bbox.v3Max, XYZToVector3(+0.0001f, +0.0001f, +0.0001f));
 
 	// save
 	inoutBVHObjects[nOffset + id] = bvhObject;
 }
 
-__kernel void Integrate(__global RigidBody* inoutRigidBodies, int nCount, float dt) 
+__kernel void Integrate(__global RigidBody* inoutRigidBodies, int nCount, float dt, Vector3 v3Gravity)
 {
+
 }
 
 );
