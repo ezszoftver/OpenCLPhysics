@@ -16,7 +16,7 @@ You can build the source code Windows, Linux (maybe MacOS).
 If source code have Bug, please write here:
 erdoszoltan256@gmail.com
 or here:
-https:/facebook.com/ezszoftver
+https://facebook.com/ezszoftver
 Thank you. :)
 
 Developer:
