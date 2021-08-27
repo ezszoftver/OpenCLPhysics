@@ -213,78 +213,30 @@ __kernel void Integrate(__global RigidBody* inoutRigidBodies, int nCount, float 
 	float3 f3AngularVelocity = Vector3ToFloat3(rigidBody.v3AngularVelocity);
 	float3 f3Rotate          = Vector3ToFloat3(rigidBody.v3Rotate);
 
-	//// calc - Euler method (deprecated)
-	//float3 f3LinearAcceleration = f3Gravity + (f3Force / fMass);
-	//f3LinearVelocity           += f3LinearAcceleration * dt;
-	//f3Position                 += f3LinearVelocity * dt;
-	//
-	//float3 f3AngularAcceleration = (f3Torque / fMass);
-	//f3AngularVelocity           += f3AngularAcceleration * dt;
-	//f3Rotate                    += f3AngularVelocity * dt;
-	//// set	
-	//inoutRigidBodies[id].v3LinearAcceleration = Float3ToVector3(f3LinearAcceleration);
-	//inoutRigidBodies[id].v3LinearVelocity     = Float3ToVector3(f3LinearVelocity);
-	//inoutRigidBodies[id].v3Position           = Float3ToVector3(f3Position);
-	//
-	//inoutRigidBodies[id].v3AngularAcceleration = Float3ToVector3(f3AngularAcceleration);
-	//inoutRigidBodies[id].v3AngularVelocity     = Float3ToVector3(f3AngularVelocity);
-	//inoutRigidBodies[id].v3Rotate              = Float3ToVector3(f3Rotate);
+	int nSteps = 10;
+	float fStepDt = dt / (float)nSteps;
 
-	// Runge-Kutta method
-	// -> Translate
+	// calc
+	float3 f3LinearAcceleration = f3Gravity + (f3Force / fMass);
+	float3 f3AngularAcceleration = (f3Torque / fMass);
+	for (int i = 0; i < nSteps; i++)
 	{
-		float3 a = f3Gravity + (f3Force / fMass);
-		float3 v = Vector3ToFloat3(rigidBody.v3LinearVelocity);
-		float3 p = Vector3ToFloat3(rigidBody.v3Position);
-		
-		float3 v1 = v;
-		float3 p1 = p;
-		
-		float3 a1 = a;
-		float3 v2 = v + (0.5f * dt * a1);
-		float3 p2 = p + (0.5f * dt * v2);
-		
-		float3 a2 = a;
-		float3 v3 = v + (0.5f * dt * a2);
-		float3 p3 = p + (0.5f * dt * v3);
-		
-		float3 a3 = a;
-		float3 v4 = v + (dt * a3);
-		float3 p4 = p + (dt * v4);
-		
-		float3 a4 = a;
+		// calc -> Euler method
+		f3LinearVelocity += f3LinearAcceleration * fStepDt;
+		f3Position += f3LinearVelocity * fStepDt;
 
-		inoutRigidBodies[id].v3LinearAcceleration = Float3ToVector3(a);
-		inoutRigidBodies[id].v3LinearVelocity     = Float3ToVector3(v + ((1.0f / 6.0f) * dt * (a1 + (2.0f * a2) + (2.0f * a3) + a4)));
-		inoutRigidBodies[id].v3Position           = Float3ToVector3(p + ((1.0f / 6.0f) * dt * (v1 + (2.0f * v2) + (2.0f * v3) + v4)));
+		f3AngularVelocity += f3AngularAcceleration * fStepDt;
+		f3Rotate += f3AngularVelocity * fStepDt;
 	}
-	// -> Rotate
-	{
-		float3 a = (f3Torque / fMass);
-		float3 v = Vector3ToFloat3(rigidBody.v3AngularVelocity);
-		float3 p = Vector3ToFloat3(rigidBody.v3Rotate);
 
-		float3 v1 = v;
-		float3 p1 = p;
-
-		float3 a1 = a;
-		float3 v2 = v + (0.5f * dt * a1);
-		float3 p2 = p + (0.5f * dt * v2);
-
-		float3 a2 = a;
-		float3 v3 = v + (0.5f * dt * a2);
-		float3 p3 = p + (0.5f * dt * v3);
-
-		float3 a3 = a;
-		float3 v4 = v + (dt * a3);
-		float3 p4 = p + (dt * v4);
-
-		float3 a4 = a;
-
-		inoutRigidBodies[id].v3AngularAcceleration = Float3ToVector3(a);
-		inoutRigidBodies[id].v3AngularVelocity	   = Float3ToVector3(v + ((1.0f / 6.0f) * dt * (a1 + (2.0f * a2) + (2.0f * a3) + a4)));
-		inoutRigidBodies[id].v3Rotate			   = Float3ToVector3(p + ((1.0f / 6.0f) * dt * (v1 + (2.0f * v2) + (2.0f * v3) + v4)));
-	}
+	// set	
+	inoutRigidBodies[id].v3LinearAcceleration = Float3ToVector3(f3LinearAcceleration);
+	inoutRigidBodies[id].v3LinearVelocity     = Float3ToVector3(f3LinearVelocity);
+	inoutRigidBodies[id].v3Position           = Float3ToVector3(f3Position);
+	
+	inoutRigidBodies[id].v3AngularAcceleration = Float3ToVector3(f3AngularAcceleration);
+	inoutRigidBodies[id].v3AngularVelocity     = Float3ToVector3(f3AngularVelocity);
+	inoutRigidBodies[id].v3Rotate              = Float3ToVector3(f3Rotate);
 }
 
 );
