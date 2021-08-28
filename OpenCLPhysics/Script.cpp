@@ -93,6 +93,9 @@ typedef struct
 	Vector3 v3AngularAcceleration;
 	Vector3 v3AngularVelocity;
 	Vector3 v3Rotate;
+
+	Vector3 v3ElapsedPosition;
+	Vector3 v3ElapsedRotate;
 }
 RigidBody;
 
@@ -213,12 +216,14 @@ __kernel void Integrate(__global RigidBody* inoutRigidBodies, int nCount, float 
 	float3 f3AngularVelocity = Vector3ToFloat3(rigidBody.v3AngularVelocity);
 	float3 f3Rotate          = Vector3ToFloat3(rigidBody.v3Rotate);
 
-	int nSteps = 10;
-	float fStepDt = dt / (float)nSteps;
-
 	// calc
+	inoutRigidBodies[id].v3ElapsedPosition = Float3ToVector3(f3Position);
+	inoutRigidBodies[id].v3ElapsedRotate   = Float3ToVector3(f3Rotate);
 	float3 f3LinearAcceleration = f3Gravity + (f3Force / fMass);
 	float3 f3AngularAcceleration = (f3Torque / fMass);
+
+	int nSteps = 10;
+	float fStepDt = dt / (float)nSteps;
 	for (int i = 0; i < nSteps; i++)
 	{
 		// calc -> Euler method

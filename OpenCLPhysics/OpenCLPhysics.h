@@ -60,6 +60,9 @@ namespace OpenCLPhysics
 		structVector3 m_v3AngularAcceleration;
 		structVector3 m_v3AngularVelocity;
 		structVector3 m_v3Rotate;
+
+		structVector3 m_v3ElapsedPosition;
+		structVector3 m_v3ElapsedRotate;
 	}
 	structRigidBody;
 
