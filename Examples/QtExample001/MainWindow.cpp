@@ -5,6 +5,28 @@
 #include <QMessageBox>
 #include <QException>
 
+int32_t Rand(int32_t nMin, int32_t nMax) 
+{
+    if (nMin == nMax || nMax < nMin) 
+    {
+        return nMin;
+    }
+
+    int nRet = (rand() % (nMax - nMin)) + nMin;
+    return nRet;
+}
+
+float Rand(float fMin, float fMax)
+{
+    if (fabs(fMin - fMax) < 0.0001f || fMax < fMin)
+    {
+        return fMin;
+    }
+
+    float fRet = (((float)rand() / (float)RAND_MAX) * (fMax - fMin)) + fMin;
+    return fRet;
+}
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
@@ -83,8 +105,7 @@ bool MainWindow::Init()
     // 2/2 - physics
     Model physicsmodel;
     physicsmodel.Load("Scene", "Physics.obj", glm::mat4(1.0f), false);
-    static_id = m_physics.GenTriMesh();
-    m_physics.SetTriMesh(static_id, physicsmodel.GetAllVertices());
+    static_id = m_physics.CreateTriMesh(physicsmodel.GetAllVertices());
     m_physics.SetMass(static_id, 0.0f); // static
 
     // dynamic
@@ -99,18 +120,29 @@ bool MainWindow::Init()
         texture.Load(strFilename.toStdString());
         textures[i] = texture.ID();
     }
+
     // 2/2 - physics
-    for (int x = -5; x < 5; x++)
+    int from_dynamic_id = -1;
+    //for (int x = -5; x < 5; x++)
     {
-        for (int z = -5; z < 5; z++)
+        //for (int z = -5; z < 5; z++)
         {
-            for (int y = 0; y < (1/*100db*/ * 50/*5000db*/); y++)
+            //for (int y = 0; y < (1/*100db*/ * 50/*5000db*/); y++)
             {
-                int dynamic_id = m_physics.GenTriMesh();
-                m_physics.SetTriMesh(dynamic_id, m_dynamicmodel.GetAllVertices());
+                int dynamic_id = -1;
+                if (-1 == from_dynamic_id)
+                {
+                    from_dynamic_id = m_physics.CreateTriMesh(m_dynamicmodel.GetAllVertices());
+                    dynamic_id = from_dynamic_id;
+                }
+                //else 
+                //{
+                //    dynamic_id = m_physics.Clone(from_dynamic_id);
+                //}
 
                 float fScale = 2.1f;
-                m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 20 + (y * fScale), z * fScale));
+                //m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 20 + (y * fScale), z * fScale));
+                m_physics.SetPosition(dynamic_id, glm::vec3(0, 20, 0));
                 m_physics.SetMass(dynamic_id, 85.0f); // dynamic
 
                 m_listDynamicIds.push_back(dynamic_id);
@@ -123,9 +155,6 @@ bool MainWindow::Init()
 
     // gravity
     m_physics.SetGravity(glm::vec3(0, -0.1, 0));
-
-    // Copy RAM to GPU
-    m_physics.Commit();
 
     // Avatar
     m_Camera.Init(glm::vec3(15, 3, 15), glm::vec3(0, 0, 0));
@@ -174,13 +203,14 @@ void MainWindow::TimerTick()
     }
 
     // print fps
-    nFPS++;
+    nIncFPS++;
     fSec += dt;
     if (fSec >= 1.0f)
     {
-        this->setWindowTitle("FPS: " + QString::number(nFPS));
+        nFPS = nIncFPS;
+        //this->setWindowTitle("FPS: " + QString::number(nFPS) + "; numRigidBodies: " + QString::number(m_physics.NumRigidBodies()));
 
-        nFPS = 0;
+        nIncFPS = 0;
         fSec = 0.0f;
     }
 
@@ -190,6 +220,18 @@ void MainWindow::TimerTick()
     }
 
     // physics
+    {
+        int new_dynamic_id = m_physics.Clone(m_listDynamicIds.at(0));
+        m_physics.SetPosition(new_dynamic_id, glm::vec3(Rand(-40.0f, 40.0f), Rand(10.0f, 50.0f), Rand(-40.0f, 40.0f)));
+        m_physics.SetMass(new_dynamic_id, 85.0f); // dynamic
+    
+        m_listDynamicIds.push_back(new_dynamic_id);
+    
+        int id = rand() % numTextures;
+        m_listRigidBodiesTextureId.push_back(textures[id]);
+    }
+    this->setWindowTitle("FPS: " + QString::number(nFPS) + "; numRigidBodies: " + QString::number(m_physics.NumRigidBodies()));
+    
     m_physics.Update(dt);
 
     int nWidth = ui.glWidget->width();

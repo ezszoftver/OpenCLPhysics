@@ -194,15 +194,22 @@ namespace OpenCLPhysics
 	{
 		m_nRigidBodyId = -1;
 		m_nTop = 0;
+		m_pListBVHNodeTriangles = nullptr;
 	}
 
 	TriMesh::~TriMesh()
 	{
-		for (uint64_t i = 0; i < m_listBVHNodeTriangles.size(); i++)
+		if (nullptr != m_pListBVHNodeTriangles)
 		{
-			delete m_listBVHNodeTriangles[i];
+			for (uint64_t i = 0; i < m_pListBVHNodeTriangles->size(); i++)
+			{
+				delete m_pListBVHNodeTriangles->at(i);
+			}
+			m_pListBVHNodeTriangles->clear();
+
+			delete m_pListBVHNodeTriangles;
+			m_pListBVHNodeTriangles = nullptr;
 		}
-		m_listBVHNodeTriangles.clear();
 	}
 
 	Physics::Physics()
@@ -396,7 +403,7 @@ namespace OpenCLPhysics
 	{
 	}
 
-	int32_t Physics::GenTriMesh()
+	int32_t Physics::CreateTriMesh(std::vector<glm::vec3>* pListVertices)
 	{		
 		int32_t nTriMeshId = (int32_t)m_listTriMeshs.size();
 		if (nTriMeshId >= TRIMESH_COUNT)
@@ -417,7 +424,56 @@ namespace OpenCLPhysics
 		m_listTriMeshs.at(nTriMeshId)->m_nRigidBodyId = nRigidBodyId;
 		m_listRigidBodies.at(nRigidBodyId).m_nTriMeshId = nTriMeshId;
 
-		return (TRIMESH_START + nTriMeshId);
+		int32_t nRet = TRIMESH_START + nTriMeshId;
+		SetTriMesh(nRet, pListVertices);
+
+		if (false == Commit())
+		{
+			return -1;
+		}
+
+		return nRet;
+	}
+
+	int32_t Physics::Clone(int32_t nFromId) 
+	{
+		int32_t nTriMeshId = (int32_t)m_listTriMeshs.size();
+		if (nTriMeshId >= TRIMESH_COUNT)
+		{
+			return -1;
+		}
+
+		// new trimesh
+		m_listTriMeshs.push_back(new TriMesh());
+
+		// new rigidbody
+		int32_t nRigidBodyId = (int32_t)m_listRigidBodies.size();
+		structRigidBody newRigidBody;
+		newRigidBody.m_nRigidBodyId = nRigidBodyId;
+		m_listRigidBodies.push_back(newRigidBody);
+
+		// update
+		m_listTriMeshs.at(nTriMeshId)->m_nRigidBodyId = nRigidBodyId;
+		m_listRigidBodies.at(nRigidBodyId).m_nTriMeshId = nTriMeshId;
+
+		int32_t nNewId = TRIMESH_START + nTriMeshId;
+
+		// copy fromId to newId
+		if (nFromId >= TRIMESH_START && nFromId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			m_listTriMeshs.at(nTriMeshId)->m_pListBVHNodeTriangles = m_listTriMeshs.at(nFromId - TRIMESH_START)->m_pListBVHNodeTriangles;
+		}
+		else 
+		{
+			return -1;
+		}
+		
+		if (false == Commit()) 
+		{
+			return -1;
+		}
+
+		return nNewId;
 	}
 
 	bool SortTrianglesFunc(Triangle *a, Triangle *b) 
@@ -463,6 +519,7 @@ namespace OpenCLPhysics
 	void Physics::SetTriMesh(int32_t nId, std::vector<glm::vec3>* pListVertices)
 	{
 		TriMesh *pTheTriMesh = m_listTriMeshs.at(nId);
+		pTheTriMesh->m_pListBVHNodeTriangles = new std::vector< BVHNodeTriangle* >();
 		structRigidBody theRigidBody = m_listRigidBodies.at( pTheTriMesh->m_nRigidBodyId );
 
 		// calc bbox (local min/max)
@@ -511,7 +568,7 @@ namespace OpenCLPhysics
 		}
 
 		// copy
-		pTheTriMesh->m_listBVHNodeTriangles.insert(pTheTriMesh->m_listBVHNodeTriangles.end(), pOUT->begin(), pOUT->end());
+		pTheTriMesh->m_pListBVHNodeTriangles->insert(pTheTriMesh->m_pListBVHNodeTriangles->end(), pOUT->begin(), pOUT->end());
 		// reset
 		pIN = pOUT;
 		pOUT = new std::vector< BVHNodeTriangle* >();
@@ -549,7 +606,7 @@ namespace OpenCLPhysics
 			}
 
 			// copy
-			pTheTriMesh->m_listBVHNodeTriangles.insert(pTheTriMesh->m_listBVHNodeTriangles.end(), pOUT->begin(), pOUT->end());
+			pTheTriMesh->m_pListBVHNodeTriangles->insert(pTheTriMesh->m_pListBVHNodeTriangles->end(), pOUT->begin(), pOUT->end());
 			// reset
 			pIN = pOUT;
 			pOUT = new std::vector< BVHNodeTriangle* >();
@@ -563,7 +620,7 @@ namespace OpenCLPhysics
 		pIN->erase(pIN->begin() + 0);
 
 		// add
-		pTheTriMesh->m_listBVHNodeTriangles.insert(pTheTriMesh->m_listBVHNodeTriangles.begin(), pRoot);
+		pTheTriMesh->m_pListBVHNodeTriangles->insert(pTheTriMesh->m_pListBVHNodeTriangles->begin(), pRoot);
 	}
 
 	void Physics::SetGravity(glm::vec3 vec3Gravity)
@@ -868,6 +925,19 @@ namespace OpenCLPhysics
 
 		cl_int err;
 
+		// Release if exists
+		if (0 != m_clmem_inoutRigidBodies)
+		{
+			clReleaseMemObject(m_clmem_inoutRigidBodies);
+			m_clmem_inoutRigidBodies = 0;
+		}
+		if (0 != m_clmem_inoutBVHObjects)
+		{
+			clReleaseMemObject(m_clmem_inoutBVHObjects);
+			m_clmem_inoutBVHObjects = 0;
+		}
+		ReleaseBVHObjects();
+
 		// create rigidBodies buffer
 		// -> ealpsed
 		m_clmem_inoutRigidBodies = clCreateBuffer(m_context, CL_MEM_READ_WRITE, sizeof(structRigidBody) * m_listRigidBodies.size(), NULL, NULL);
@@ -921,6 +991,11 @@ namespace OpenCLPhysics
 
 	bool Physics::StepUpdate(float dt)
 	{
+		if (m_listRigidBodies.size() < 1)
+		{
+			return false;
+		}
+
 		cl_int err = 0;
 
 		// write to GPU the current dta
@@ -956,6 +1031,11 @@ namespace OpenCLPhysics
 		return true;
 	}
 
+	uint32_t Physics::NumRigidBodies() 
+	{
+		return (uint32_t)m_listRigidBodies.size();
+	}
+
 	void Physics::CreateBVHObjects()
 	{
 		// 1/2 - CREATE LEVELS
@@ -963,6 +1043,25 @@ namespace OpenCLPhysics
 
 		m_BVHObjectsLevels.clear();
 		uint32_t numRigidBodies = (uint32_t)m_listRigidBodies.size();
+
+		if (1 == numRigidBodies)
+		{
+			// create current level
+			std::vector< structBVHObject >* pCurrentLevel = new std::vector< structBVHObject >;
+
+			structBVHObject element;
+
+			structRigidBody theRigidBody = m_listRigidBodies.at(0);
+			element.m_BBox = theRigidBody.m_BBox;
+
+			element.m_nLeft = -1;
+			element.m_nRight = -1;
+			pCurrentLevel->push_back(element);
+
+			// add to tree, the current level
+			m_BVHObjectsLevels.push_back(pCurrentLevel);
+		}
+		
 		for (uint32_t nLevel = 0; numRigidBodies > 1; nLevel++)
 		{
 			// create current level
@@ -1092,6 +1191,17 @@ namespace OpenCLPhysics
 				nOffset = nElapsedOffset;
 			}
 		}
+	}
+
+	void Physics::ReleaseBVHObjects() 
+	{
+		for (uint32_t i = 0; i < m_BVHObjectsLevels.size(); i++) 
+		{
+			delete m_BVHObjectsLevels.at(i);
+		}
+		m_BVHObjectsLevels.clear();
+
+		m_listBVHObjects.clear();
 	}
 
 	bool Physics::UpdateBVHObjects()

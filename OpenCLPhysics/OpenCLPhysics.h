@@ -131,7 +131,7 @@ namespace OpenCLPhysics
 
 		int32_t m_nRigidBodyId;
 
-		std::vector< BVHNodeTriangle* > m_listBVHNodeTriangles;
+		std::vector< BVHNodeTriangle* > *m_pListBVHNodeTriangles;
 
 		uint8_t m_nTop;
 		Hit m_arrHits[MAX_HITS_COUNT_PER_OBJECTS];
@@ -150,8 +150,8 @@ namespace OpenCLPhysics
 		bool CreateDevice(std::string strDeviceName);
 		void CloseDevice();
 
-		int32_t GenTriMesh();
-		void SetTriMesh(int32_t nId, std::vector<glm::vec3> *pListVertices);
+		int32_t CreateTriMesh(std::vector<glm::vec3>* pListVertices);
+		int32_t Clone(int32_t nFromId);
 
 		void SetGravity(glm::vec3 v3Gravity);
 		glm::vec3 GetGravity();
@@ -189,10 +189,14 @@ namespace OpenCLPhysics
 		bool Commit();
 		bool Update(float dt, uint16_t nNumSteps = 1);
 
+		uint32_t NumRigidBodies();
+
 	private:
+		void SetTriMesh(int32_t nId, std::vector<glm::vec3>* pListVertices);
 		bool StepUpdate(float dt);
 		void CreateBVHObjects();
 		bool UpdateBVHObjects();
+		void ReleaseBVHObjects();
 		bool Integrate(float dt);
 
 		cl_context m_context;
@@ -200,8 +204,8 @@ namespace OpenCLPhysics
 		cl_program m_program;
 		cl_kernel m_kernelUpdateBVHObjects;
 		cl_kernel m_kernelIntegrate;
-		cl_mem m_clmem_inoutRigidBodies;
-		cl_mem m_clmem_inoutBVHObjects;
+		cl_mem m_clmem_inoutRigidBodies = 0;
+		cl_mem m_clmem_inoutBVHObjects = 0;
 
 		structVector3 m_v3Gravity;
 		std::vector< structRigidBody > m_listRigidBodies;

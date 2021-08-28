@@ -79,6 +79,7 @@ private:
     uint64_t m_nElapsedTime;
     uint64_t m_nCurrentTime;
     float dt;
+    int nIncFPS = 0;
     int nFPS = 0;
     float fSec = 0;
 
