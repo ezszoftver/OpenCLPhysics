@@ -899,7 +899,27 @@ namespace OpenCLPhysics
 		return (a.m_nRigidBodyId < b.m_nRigidBodyId);
 	}
 
-	bool Physics::Update(float dt)
+	bool Physics::Update(float dt, uint16_t nSteps) 
+	{
+		if (nSteps < 1)
+		{
+			nSteps = 1;
+		}
+
+		float fStepDt = dt / (float)nSteps;
+
+		for (uint16_t i = 0; i < nSteps; i++)
+		{
+			if (false == StepUpdate(fStepDt)) 
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	bool Physics::StepUpdate(float dt)
 	{
 		cl_int err = 0;
 

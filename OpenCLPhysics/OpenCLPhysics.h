@@ -5,7 +5,7 @@
 #include "glm/glm.hpp"
 #include "CL/cl.h"
 
-#define MAX_HITS_COUNT_PER_OBJECTS 16
+#define MAX_HITS_COUNT_PER_OBJECTS 32
 
 namespace OpenCLPhysics
 {
@@ -187,9 +187,10 @@ namespace OpenCLPhysics
 		float GetAngularDamping(int32_t nId);
 
 		bool Commit();
-		bool Update(float dt);
+		bool Update(float dt, uint16_t nNumSteps = 1);
 
 	private:
+		bool StepUpdate(float dt);
 		void CreateBVHObjects();
 		bool UpdateBVHObjects();
 		bool Integrate(float dt);
