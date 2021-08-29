@@ -175,9 +175,6 @@
     <CopyFileToFolders Include="Scene\woodewhite.jpg">
       <Filter>Scene</Filter>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="Scene\Music.wav">
-      <Filter>Scene</Filter>
-    </CopyFileToFolders>
     <CopyFileToFolders Include="Shaders\Draw.fs.txt">
       <Filter>Shaders</Filter>
     </CopyFileToFolders>

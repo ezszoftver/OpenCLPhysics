@@ -45,17 +45,17 @@ bool MainWindow::Init()
     // randomize
     srand(time(NULL));
 
-    // openal
-    alutInit(&__argc, __argv);
-
-    // openal
-    ALuint buffer;
-    buffer = alutCreateBufferFromFile("Scene/Music.wav");
-    ALuint source;
-    alGenSources(1, &source);
-    alSourcei(source, AL_BUFFER, buffer);
-    alSourcei(source, AL_LOOPING, true);
-    alSourcePlay(source);
+    //// openal
+    //alutInit(&__argc, __argv);
+    //
+    //// openal
+    //ALuint buffer;
+    //buffer = alutCreateBufferFromFile("Scene/Music.wav");
+    //ALuint source;
+    //alGenSources(1, &source);
+    //alSourcei(source, AL_BUFFER, buffer);
+    //alSourcei(source, AL_LOOPING, true);
+    //alSourcePlay(source);
 
     // opengl
     if (false == InitGL(ui.glWidget))
