@@ -75,6 +75,7 @@ typedef struct
 {
 	int nRigidBodyId;
 	int nTriMeshId;
+	int nIsEnabled;
 
 	BBox bbox;
 
@@ -195,6 +196,11 @@ __kernel void Integrate(__global RigidBody* inoutRigidBodies, int nCount, float 
 	int id = get_global_id(0);
 
 	RigidBody rigidBody = inoutRigidBodies[id];
+
+	if (0 == rigidBody.nIsEnabled)
+	{
+		return;
+	}
 
 	// init
 	float fMass = rigidBody.fMass;

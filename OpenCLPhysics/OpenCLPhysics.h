@@ -42,6 +42,7 @@ namespace OpenCLPhysics
 	{
 		int32_t m_nRigidBodyId = -1;
 		int32_t m_nTriMeshId = -1;
+		int32_t m_nIsEnabled = 1;
 
 		structBBox m_BBox;
 
@@ -139,19 +140,23 @@ namespace OpenCLPhysics
 
 	class Physics
 	{
-		static const int32_t TRIMESH_START = 0;
-		static const int32_t TRIMESH_COUNT = 100000000; // 100 million
+		int32_t TRIMESH_START = 0;
+		int32_t TRIMESH_COUNT = 1;
 
 	public:
 		Physics();
 		~Physics();
 
 		std::vector<std::string> GetDevices();
-		bool CreateDevice(std::string strDeviceName);
+		bool CreateDevice(std::string strDeviceName, int32_t nTriMeshsCount = 100000);
 		void CloseDevice();
 
 		int32_t CreateTriMesh(std::vector<glm::vec3>* pListVertices);
-		int32_t Clone(int32_t nFromId);
+		int32_t CreateFromId(int32_t nFromId);
+		bool DeleteTriMesh(int32_t nId);
+
+		void SetEnabled(int32_t nId, bool bValue);
+		bool IsEnabled(int32_t nId);
 
 		void SetGravity(glm::vec3 v3Gravity);
 		glm::vec3 GetGravity();
@@ -189,6 +194,7 @@ namespace OpenCLPhysics
 		bool Commit();
 		bool Update(float dt, uint16_t nNumSteps = 1);
 
+		uint32_t MaxRigidBodies();
 		uint32_t NumRigidBodies();
 
 	private:
@@ -208,6 +214,7 @@ namespace OpenCLPhysics
 		cl_mem m_clmem_inoutBVHObjects = 0;
 
 		structVector3 m_v3Gravity;
+		std::vector< int32_t > m_listFreeIds;
 		std::vector< structRigidBody > m_listRigidBodies;
 		std::vector< TriMesh* > m_listTriMeshs;
 

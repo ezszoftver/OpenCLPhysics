@@ -179,7 +179,7 @@ bool MainWindow::InitPhysics()
         return false;
     }
 
-    if (false == m_physics.CreateDevice(listDevices[0]))
+    if (false == m_physics.CreateDevice(listDevices[0], 5000))
     {
         return false;
     }
@@ -221,8 +221,18 @@ void MainWindow::TimerTick()
 
     // physics
     {
-        int new_dynamic_id = m_physics.Clone(m_listDynamicIds.at(0));
-        m_physics.SetPosition(new_dynamic_id, glm::vec3(Rand(-40.0f, 40.0f), Rand(10.0f, 50.0f), Rand(-40.0f, 40.0f)));
+        // delete, if more
+        if (m_physics.NumRigidBodies() >= m_physics.MaxRigidBodies())
+        {
+            m_physics.DeleteTriMesh(m_listDynamicIds.at(1));
+
+            m_listDynamicIds.erase(m_listDynamicIds.begin() + 1);
+            m_listRigidBodiesTextureId.erase(m_listRigidBodiesTextureId.begin() + 1);
+        }
+
+        // create new
+        int new_dynamic_id = m_physics.CreateFromId(m_listDynamicIds.at(0));
+        m_physics.SetPosition(new_dynamic_id, glm::vec3(Rand(-30.0f, 30.0f), Rand(20.0f, 60.0f), Rand(-30.0f, 30.0f)));
         m_physics.SetMass(new_dynamic_id, 85.0f); // dynamic
     
         m_listDynamicIds.push_back(new_dynamic_id);
@@ -318,6 +328,12 @@ void MainWindow::TimerTick()
             }
 
             int dynamic_id = m_listDynamicIds.at(i);
+
+            if (false == m_physics.IsEnabled(dynamic_id))
+            {
+                continue;
+            }
+
             glm::mat4 mWorld = m_physics.GetTransform(dynamic_id);
             m_shaderShadowMap.SetMatrix("matWorld", &mWorld);
 
@@ -364,6 +380,12 @@ void MainWindow::TimerTick()
             }
 
             int dynamic_id = m_listDynamicIds.at(i);
+
+            if (false == m_physics.IsEnabled(dynamic_id))
+            {
+                continue;
+            }
+
             glm::mat4 mWorld = m_physics.GetTransform(dynamic_id);
             m_shaderDraw.SetMatrix("matWorld", &mWorld);
 

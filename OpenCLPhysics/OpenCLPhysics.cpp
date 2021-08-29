@@ -199,17 +199,6 @@ namespace OpenCLPhysics
 
 	TriMesh::~TriMesh()
 	{
-		if (nullptr != m_pListBVHNodeTriangles)
-		{
-			for (uint64_t i = 0; i < m_pListBVHNodeTriangles->size(); i++)
-			{
-				delete m_pListBVHNodeTriangles->at(i);
-			}
-			m_pListBVHNodeTriangles->clear();
-
-			delete m_pListBVHNodeTriangles;
-			m_pListBVHNodeTriangles = nullptr;
-		}
 	}
 
 	Physics::Physics()
@@ -294,7 +283,7 @@ namespace OpenCLPhysics
 		return listRet;
 	}
 
-	bool Physics::CreateDevice(std::string strDeviceName)
+	bool Physics::CreateDevice(std::string strDeviceName, int32_t nTriMeshsCount)
 	{
 		cl_int status = CL_SUCCESS;
 		cl_uint numPlatforms;
@@ -391,6 +380,22 @@ namespace OpenCLPhysics
 					m_kernelIntegrate = clCreateKernel(m_program, "Integrate", &status);
 					if (!m_kernelIntegrate || status != CL_SUCCESS) { return false; }
 
+					// max trimeshs
+					TRIMESH_COUNT = nTriMeshsCount;
+					m_listFreeIds.clear();
+					m_listTriMeshs.clear();
+					m_listRigidBodies.clear();
+					for (int i = 0; i < TRIMESH_COUNT; i++)
+					{
+						m_listFreeIds.push_back(i);
+
+						m_listTriMeshs.push_back(new TriMesh());
+
+						structRigidBody newRigidBody;
+						newRigidBody.m_nRigidBodyId = i;
+						m_listRigidBodies.push_back(newRigidBody);
+					}
+
 					return true;
 				}
 			}
@@ -404,28 +409,36 @@ namespace OpenCLPhysics
 	}
 
 	int32_t Physics::CreateTriMesh(std::vector<glm::vec3>* pListVertices)
-	{		
-		int32_t nTriMeshId = (int32_t)m_listTriMeshs.size();
-		if (nTriMeshId >= TRIMESH_COUNT)
+	{
+		if (0 == m_listFreeIds.size()) 
 		{
 			return -1;
 		}
 
+		// get free id
+		int32_t nId = m_listFreeIds.at(0);
+		m_listFreeIds.erase(m_listFreeIds.begin() + 0);
+
 		// new trimesh
-		m_listTriMeshs.push_back( new TriMesh() );
+		int32_t nTriMeshId = nId;
 
 		// new rigidbody
-		int32_t nRigidBodyId = (int32_t)m_listRigidBodies.size();
-		structRigidBody newRigidBody;
-		newRigidBody.m_nRigidBodyId = nRigidBodyId;
-		m_listRigidBodies.push_back(newRigidBody);
+		int32_t nRigidBodyId = nId;
 
 		// update
+		structRigidBody newRigidBody;
+		newRigidBody.m_nRigidBodyId = nRigidBodyId;
+		m_listRigidBodies.at(nRigidBodyId) = newRigidBody;
+
+		delete m_listTriMeshs.at(nTriMeshId);
+		m_listTriMeshs.at(nTriMeshId) = new TriMesh();
+
 		m_listTriMeshs.at(nTriMeshId)->m_nRigidBodyId = nRigidBodyId;
 		m_listRigidBodies.at(nRigidBodyId).m_nTriMeshId = nTriMeshId;
 
 		int32_t nRet = TRIMESH_START + nTriMeshId;
 		SetTriMesh(nRet, pListVertices);
+		SetEnabled(nId, true);
 
 		if (false == Commit())
 		{
@@ -435,26 +448,34 @@ namespace OpenCLPhysics
 		return nRet;
 	}
 
-	int32_t Physics::Clone(int32_t nFromId) 
+	int32_t Physics::CreateFromId(int32_t nFromId) 
 	{
-		int32_t nTriMeshId = (int32_t)m_listTriMeshs.size();
-		if (nTriMeshId >= TRIMESH_COUNT)
+		if (0 == m_listFreeIds.size())
 		{
 			return -1;
 		}
 
+		// get free id
+		int32_t nId = m_listFreeIds.at(0);
+		m_listFreeIds.erase(m_listFreeIds.begin() + 0);
+
 		// new trimesh
-		m_listTriMeshs.push_back(new TriMesh());
+		int32_t nTriMeshId = nId;
 
 		// new rigidbody
-		int32_t nRigidBodyId = (int32_t)m_listRigidBodies.size();
-		structRigidBody newRigidBody;
-		newRigidBody.m_nRigidBodyId = nRigidBodyId;
-		m_listRigidBodies.push_back(newRigidBody);
+		int32_t nRigidBodyId = nId;
 
 		// update
+		structRigidBody newRigidBody;
+		newRigidBody.m_nRigidBodyId = nRigidBodyId;
+		m_listRigidBodies.at(nRigidBodyId) = newRigidBody;
+
+		delete m_listTriMeshs.at(nTriMeshId);
+		m_listTriMeshs.at(nTriMeshId) = new TriMesh();
+
 		m_listTriMeshs.at(nTriMeshId)->m_nRigidBodyId = nRigidBodyId;
 		m_listRigidBodies.at(nRigidBodyId).m_nTriMeshId = nTriMeshId;
+		SetEnabled(nId, true);
 
 		int32_t nNewId = TRIMESH_START + nTriMeshId;
 
@@ -474,6 +495,40 @@ namespace OpenCLPhysics
 		}
 
 		return nNewId;
+	}
+
+	bool Physics::DeleteTriMesh(int32_t nId) 
+	{
+		if (nId == -1) 
+		{
+			return false;
+		}
+
+		SetEnabled(nId, false);
+		m_listFreeIds.insert(m_listFreeIds.begin() + 0, nId);
+
+		return true;
+	}
+
+	void Physics::SetEnabled(int32_t nId, bool bValue) 
+	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			m_listRigidBodies[nRigidBodyId].m_nIsEnabled = (true == bValue) ? 1 : 0;
+		}
+	}
+
+	bool Physics::IsEnabled(int32_t nId) 
+	{
+		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
+		{
+			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+			bool ret = (m_listRigidBodies[nRigidBodyId].m_nIsEnabled == 0) ? false : true;
+			return ret;
+		}
+
+		return 0;
 	}
 
 	bool SortTrianglesFunc(Triangle *a, Triangle *b) 
@@ -1033,7 +1088,13 @@ namespace OpenCLPhysics
 
 	uint32_t Physics::NumRigidBodies() 
 	{
-		return (uint32_t)m_listRigidBodies.size();
+		int32_t nCount = TRIMESH_COUNT - (int32_t)m_listFreeIds.size();
+		return nCount;
+	}
+
+	uint32_t Physics::MaxRigidBodies() 
+	{
+		return TRIMESH_COUNT;
 	}
 
 	void Physics::CreateBVHObjects()
