@@ -190,14 +190,14 @@ namespace OpenCLPhysics
 		float GetLinearDamping(int32_t nId);
 		void SetAngularDamping(int32_t nId, float fAngularDamping);
 		float GetAngularDamping(int32_t nId);
-
-		bool Commit();
+		
 		bool Update(float dt, uint16_t nNumSteps = 1);
 
 		uint32_t MaxRigidBodies();
 		uint32_t NumRigidBodies();
 
 	private:
+		bool Commit();
 		void SetTriMesh(int32_t nId, std::vector<glm::vec3>* pListVertices);
 		bool StepUpdate(float dt);
 		void CreateBVHObjects();
