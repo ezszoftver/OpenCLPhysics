@@ -1,4 +1,4 @@
-# OpenCL Physics Engine v0.0 zz
+# OpenCL Physics Engine v0.0
 !!! THIS IS UNDER DEVELOPING. NOT STABLE. !!!
 !!! VERSION: 0.0 !!!
 
