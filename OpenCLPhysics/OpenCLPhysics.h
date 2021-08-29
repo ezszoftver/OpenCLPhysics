@@ -148,7 +148,7 @@ namespace OpenCLPhysics
 		~Physics();
 
 		std::vector<std::string> GetDevices();
-		bool CreateDevice(std::string strDeviceName, int32_t nTriMeshsCount = 100000);
+		bool CreateDevice(std::string strDeviceName, int32_t nTriMeshsCount = 1000000);
 		void CloseDevice();
 
 		int32_t CreateTriMesh(std::vector<glm::vec3>* pListVertices);

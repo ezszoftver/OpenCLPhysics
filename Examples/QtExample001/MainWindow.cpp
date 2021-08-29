@@ -123,11 +123,11 @@ bool MainWindow::Init()
 
     // 2/2 - physics
     int from_dynamic_id = -1;
-    //for (int x = -5; x < 5; x++)
+    for (int x = -5; x < 5; x++)
     {
-        //for (int z = -5; z < 5; z++)
+        for (int z = -5; z < 5; z++)
         {
-            //for (int y = 0; y < (1/*100db*/ * 50/*5000db*/); y++)
+            for (int y = 0; y < (1/*100db*/ * 50/*5000db*/); y++)
             {
                 int dynamic_id = -1;
                 if (-1 == from_dynamic_id)
@@ -135,14 +135,13 @@ bool MainWindow::Init()
                     from_dynamic_id = m_physics.CreateTriMesh(m_dynamicmodel.GetAllVertices());
                     dynamic_id = from_dynamic_id;
                 }
-                //else 
-                //{
-                //    dynamic_id = m_physics.Clone(from_dynamic_id);
-                //}
+                else 
+                {
+                    dynamic_id = m_physics.CreateFromId(from_dynamic_id);
+                }
 
                 float fScale = 2.1f;
-                //m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 20 + (y * fScale), z * fScale));
-                m_physics.SetPosition(dynamic_id, glm::vec3(0, 20, 0));
+                m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 20 + (y * fScale), z * fScale));
                 m_physics.SetMass(dynamic_id, 85.0f); // dynamic
 
                 m_listDynamicIds.push_back(dynamic_id);
@@ -179,7 +178,7 @@ bool MainWindow::InitPhysics()
         return false;
     }
 
-    if (false == m_physics.CreateDevice(listDevices[0], 5000))
+    if (false == m_physics.CreateDevice(listDevices[0]))
     {
         return false;
     }
@@ -208,7 +207,7 @@ void MainWindow::TimerTick()
     if (fSec >= 1.0f)
     {
         nFPS = nIncFPS;
-        //this->setWindowTitle("FPS: " + QString::number(nFPS) + "; numRigidBodies: " + QString::number(m_physics.NumRigidBodies()));
+        this->setWindowTitle("FPS: " + QString::number(nFPS) + "; Num RigidBodies: " + QString::number(m_physics.NumRigidBodies()));
 
         nIncFPS = 0;
         fSec = 0.0f;
@@ -219,46 +218,23 @@ void MainWindow::TimerTick()
         dt = 1.0f / 10.0f;
     }
 
-    // physics
-    {
-        // delete, if more
-        if (m_physics.NumRigidBodies() >= m_physics.MaxRigidBodies())
-        {
-            m_physics.DeleteTriMesh(m_listDynamicIds.at(1));
-
-            m_listDynamicIds.erase(m_listDynamicIds.begin() + 1);
-            m_listRigidBodiesTextureId.erase(m_listRigidBodiesTextureId.begin() + 1);
-        }
-
-        // create new
-        int new_dynamic_id = m_physics.CreateFromId(m_listDynamicIds.at(0));
-        m_physics.SetPosition(new_dynamic_id, glm::vec3(Rand(-30.0f, 30.0f), Rand(20.0f, 60.0f), Rand(-30.0f, 30.0f)));
-        m_physics.SetMass(new_dynamic_id, 85.0f); // dynamic
-    
-        m_listDynamicIds.push_back(new_dynamic_id);
-    
-        int id = rand() % numTextures;
-        m_listRigidBodiesTextureId.push_back(textures[id]);
-    }
-    this->setWindowTitle("FPS: " + QString::number(nFPS) + "; numRigidBodies: " + QString::number(m_physics.NumRigidBodies()));
-    
     m_physics.Update(dt);
 
     int nWidth = ui.glWidget->width();
     int nHeight = ui.glWidget->height();
     if (nWidth < 1) { nWidth = 1; }
     if (nHeight < 1) { nHeight = 1; }
-
+    
     // mouse rotate
     QPoint pointDiff = cursor().pos() - QPoint(width() / 2, height() / 2);
     cursor().setPos(QPoint(width() / 2, height() / 2));
     m_Camera.Rotate(pointDiff.x(), pointDiff.y());
     m_Camera.Update(dt);
-
+    
     glm::vec3 v3CameraPos = m_Camera.GetPos();
     glm::vec3 v3CameraAt = m_Camera.GetAt();
     glm::vec3 v3CameraDir = glm::normalize(v3CameraAt - v3CameraPos);
-
+    
     // move
     float speed = 4.0f;
     glm::vec3 vel(0, 0, 0);
@@ -278,25 +254,25 @@ void MainWindow::TimerTick()
     {
         vel += -glm::cross(v3CameraDir, glm::vec3(0, 1, 0));
     }
-
+    
     if (glm::length(vel) > 0.0001f)
     {
         vel = glm::normalize(vel);
         vel *= speed;
-
+    
         glm::vec3 v3CameraPos = m_Camera.GetPos();
         v3CameraPos += vel * dt;
         m_Camera.SetPos(v3CameraPos);
     }
-
+    
     glm::vec3 v3LightPos = glm::vec3(32.6785f, 85.7038f, -39.8369f);
     glm::vec3 v3LightAt = glm::vec3(0, 0, 0);
     glm::vec3 v3LightDir = glm::normalize(v3LightAt - v3LightPos);
-
+    
     //glm::mat4 mLightWorld = glm::mat4(1.0f);
     glm::mat4 mLightView = glm::lookAtRH(v3LightPos, v3LightAt, glm::vec3(0, 1, 0));
     glm::mat4 mLightProj = glm::orthoRH(-50.0f, 50.0f, -50.0f, 50.0f, 1.0f, 200.0f);
-
+    
     // draw
     // 1/2 - draw to shadow texture
     m_RenderToShadowTexture.Bind();
@@ -319,24 +295,24 @@ void MainWindow::TimerTick()
     for (int j = 0; j < numTextures; j++)
     {
         m_shaderShadowMap.SetTexture("g_Texture", textures[j], 0);
-
+    
         for (int i = 0; i < m_listDynamicIds.size(); i++)
         {
             if (m_listRigidBodiesTextureId.at(i) != textures[j])
             {
                 continue;
             }
-
+    
             int dynamic_id = m_listDynamicIds.at(i);
-
+    
             if (false == m_physics.IsEnabled(dynamic_id))
             {
                 continue;
             }
-
+    
             glm::mat4 mWorld = m_physics.GetTransform(dynamic_id);
             m_shaderShadowMap.SetMatrix("matWorld", &mWorld);
-
+    
             m_dynamicmodel.Draw(&m_shaderShadowMap);
         }
     }
@@ -371,24 +347,24 @@ void MainWindow::TimerTick()
     for (int j = 0; j < numTextures; j++)
     {
         m_shaderDraw.SetTexture("g_Texture", textures[j], 0);
-
+    
         for (int i = 0; i < m_listDynamicIds.size(); i++)
         {
             if (m_listRigidBodiesTextureId.at(i) != textures[j])
             {
                 continue;
             }
-
+    
             int dynamic_id = m_listDynamicIds.at(i);
-
+    
             if (false == m_physics.IsEnabled(dynamic_id))
             {
                 continue;
             }
-
+    
             glm::mat4 mWorld = m_physics.GetTransform(dynamic_id);
             m_shaderDraw.SetMatrix("matWorld", &mWorld);
-
+    
             m_dynamicmodel.Draw(&m_shaderDraw);
         }
     }

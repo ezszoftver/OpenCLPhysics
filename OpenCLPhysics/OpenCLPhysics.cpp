@@ -388,12 +388,6 @@ namespace OpenCLPhysics
 					for (int i = 0; i < TRIMESH_COUNT; i++)
 					{
 						m_listFreeIds.push_back(i);
-
-						m_listTriMeshs.push_back(new TriMesh());
-
-						structRigidBody newRigidBody;
-						newRigidBody.m_nRigidBodyId = i;
-						m_listRigidBodies.push_back(newRigidBody);
 					}
 
 					return true;
@@ -418,6 +412,16 @@ namespace OpenCLPhysics
 		// get free id
 		int32_t nId = m_listFreeIds.at(0);
 		m_listFreeIds.erase(m_listFreeIds.begin() + 0);
+
+		// resize
+		while(nId >= m_listTriMeshs.size())
+		{
+			m_listTriMeshs.push_back(new TriMesh());
+
+			structRigidBody newRigidBody;
+			newRigidBody.m_nRigidBodyId = (int32_t)m_listRigidBodies.size();
+			m_listRigidBodies.push_back(newRigidBody);
+		}
 
 		// new trimesh
 		int32_t nTriMeshId = nId;
@@ -458,6 +462,16 @@ namespace OpenCLPhysics
 		// get free id
 		int32_t nId = m_listFreeIds.at(0);
 		m_listFreeIds.erase(m_listFreeIds.begin() + 0);
+
+		// resize
+		while (nId >= m_listTriMeshs.size())
+		{
+			m_listTriMeshs.push_back(new TriMesh());
+
+			structRigidBody newRigidBody;
+			newRigidBody.m_nRigidBodyId = (int32_t)m_listRigidBodies.size();
+			m_listRigidBodies.push_back(newRigidBody);
+		}
 
 		// new trimesh
 		int32_t nTriMeshId = nId;
