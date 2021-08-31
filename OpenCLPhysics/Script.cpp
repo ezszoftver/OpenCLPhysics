@@ -73,7 +73,7 @@ BVHObject;
 
 typedef struct
 {
-	int nRigidBodyId;
+	int nId;
 	int nTriMeshId;
 	int nIsEnabled;
 

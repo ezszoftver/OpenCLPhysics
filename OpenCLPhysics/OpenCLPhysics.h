@@ -67,12 +67,23 @@ namespace OpenCLPhysics
 	}
 	structRigidBody;
 
+	typedef struct _structTriangle 
+	{
+		structVector3 m_v3PosA;
+		structVector3 m_v3PosB;
+		structVector3 m_v3PosC;
+		structVector3 m_v3Normal;
+	}
+	structTriangle;
+
 	class Triangle
 	{
 	public:
 		Triangle();
 		Triangle(glm::vec3 v3PosA, glm::vec3 v3PosB, glm::vec3 v3PosC, glm::vec3 v3Normal);
 		~Triangle();
+
+		structTriangle GetStructTriangle();
 
 		glm::vec3 m_v3PosA;
 		glm::vec3 m_v3PosB;
@@ -111,12 +122,25 @@ namespace OpenCLPhysics
 		int32_t m_nBodyBId;
 	};
 
+	typedef struct _structBVHNodeTriangle 
+	{
+		int32_t m_nLeft = -1;
+		int32_t m_nRight = -1;
+
+		structTriangle m_Triangle;
+		structBBox m_BBox;
+	}
+	structBVHNodeTriangle;
+
 	class BVHNodeTriangle
 	{
 	public:
-		BVHNodeTriangle();
+		BVHNodeTriangle(int32_t nId);
 		bool IsLeaf();
 
+		structBVHNodeTriangle GetStructBVHNodeTriangle();
+
+		int32_t m_nId;
 		BVHNodeTriangle* m_pLeft;
 		BVHNodeTriangle* m_pRight;
 
@@ -130,18 +154,12 @@ namespace OpenCLPhysics
 		TriMesh();
 		~TriMesh();
 
-		int32_t m_nRigidBodyId;
-
 		std::vector< BVHNodeTriangle* > *m_pListBVHNodeTriangles;
-
-		uint8_t m_nTop;
-		Hit m_arrHits[MAX_HITS_COUNT_PER_OBJECTS];
 	};
 
 	class Physics
 	{
-		int32_t TRIMESH_START = 0;
-		int32_t TRIMESH_COUNT = 1;
+		int32_t TRIMESH_COUNT = 0;
 
 	public:
 		Physics();
@@ -151,9 +169,11 @@ namespace OpenCLPhysics
 		bool CreateDevice(std::string strDeviceName, int32_t nTriMeshsCount = 1000000);
 		void CloseDevice();
 
-		int32_t CreateTriMesh(std::vector<glm::vec3>* pListVertices);
-		int32_t CreateFromId(int32_t nFromId);
+		int32_t CreateTriMesh(std::vector<glm::vec3>* pListVertices, bool bIsCommit = true);
+		int32_t CreateFromId(int32_t nFromId, bool bIsCommit = true);
 		bool DeleteTriMesh(int32_t nId);
+
+		bool Commit();
 
 		void SetEnabled(int32_t nId, bool bValue);
 		bool IsEnabled(int32_t nId);
@@ -197,7 +217,6 @@ namespace OpenCLPhysics
 		uint32_t NumRigidBodies();
 
 	private:
-		bool Commit();
 		void SetTriMesh(int32_t nId, std::vector<glm::vec3>* pListVertices);
 		bool StepUpdate(float dt);
 		void CreateBVHObjects();
@@ -213,13 +232,21 @@ namespace OpenCLPhysics
 		cl_mem m_clmem_inoutRigidBodies = 0;
 		cl_mem m_clmem_inoutBVHObjects = 0;
 
+		cl_mem m_clmem_inBVHNodeTriangles = 0;
+		cl_mem m_clmem_inBVHNodeTrianglesOffsets = 0;
+
 		structVector3 m_v3Gravity;
 		std::vector< int32_t > m_listFreeIds;
 		std::vector< structRigidBody > m_listRigidBodies;
 		std::vector< TriMesh* > m_listTriMeshs;
 
+		// objects
 		std::vector< std::vector< structBVHObject >* > m_BVHObjectsLevels; // ebbõl kiszámítható a "count", és az "offset"
 		std::vector< structBVHObject > m_listBVHObjects;
+
+		// triangles
+		std::vector< structBVHNodeTriangle > m_listBVHNodeTriangles;
+		std::vector< int32_t > m_listBVHNodeTrianglesOffsets;
 	};
 
 }

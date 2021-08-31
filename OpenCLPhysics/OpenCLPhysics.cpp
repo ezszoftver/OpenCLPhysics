@@ -48,6 +48,16 @@ namespace OpenCLPhysics
 	{
 	}
 
+	structTriangle Triangle::GetStructTriangle()
+	{
+		structTriangle ret;
+		ret.m_v3PosA = ToVector3(m_v3PosA);
+		ret.m_v3PosB = ToVector3(m_v3PosB);
+		ret.m_v3PosC = ToVector3(m_v3PosC);
+		ret.m_v3Normal = ToVector3(m_v3Normal);
+		return ret;
+	}
+
 	BBox::BBox() 
 	{
 		m_v3Min = glm::vec3(+FLT_MAX, +FLT_MAX, +FLT_MAX);
@@ -176,8 +186,10 @@ namespace OpenCLPhysics
 	{
 	}
 
-	BVHNodeTriangle::BVHNodeTriangle()
+	BVHNodeTriangle::BVHNodeTriangle(int32_t nId)
 	{
+		m_nId = nId;
+
 		m_pLeft = nullptr;
 		m_pRight = nullptr;
 		
@@ -190,10 +202,32 @@ namespace OpenCLPhysics
 		return (m_pLeft == nullptr && m_pRight == nullptr);
 	}
 
+	structBVHNodeTriangle BVHNodeTriangle::GetStructBVHNodeTriangle() 
+	{
+		structBVHNodeTriangle ret;
+		ret.m_nLeft = -1;
+		ret.m_nRight = -1;
+		if (nullptr != this->m_pLeft) 
+		{
+			ret.m_nLeft = this->m_pLeft->m_nId;
+		}
+		if (nullptr != this->m_pRight)
+		{
+			ret.m_nRight = this->m_pRight->m_nId;
+		}
+		if (nullptr != this->m_pTriangle) 
+		{
+			ret.m_Triangle = this->m_pTriangle->GetStructTriangle();
+		}
+		if (nullptr != this->m_pBBox)
+		{
+			ret.m_BBox = this->m_pBBox->GetStructBBox();
+		}
+		return ret;
+	}
+
 	TriMesh::TriMesh()
 	{
-		m_nRigidBodyId = -1;
-		m_nTop = 0;
 		m_pListBVHNodeTriangles = nullptr;
 	}
 
@@ -402,7 +436,7 @@ namespace OpenCLPhysics
 	{
 	}
 
-	int32_t Physics::CreateTriMesh(std::vector<glm::vec3>* pListVertices)
+	int32_t Physics::CreateTriMesh(std::vector<glm::vec3>* pListVertices, bool bIsCommit)
 	{
 		if (0 == m_listFreeIds.size()) 
 		{
@@ -437,22 +471,25 @@ namespace OpenCLPhysics
 		delete m_listTriMeshs.at(nTriMeshId);
 		m_listTriMeshs.at(nTriMeshId) = new TriMesh();
 
-		m_listTriMeshs.at(nTriMeshId)->m_nRigidBodyId = nRigidBodyId;
+		//m_listTriMeshs.at(nTriMeshId)->m_nRigidBodyId = nRigidBodyId;
 		m_listRigidBodies.at(nRigidBodyId).m_nTriMeshId = nTriMeshId;
 
-		int32_t nRet = TRIMESH_START + nTriMeshId;
+		int32_t nRet = nTriMeshId;
 		SetTriMesh(nRet, pListVertices);
 		SetEnabled(nId, true);
 
-		if (false == Commit())
+		if (true == bIsCommit) 
 		{
-			return -1;
+			if (false == Commit())
+			{
+				return -1;
+			}
 		}
 
 		return nRet;
 	}
 
-	int32_t Physics::CreateFromId(int32_t nFromId) 
+	int32_t Physics::CreateFromId(int32_t nFromId, bool bIsCommit) 
 	{
 		if (0 == m_listFreeIds.size())
 		{
@@ -487,25 +524,22 @@ namespace OpenCLPhysics
 		delete m_listTriMeshs.at(nTriMeshId);
 		m_listTriMeshs.at(nTriMeshId) = new TriMesh();
 
-		m_listTriMeshs.at(nTriMeshId)->m_nRigidBodyId = nRigidBodyId;
+		//m_listTriMeshs.at(nTriMeshId)->m_nRigidBodyId = nRigidBodyId;
 		m_listRigidBodies.at(nRigidBodyId).m_nTriMeshId = nTriMeshId;
 		SetEnabled(nId, true);
 
-		int32_t nNewId = TRIMESH_START + nTriMeshId;
+		int32_t nNewId = nTriMeshId;
 
 		// copy fromId to newId
-		if (nFromId >= TRIMESH_START && nFromId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			m_listTriMeshs.at(nTriMeshId)->m_pListBVHNodeTriangles = m_listTriMeshs.at(nFromId - TRIMESH_START)->m_pListBVHNodeTriangles;
-		}
-		else 
-		{
-			return -1;
-		}
+		m_listTriMeshs.at(nTriMeshId)->m_pListBVHNodeTriangles = m_listTriMeshs.at(nFromId)->m_pListBVHNodeTriangles;
+		m_listRigidBodies.at(nRigidBodyId).m_nTriMeshId = nFromId;
 		
-		if (false == Commit()) 
+		if (true == bIsCommit) 
 		{
-			return -1;
+			if (false == Commit())
+			{
+				return -1;
+			}
 		}
 
 		return nNewId;
@@ -526,23 +560,13 @@ namespace OpenCLPhysics
 
 	void Physics::SetEnabled(int32_t nId, bool bValue) 
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			m_listRigidBodies[nRigidBodyId].m_nIsEnabled = (true == bValue) ? 1 : 0;
-		}
+		m_listRigidBodies[nId].m_nIsEnabled = (true == bValue) ? 1 : 0;
 	}
 
 	bool Physics::IsEnabled(int32_t nId) 
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			bool ret = (m_listRigidBodies[nRigidBodyId].m_nIsEnabled == 0) ? false : true;
-			return ret;
-		}
-
-		return 0;
+		bool ret = (m_listRigidBodies[nId].m_nIsEnabled == 0) ? false : true;
+		return ret;
 	}
 
 	bool SortTrianglesFunc(Triangle *a, Triangle *b) 
@@ -589,7 +613,7 @@ namespace OpenCLPhysics
 	{
 		TriMesh *pTheTriMesh = m_listTriMeshs.at(nId);
 		pTheTriMesh->m_pListBVHNodeTriangles = new std::vector< BVHNodeTriangle* >();
-		structRigidBody theRigidBody = m_listRigidBodies.at( pTheTriMesh->m_nRigidBodyId );
+		structRigidBody theRigidBody = m_listRigidBodies.at( nId/*pTheTriMesh->m_nRigidBodyId*/);
 
 		// calc bbox (local min/max)
 		BBox* pBBox = new BBox();
@@ -601,7 +625,7 @@ namespace OpenCLPhysics
 		theRigidBody.m_BBox = pBBox->GetStructBBox();
 		delete pBBox;
 
-		m_listRigidBodies[pTheTriMesh->m_nRigidBodyId] = theRigidBody;
+		m_listRigidBodies[nId/*pTheTriMesh->m_nRigidBodyId*/] = theRigidBody;
 
 		// vertices to triangles
 		std::vector< Triangle* > listTriangles;
@@ -626,8 +650,10 @@ namespace OpenCLPhysics
 		// triangles to bboxs
 		while (listTriangles.size() > 0)
 		{
+			int32_t nId = (int32_t)pTheTriMesh->m_pListBVHNodeTriangles->size() + (int32_t)pOUT->size();
+
 			// node
-			BVHNodeTriangle* pNode = new BVHNodeTriangle();
+			BVHNodeTriangle* pNode = new BVHNodeTriangle(nId);
 			pNode->m_pTriangle = listTriangles.at(0);
 			pNode->m_pBBox = BBox::Create(pNode->m_pTriangle);
 			listTriangles.erase(listTriangles.begin() + 0);
@@ -649,8 +675,10 @@ namespace OpenCLPhysics
 			{
 				if (pIN->size() >= 2) // > 2
 				{
+					int32_t nId = (int32_t)pTheTriMesh->m_pListBVHNodeTriangles->size() + (int32_t)pOUT->size();
+
 					// node
-					BVHNodeTriangle* pNode = new BVHNodeTriangle();
+					BVHNodeTriangle* pNode = new BVHNodeTriangle(nId);
 					pNode->m_pLeft = pIN->at(0);
 					pIN->erase(pIN->begin() + 0);
 					int i = SearchNeightboorBBox(pNode->m_pLeft->m_pBBox, pIN, range);
@@ -663,8 +691,10 @@ namespace OpenCLPhysics
 				}
 				else // 1
 				{
+					int32_t nId = (int32_t)pTheTriMesh->m_pListBVHNodeTriangles->size() + (int32_t)pOUT->size();
+
 					// node
-					BVHNodeTriangle* pNode = new BVHNodeTriangle();
+					BVHNodeTriangle* pNode = new BVHNodeTriangle(nId);
 					pNode->m_pLeft = pIN->at(0);
 					pNode->m_pBBox = BBox::Create(pNode->m_pLeft->m_pBBox);
 					pIN->erase(pIN->begin() + 0);
@@ -683,13 +713,36 @@ namespace OpenCLPhysics
 		while (pIN->size() > 1);
 
 		// root
-		BVHNodeTriangle* pRoot = new BVHNodeTriangle();
+		BVHNodeTriangle* pRoot = new BVHNodeTriangle(0);
 		pRoot->m_pLeft = pIN->at(0);
 		pRoot->m_pBBox = BBox::Create(pRoot->m_pLeft->m_pBBox);
 		pIN->erase(pIN->begin() + 0);
 
 		// add
 		pTheTriMesh->m_pListBVHNodeTriangles->insert(pTheTriMesh->m_pListBVHNodeTriangles->begin(), pRoot);
+
+		// create structBVHTriangle array
+		int32_t nOffset = (int32_t)m_listBVHNodeTriangles.size();
+		for (int32_t i = 0; i < pTheTriMesh->m_pListBVHNodeTriangles->size(); i++)
+		{
+			// get
+			BVHNodeTriangle *pBVHNodeTriangle = pTheTriMesh->m_pListBVHNodeTriangles->at(i);
+			structBVHNodeTriangle node = pBVHNodeTriangle->GetStructBVHNodeTriangle();
+
+			// update
+			if (-1 != node.m_nLeft) 
+			{
+				node.m_nLeft += nOffset;
+			}
+			if (-1 != node.m_nRight)
+			{
+				node.m_nRight += nOffset;
+			}
+
+			// set
+			m_listBVHNodeTriangles.push_back(node);
+		}
+		m_listBVHNodeTrianglesOffsets.push_back(nOffset);
 	}
 
 	void Physics::SetGravity(glm::vec3 vec3Gravity)
@@ -704,285 +757,148 @@ namespace OpenCLPhysics
 
 	glm::mat4 Physics::GetTransform(int32_t nId)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
+		glm::vec3 v3Rotate = ToVector3(m_listRigidBodies[nId].m_v3Rotate);
+		glm::vec3 v3Position = ToVector3(m_listRigidBodies[nId].m_v3Position);
 
-			glm::vec3 v3Rotate = ToVector3(m_listRigidBodies[nRigidBodyId].m_v3Rotate);
-			glm::vec3 v3Position = ToVector3(m_listRigidBodies[nRigidBodyId].m_v3Position);
-
-			return (glm::translate(glm::mat4(1.0f), v3Position) * glm::eulerAngleXYZ(v3Rotate.x, v3Rotate.y, v3Rotate.z));
-		}
-
-		return glm::mat4(1.0f);
+		return (glm::translate(glm::mat4(1.0f), v3Position) * glm::eulerAngleXYZ(v3Rotate.x, v3Rotate.y, v3Rotate.z));
 	}
 
 	void Physics::SetPosition(int32_t nId, glm::vec3 v3Position)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			m_listRigidBodies[nRigidBodyId].m_v3Position = ToVector3(v3Position);
-		}
+		m_listRigidBodies[nId].m_v3Position = ToVector3(v3Position);
 	}
 
 	glm::vec3 Physics::GetPosition(int32_t nId)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			glm::vec3 ret = ToVector3(m_listRigidBodies[nRigidBodyId].m_v3Position); //glm::vec3(m_listRigidBodies[nRigidBodyId].m_v3PositionX, m_listRigidBodies[nRigidBodyId].m_v3PositionY, m_listRigidBodies[nRigidBodyId].m_v3PositionZ);
-			return ret;
-		}
-
-		return glm::vec3(0, 0, 0);
+		glm::vec3 ret = ToVector3(m_listRigidBodies[nId].m_v3Position);
+		return ret;
 	}
 
 	void Physics::SetEulerRotate(int32_t nId, glm::vec3 v3EulerRotate)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			m_listRigidBodies[nRigidBodyId].m_v3Rotate = ToVector3(v3EulerRotate);
-		}
+		m_listRigidBodies[nId].m_v3Rotate = ToVector3(v3EulerRotate);
 	}
 
 	glm::vec3 Physics::GetEulerRotate(int32_t nId)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			glm::vec3 ret = ToVector3(m_listRigidBodies[nRigidBodyId].m_v3Rotate); //glm::vec3(m_listRigidBodies[nRigidBodyId].m_v3RotateX, m_listRigidBodies[nRigidBodyId].m_v3RotateY, m_listRigidBodies[nRigidBodyId].m_v3RotateZ);
-			return ret;
-		}
-
-		return glm::vec3(0, 0, 0);
+		glm::vec3 ret = ToVector3(m_listRigidBodies[nId].m_v3Rotate);
+		return ret;
 	}
 
 	void Physics::SetLinearVelocity(int32_t nId, glm::vec3 v3LinearVelocity)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			m_listRigidBodies[nRigidBodyId].m_v3LinearVelocity = ToVector3(v3LinearVelocity);
-		}
+		m_listRigidBodies[nId].m_v3LinearVelocity = ToVector3(v3LinearVelocity);
 	}
 
 	glm::vec3 Physics::GetLinearVelocity(int32_t nId)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			glm::vec3 ret = ToVector3(m_listRigidBodies[nRigidBodyId].m_v3LinearVelocity); //glm::vec3(m_listRigidBodies[nRigidBodyId].m_v3LinearVelocityX, m_listRigidBodies[nRigidBodyId].m_v3LinearVelocityY, m_listRigidBodies[nRigidBodyId].m_v3LinearVelocityZ);
-			return ret;
-		}
-
-		return glm::vec3(0, 0, 0);
+		glm::vec3 ret = ToVector3(m_listRigidBodies[nId].m_v3LinearVelocity);
+		return ret;
 	}
 
 	void Physics::SetAngularVelocity(int32_t nId, glm::vec3 v3AngularVelocity)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			m_listRigidBodies[nRigidBodyId].m_v3AngularVelocity = ToVector3(v3AngularVelocity);
-		}
+		m_listRigidBodies[nId].m_v3AngularVelocity = ToVector3(v3AngularVelocity);
 	}
 
 	glm::vec3 Physics::GetAngularVelocity(int32_t nId)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			glm::vec3 ret = ToVector3(m_listRigidBodies[nRigidBodyId].m_v3AngularVelocity); //glm::vec3(m_listRigidBodies[nRigidBodyId].m_v3AngularVelocityX, m_listRigidBodies[nRigidBodyId].m_v3AngularVelocityY, m_listRigidBodies[nRigidBodyId].m_v3AngularVelocityZ);
-			return ret;
-		}
-
-		return glm::vec3(0, 0, 0);
+		glm::vec3 ret = ToVector3(m_listRigidBodies[nId].m_v3AngularVelocity);
+		return ret;
 	}
 
 	void Physics::SetLinearAcceleration(int32_t nId, glm::vec3 v3LinearAcceleration)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			m_listRigidBodies[nRigidBodyId].m_v3LinearAcceleration = ToVector3(v3LinearAcceleration);
-		}
+		m_listRigidBodies[nId].m_v3LinearAcceleration = ToVector3(v3LinearAcceleration);
 	}
 
 	glm::vec3 Physics::GetLinearAcceleration(int32_t nId)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			glm::vec3 ret = ToVector3(m_listRigidBodies[nRigidBodyId].m_v3LinearAcceleration); //glm::vec3(m_listRigidBodies[nRigidBodyId].m_v3LinearAccelerationX, m_listRigidBodies[nRigidBodyId].m_v3LinearAccelerationY, m_listRigidBodies[nRigidBodyId].m_v3LinearAccelerationZ);
-			return ret;
-		}
-
-		return glm::vec3(0, 0, 0);
+		glm::vec3 ret = ToVector3(m_listRigidBodies[nId].m_v3LinearAcceleration);
+		return ret;
 	}
 
 	void Physics::SetAngularAcceleration(int32_t nId, glm::vec3 v3AngularAcceleration)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			m_listRigidBodies[nRigidBodyId].m_v3AngularAcceleration = ToVector3(v3AngularAcceleration);
-		}
+		m_listRigidBodies[nId].m_v3AngularAcceleration = ToVector3(v3AngularAcceleration);
 	}
 
 	glm::vec3 Physics::GetAngularAcceleration(int32_t nId)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			glm::vec3 ret = ToVector3(m_listRigidBodies[nRigidBodyId].m_v3AngularAcceleration); //glm::vec3(m_listRigidBodies[nRigidBodyId].m_v3AngularAccelerationX, m_listRigidBodies[nRigidBodyId].m_v3AngularAccelerationY, m_listRigidBodies[nRigidBodyId].m_v3AngularAccelerationZ);
-			return ret;
-		}
-
-		return glm::vec3(0, 0, 0);
+		glm::vec3 ret = ToVector3(m_listRigidBodies[nId].m_v3AngularAcceleration);
+		return ret;
 	}
 
 	void Physics::SetForce(int32_t nId, glm::vec3 v3Force)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			m_listRigidBodies[nRigidBodyId].m_v3Force = ToVector3(v3Force);
-		}
+		m_listRigidBodies[nId].m_v3Force = ToVector3(v3Force);
 	}
 
 	glm::vec3 Physics::GetForce(int32_t nId)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			glm::vec3 ret = ToVector3(m_listRigidBodies[nRigidBodyId].m_v3Force); //glm::vec3(m_listRigidBodies[nRigidBodyId].m_v3ForceX, m_listRigidBodies[nRigidBodyId].m_v3ForceY, m_listRigidBodies[nRigidBodyId].m_v3ForceZ);
-			return ret;
-		}
-
-		return glm::vec3(0, 0, 0);
+		glm::vec3 ret = ToVector3(m_listRigidBodies[nId].m_v3Force);
+		return ret;
 	}
 
 	void Physics::SetTorque(int32_t nId, glm::vec3 v3Torque)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			m_listRigidBodies[nRigidBodyId].m_v3Torque = ToVector3(v3Torque);
-		}
+		m_listRigidBodies[nId].m_v3Torque = ToVector3(v3Torque);
 	}
 
 	glm::vec3 Physics::GetTorque(int32_t nId)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			glm::vec3 ret = ToVector3(m_listRigidBodies[nRigidBodyId].m_v3Torque); //glm::vec3(m_listRigidBodies[nRigidBodyId].m_v3TorqueX, m_listRigidBodies[nRigidBodyId].m_v3TorqueY, m_listRigidBodies[nRigidBodyId].m_v3TorqueZ);
-			return ret;
-		}
-
-		return glm::vec3(0, 0, 0);
+		glm::vec3 ret = ToVector3(m_listRigidBodies[nId].m_v3Torque);
+		return ret;
 	}
 
 	void Physics::SetMass(int32_t nId, float fMass)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			m_listRigidBodies[nRigidBodyId].m_fMass = fMass;
-		}
+		m_listRigidBodies[nId].m_fMass = fMass;
 	}
 
 	float Physics::GetMass(int32_t nId)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			return m_listRigidBodies[nRigidBodyId].m_fMass;
-		}
-
-		return 0.0f;
+		return m_listRigidBodies[nId].m_fMass;		
 	}
 
 	void Physics::SetRestitution(int32_t nId, float fRestitution)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			m_listRigidBodies[nRigidBodyId].m_fRestitution = fRestitution;
-		}
+		m_listRigidBodies[nId].m_fRestitution = fRestitution;
 	}
 
 	float Physics::GetRestitution(int32_t nId)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			return m_listRigidBodies[nRigidBodyId].m_fRestitution;
-		}
-
-		return 0.0f;
+		return m_listRigidBodies[nId].m_fRestitution;
 	}
 
 	void Physics::SetFriction(int32_t nId, float fFriction)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			m_listRigidBodies[nRigidBodyId].m_fFriction = fFriction;
-		}
+		m_listRigidBodies[nId].m_fFriction = fFriction;
 	}
 
 	float Physics::GetFriction(int32_t nId)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			return m_listRigidBodies[nRigidBodyId].m_fFriction;
-		}
-
-		return 0.0f;
+		return m_listRigidBodies[nId].m_fFriction;
 	}
 
 	void Physics::SetLinearDamping(int32_t nId, float fLinearDamping)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			m_listRigidBodies[nRigidBodyId].m_fLinearDamping = fLinearDamping;
-		}
+		m_listRigidBodies[nId].m_fLinearDamping = fLinearDamping;
 	}
 
 	float Physics::GetLinearDamping(int32_t nId)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			return m_listRigidBodies[nRigidBodyId].m_fLinearDamping;
-		}
-
-		return 0.0f;
+		return m_listRigidBodies[nId].m_fLinearDamping;
 	}
 
 	void Physics::SetAngularDamping(int32_t nId, float fAngularDamping)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			m_listRigidBodies[nRigidBodyId].m_fAngularDamping = fAngularDamping;
-		}
+		m_listRigidBodies[nId].m_fAngularDamping = fAngularDamping;
 	}
 
 	float Physics::GetAngularDamping(int32_t nId)
 	{
-		if (nId >= TRIMESH_START && nId < (TRIMESH_START + TRIMESH_COUNT))
-		{
-			int32_t nRigidBodyId = m_listTriMeshs.at(nId - TRIMESH_START)->m_nRigidBodyId;
-			return m_listRigidBodies[nRigidBodyId].m_fAngularDamping;
-		}
-
-		return 0.0f;
+		return m_listRigidBodies[nId].m_fAngularDamping;
 	}
 
 	bool Physics::Commit()
@@ -1007,8 +923,18 @@ namespace OpenCLPhysics
 		}
 		ReleaseBVHObjects();
 
+		if (0 != m_clmem_inBVHNodeTriangles)
+		{
+			clReleaseMemObject(m_clmem_inBVHNodeTriangles);
+			m_clmem_inBVHNodeTriangles = 0;
+		}
+		if (0 != m_clmem_inBVHNodeTrianglesOffsets)
+		{
+			clReleaseMemObject(m_clmem_inBVHNodeTrianglesOffsets);
+			m_clmem_inBVHNodeTrianglesOffsets = 0;
+		}
+
 		// create rigidBodies buffer
-		// -> ealpsed
 		m_clmem_inoutRigidBodies = clCreateBuffer(m_context, CL_MEM_READ_WRITE, sizeof(structRigidBody) * m_listRigidBodies.size(), NULL, NULL);
 		if (!m_clmem_inoutRigidBodies) { return false; }
 		// -> copy
@@ -1021,6 +947,20 @@ namespace OpenCLPhysics
 		if (!m_clmem_inoutBVHObjects) { return false; }
 		// -> copy
 		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutBVHObjects, CL_TRUE, 0, sizeof(structBVHObject) * m_listBVHObjects.size(), m_listBVHObjects.data(), 0, NULL, NULL);
+		if (err != CL_SUCCESS) { return false; }
+
+		// create BVHNodeTriangles buffer
+		m_clmem_inBVHNodeTriangles = clCreateBuffer(m_context, CL_MEM_READ_ONLY, sizeof(structBVHNodeTriangle) * m_listBVHNodeTriangles.size(), NULL, NULL);
+		if (!m_clmem_inBVHNodeTriangles) { return false; }
+		// -> copy
+		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inBVHNodeTriangles, CL_TRUE, 0, sizeof(structBVHNodeTriangle) * m_listBVHNodeTriangles.size(), m_listBVHNodeTriangles.data(), 0, NULL, NULL);
+		if (err != CL_SUCCESS) { return false; }
+
+		// create BVHNodeTrianglesOffsets buffer
+		m_clmem_inBVHNodeTrianglesOffsets = clCreateBuffer(m_context, CL_MEM_READ_ONLY, sizeof(int32_t) * m_listBVHNodeTrianglesOffsets.size(), NULL, NULL);
+		if (!m_clmem_inBVHNodeTrianglesOffsets) { return false; }
+		// -> copy
+		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inBVHNodeTrianglesOffsets, CL_TRUE, 0, sizeof(int32_t) * m_listBVHNodeTrianglesOffsets.size(), m_listBVHNodeTrianglesOffsets.data(), 0, NULL, NULL);
 		if (err != CL_SUCCESS) { return false; }
 
 		return true;
