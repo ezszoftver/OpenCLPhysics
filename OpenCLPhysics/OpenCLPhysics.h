@@ -19,14 +19,8 @@ namespace OpenCLPhysics
 
 	typedef struct _structBBox
 	{
-		// min
-		float v3MinX = 0;
-		float v3MinY = 0;
-		float v3MinZ = 0;
-		// max
-		float v3MaxX = 0;
-		float v3MaxY = 0;
-		float v3MaxZ = 0;
+		structVector3 v3Min;
+		structVector3 v3Max;
 	}
 	structBBox;
 

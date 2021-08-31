@@ -135,13 +135,13 @@ namespace OpenCLPhysics
 
 	void BBox::Add(structBBox bbox) 
 	{
-		m_v3Min.x = std::fmin(m_v3Min.x, bbox.v3MinX);
-		m_v3Min.y = std::fmin(m_v3Min.y, bbox.v3MinY);
-		m_v3Min.z = std::fmin(m_v3Min.z, bbox.v3MinZ);
+		m_v3Min.x = std::fmin(m_v3Min.x, bbox.v3Min.x);
+		m_v3Min.y = std::fmin(m_v3Min.y, bbox.v3Min.y);
+		m_v3Min.z = std::fmin(m_v3Min.z, bbox.v3Min.z);
 
-		m_v3Max.x = std::fmax(m_v3Max.x, bbox.v3MaxX);
-		m_v3Max.y = std::fmax(m_v3Max.y, bbox.v3MaxY);
-		m_v3Max.z = std::fmax(m_v3Max.z, bbox.v3MaxZ);
+		m_v3Max.x = std::fmax(m_v3Max.x, bbox.v3Max.x);
+		m_v3Max.y = std::fmax(m_v3Max.y, bbox.v3Max.y);
+		m_v3Max.z = std::fmax(m_v3Max.z, bbox.v3Max.z);
 	}
 
 	void BBox::Add(glm::vec3 v) 
@@ -159,13 +159,13 @@ namespace OpenCLPhysics
 	{
 		structBBox ret;
 
-		ret.v3MinX = m_v3Min.x;
-		ret.v3MinY = m_v3Min.y;
-		ret.v3MinZ = m_v3Min.z;
+		ret.v3Min.x = m_v3Min.x;
+		ret.v3Min.y = m_v3Min.y;
+		ret.v3Min.z = m_v3Min.z;
 
-		ret.v3MaxX = m_v3Max.x;
-		ret.v3MaxY = m_v3Max.y;
-		ret.v3MaxZ = m_v3Max.z;
+		ret.v3Max.x = m_v3Max.x;
+		ret.v3Max.y = m_v3Max.y;
+		ret.v3Max.z = m_v3Max.z;
 
 		return ret;
 	}
