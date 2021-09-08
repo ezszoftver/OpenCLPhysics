@@ -519,6 +519,7 @@ namespace OpenCLPhysics
 		// update
 		structRigidBody newRigidBody;
 		newRigidBody.m_nRigidBodyId = nRigidBodyId;
+		newRigidBody.m_BBox = m_listRigidBodies.at(nFromId).m_BBox;
 		m_listRigidBodies.at(nRigidBodyId) = newRigidBody;
 
 		delete m_listTriMeshs.at(nTriMeshId);
@@ -1025,17 +1026,21 @@ namespace OpenCLPhysics
 		// 3. UPDATE BVHObjects with GPU
 		if (false == UpdateBVHObjects()) { return false; }
 
-		// CollisionDetection
-		;
-		// CollisionResponse
-		;
-
-		// read to RAM for CPU
-		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), &(m_listRigidBodies[0]), 0, NULL, NULL);
+		// 4. SORT to Original
+		std::sort(m_listRigidBodies.begin(), m_listRigidBodies.end(), SortRigidBodiesFunc_Inc);
+		// write to GPU
+		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), m_listRigidBodies.data(), 0, NULL, NULL);
 		if (err != CL_SUCCESS) { return false; }
 
-		// SORT to Original
-		std::sort(m_listRigidBodies.begin(), m_listRigidBodies.end(), SortRigidBodiesFunc_Inc);
+		// 5. CollisionDetection
+		CollisionDetection();
+
+		// 6. CollisionResponse
+		CollisionResponse();
+
+		// 7. read to RAM for CPU
+		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), &(m_listRigidBodies[0]), 0, NULL, NULL);
+		if (err != CL_SUCCESS) { return false; }
 
 		return true;
 	}
@@ -1068,6 +1073,7 @@ namespace OpenCLPhysics
 
 			structRigidBody theRigidBody = m_listRigidBodies.at(0);
 			element.m_BBox = theRigidBody.m_BBox;
+			element.m_nRigidBodyId = 0;
 
 			element.m_nLeft = -1;
 			element.m_nRight = -1;
@@ -1092,6 +1098,7 @@ namespace OpenCLPhysics
 
 					structRigidBody theRigidBody = m_listRigidBodies.at(i);
 					element.m_BBox = theRigidBody.m_BBox;
+					element.m_nRigidBodyId = i;
 
 					element.m_nLeft = -1;
 					element.m_nRight = -1;
@@ -1127,6 +1134,7 @@ namespace OpenCLPhysics
 					}
 					j++;
 					element.m_BBox = bbox.GetStructBBox();
+					element.m_nRigidBodyId = -1;
 
 					pCurrentLevel->push_back(element);
 				}
@@ -1165,6 +1173,7 @@ namespace OpenCLPhysics
 			element.m_nRight = -1;
 		}
 		element.m_BBox = bbox.GetStructBBox();
+		element.m_nRigidBodyId = -1;
 
 		pLastLevel->push_back(element);
 
@@ -1176,6 +1185,7 @@ namespace OpenCLPhysics
 		
 		// ROOT element
 		structBVHObject root;
+		root.m_nRigidBodyId = -1;
 		m_listBVHObjects.push_back(root);
 		uint32_t nElapsedOffset;
 		uint32_t nOffset = 1;
@@ -1287,5 +1297,98 @@ namespace OpenCLPhysics
 		}
 
 		return true;
+	}
+
+	// DEBUG - EZ MAJD NEM KELL
+	bool IsCollide(structBBox bbox1, structBBox bbox2)
+	{
+		if (bbox1.v3Max.x < bbox2.v3Min.x || bbox1.v3Min.x > bbox2.v3Max.x) return false;
+		if (bbox1.v3Max.y < bbox2.v3Min.y || bbox1.v3Min.y > bbox2.v3Max.y) return false;
+		if (bbox1.v3Max.z < bbox2.v3Min.z || bbox1.v3Min.z > bbox2.v3Max.z) return false;
+
+		return true;
+	}
+
+	void Physics::CollisionDetection() 
+	{
+		// DEBUG: EZEK MAJD NEM KELLENEK, CSAK MOST A CPU-NAK
+		cl_int err = 0;
+		std::vector<structBVHObject> inoutBVHObjects;
+		inoutBVHObjects.resize(m_listBVHObjects.size());
+		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutBVHObjects, CL_TRUE, 0, sizeof(structBVHObject) * m_listBVHObjects.size(), &(inoutBVHObjects[0]), 0, NULL, NULL);
+		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), &(m_listRigidBodies[0]), 0, NULL, NULL);
+
+		if (err != CL_SUCCESS)
+		{
+			return;
+		}
+
+		for (int32_t id1 = 0; id1 < m_listRigidBodies.size(); id1++)
+		{
+			// EZ MEGY MAJD AZ OPENCL FUGGVENYBE
+			structRigidBody structRigidBody1 = m_listRigidBodies.at(id1);
+
+			int nTop = -1;
+			int arrStack[64];
+
+			nTop++;
+			arrStack[nTop] = 0;
+
+			while (nTop > -1) 
+			{
+				int nOtherId = arrStack[nTop];
+				nTop--;
+
+				structBVHObject structBVHObject = inoutBVHObjects[nOtherId];
+
+				if (structBVHObject.m_nLeft == -1 && structBVHObject.m_nRight == -1) 
+				{
+					// saját magával nem kell ütközésvizsgálatot csinálni
+					int id2 = structBVHObject.m_nRigidBodyId;
+
+					if (id1 < id2)
+					{
+						structRigidBody structRigidBody2 = m_listRigidBodies.at(id2);
+
+						structBBox bboxRigidBody2;
+						bboxRigidBody2.v3Min.x = structRigidBody2.m_BBox.v3Min.x + structRigidBody2.m_v3Position.x;
+						bboxRigidBody2.v3Min.y = structRigidBody2.m_BBox.v3Min.y + structRigidBody2.m_v3Position.y;
+						bboxRigidBody2.v3Min.z = structRigidBody2.m_BBox.v3Min.z + structRigidBody2.m_v3Position.z;
+
+						bboxRigidBody2.v3Max.x = structRigidBody2.m_BBox.v3Max.x + structRigidBody2.m_v3Position.x;
+						bboxRigidBody2.v3Max.y = structRigidBody2.m_BBox.v3Max.y + structRigidBody2.m_v3Position.y;
+						bboxRigidBody2.v3Max.z = structRigidBody2.m_BBox.v3Max.z + structRigidBody2.m_v3Position.z;
+
+						if (true == IsCollide(structRigidBody1.m_BBox, bboxRigidBody2))
+						{
+							//GetHits(structRigidBody1, structRigidBody2, hits, );
+						}
+					}
+				}
+				else 
+				{
+					if (true == IsCollide(structRigidBody1.m_BBox, structBVHObject.m_BBox))
+					{
+						if (structBVHObject.m_nLeft != -1)
+						{
+							nTop++;
+							arrStack[nTop] = structBVHObject.m_nLeft;
+						}
+
+						if (structBVHObject.m_nRight != -1)
+						{
+							nTop++;
+							arrStack[nTop] = structBVHObject.m_nRight;
+						}
+					}
+				}
+				
+			}
+			
+		}
+	}
+
+	void Physics::CollisionResponse()
+	{
 	}
 }

@@ -66,6 +66,7 @@ BBox;
 typedef struct 
 {
     BBox bbox;
+	int nRigidBodyId;
     int nLeft;
     int nRight;
 }

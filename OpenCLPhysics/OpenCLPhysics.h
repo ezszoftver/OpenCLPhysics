@@ -27,6 +27,8 @@ namespace OpenCLPhysics
 	typedef struct _structBVHObject 
 	{
 		structBBox m_BBox;
+		int32_t m_nRigidBodyId = -1;
+
 		int32_t m_nLeft = -1;
 		int32_t m_nRight = -1;
 	}
@@ -217,6 +219,8 @@ namespace OpenCLPhysics
 		bool UpdateBVHObjects();
 		void ReleaseBVHObjects();
 		bool Integrate(float dt);
+		void CollisionDetection();
+		void CollisionResponse();
 
 		cl_context m_context;
 		cl_command_queue m_command_queue;
