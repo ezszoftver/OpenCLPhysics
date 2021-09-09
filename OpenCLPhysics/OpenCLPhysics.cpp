@@ -170,22 +170,6 @@ namespace OpenCLPhysics
 		return ret;
 	}
 
-	Hit::Hit() 
-	{
-		m_nBodyAId = -1;
-		m_nBodyBId = -1;
-	}
-
-	Hit::Hit(int32_t nBodyAId, int32_t nBodyBId, glm::vec3 v3WorldPosition, glm::vec3 v3Normal)
-	{
-		m_nBodyAId = nBodyAId;
-		m_nBodyBId = nBodyBId;
-	}
-
-	Hit::~Hit() 
-	{
-	}
-
 	BVHNodeTriangle::BVHNodeTriangle(int32_t nId)
 	{
 		m_nId = nId;
@@ -724,6 +708,7 @@ namespace OpenCLPhysics
 
 		// create structBVHTriangle array
 		int32_t nOffset = (int32_t)m_listBVHNodeTriangles.size();
+		int32_t nCount = (int32_t)pTheTriMesh->m_pListBVHNodeTriangles->size();
 		for (int32_t i = 0; i < pTheTriMesh->m_pListBVHNodeTriangles->size(); i++)
 		{
 			// get
@@ -743,7 +728,10 @@ namespace OpenCLPhysics
 			// set
 			m_listBVHNodeTriangles.push_back(node);
 		}
-		m_listBVHNodeTrianglesOffsets.push_back(nOffset);
+		structBVHNodeTriangleOffset offset;
+		offset.m_nOffset = nOffset;
+		offset.m_nCount = nCount;
+		m_listBVHNodeTrianglesOffsets.push_back(offset);
 	}
 
 	void Physics::SetGravity(glm::vec3 vec3Gravity)
@@ -902,6 +890,17 @@ namespace OpenCLPhysics
 		return m_listRigidBodies[nId].m_fAngularDamping;
 	}
 
+	glm::vec3 Physics::GetBBoxMin(int32_t nId) 
+	{
+		glm::vec3 ret = ToVector3(m_listRigidBodies[nId].m_BBox.v3Min);
+		return ret;
+	}
+	glm::vec3 Physics::GetBBoxMax(int32_t nId) 
+	{
+		glm::vec3 ret = ToVector3(m_listRigidBodies[nId].m_BBox.v3Max);
+		return ret;
+	}
+
 	bool Physics::Commit()
 	{
 		if (m_listRigidBodies.size() < 1)
@@ -958,10 +957,10 @@ namespace OpenCLPhysics
 		if (err != CL_SUCCESS) { return false; }
 
 		// create BVHNodeTrianglesOffsets buffer
-		m_clmem_inBVHNodeTrianglesOffsets = clCreateBuffer(m_context, CL_MEM_READ_ONLY, sizeof(int32_t) * m_listBVHNodeTrianglesOffsets.size(), NULL, NULL);
+		m_clmem_inBVHNodeTrianglesOffsets = clCreateBuffer(m_context, CL_MEM_READ_ONLY, sizeof(structBVHNodeTriangleOffset) * m_listBVHNodeTrianglesOffsets.size(), NULL, NULL);
 		if (!m_clmem_inBVHNodeTrianglesOffsets) { return false; }
 		// -> copy
-		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inBVHNodeTrianglesOffsets, CL_TRUE, 0, sizeof(int32_t) * m_listBVHNodeTrianglesOffsets.size(), m_listBVHNodeTrianglesOffsets.data(), 0, NULL, NULL);
+		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inBVHNodeTrianglesOffsets, CL_TRUE, 0, sizeof(structBVHNodeTriangleOffset) * m_listBVHNodeTrianglesOffsets.size(), m_listBVHNodeTrianglesOffsets.data(), 0, NULL, NULL);
 		if (err != CL_SUCCESS) { return false; }
 
 		return true;
@@ -1008,7 +1007,7 @@ namespace OpenCLPhysics
 
 		cl_int err = 0;
 
-		// write to GPU the current dta
+		// write to GPU the current data
 		err |= clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), &(m_listRigidBodies[0]), 0, NULL, NULL);
 		if (err != CL_SUCCESS) { return false; }
 		// 1. INTEGRATE with GPU
@@ -1025,6 +1024,10 @@ namespace OpenCLPhysics
 
 		// 3. UPDATE BVHObjects with GPU
 		if (false == UpdateBVHObjects()) { return false; }
+
+		// read BBOXs
+		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), &(m_listRigidBodies[0]), 0, NULL, NULL);
+		if (err != CL_SUCCESS) { return false; }
 
 		// 4. SORT to Original
 		std::sort(m_listRigidBodies.begin(), m_listRigidBodies.end(), SortRigidBodiesFunc_Inc);
@@ -1253,6 +1256,8 @@ namespace OpenCLPhysics
 			err |= clSetKernelArg(m_kernelUpdateBVHObjects, 1, sizeof(cl_mem), &m_clmem_inoutRigidBodies);
 			err |= clSetKernelArg(m_kernelUpdateBVHObjects, 2, sizeof(int32_t), &nOffset);
 			err |= clSetKernelArg(m_kernelUpdateBVHObjects, 3, sizeof(int32_t), &nCount);
+			err |= clSetKernelArg(m_kernelUpdateBVHObjects, 4, sizeof(cl_mem), &m_clmem_inBVHNodeTriangles);
+			err |= clSetKernelArg(m_kernelUpdateBVHObjects, 5, sizeof(cl_mem), &m_clmem_inBVHNodeTrianglesOffsets);
 			err |= clEnqueueNDRangeKernel(m_command_queue, m_kernelUpdateBVHObjects, 1, NULL, &nGlobal, &nLocal, 0, NULL, NULL);
 			clFinish(m_command_queue);
 

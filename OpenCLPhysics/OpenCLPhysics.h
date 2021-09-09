@@ -106,17 +106,15 @@ namespace OpenCLPhysics
 		glm::vec3 m_v3Max;
 	};
 
-	class Hit 
+	typedef struct _structHit 
 	{
-	public:
+		int32_t m_nRigidBodyAId = -1;
+		int32_t m_nRigidBodyBId = -1;
 
-		Hit();
-		Hit(int32_t nBodyAId, int32_t nBodyBId, glm::vec3 v3WorldPosition, glm::vec3 v3Normal);
-		~Hit();
-
-		int32_t m_nBodyAId;
-		int32_t m_nBodyBId;
-	};
+		structVector3 m_v3HitPointInWorld;
+		structVector3 m_v3Normal;
+	}
+	structHit;
 
 	typedef struct _structBVHNodeTriangle 
 	{
@@ -127,6 +125,13 @@ namespace OpenCLPhysics
 		structBBox m_BBox;
 	}
 	structBVHNodeTriangle;
+
+	typedef struct _structBVHNodeTriangleOffset
+	{
+		int32_t m_nOffset;
+		int32_t m_nCount;
+	}
+	structBVHNodeTriangleOffset;
 
 	class BVHNodeTriangle
 	{
@@ -207,6 +212,9 @@ namespace OpenCLPhysics
 		void SetAngularDamping(int32_t nId, float fAngularDamping);
 		float GetAngularDamping(int32_t nId);
 		
+		glm::vec3 GetBBoxMin(int32_t nId);
+		glm::vec3 GetBBoxMax(int32_t nId);
+
 		bool Update(float dt, uint16_t nNumSteps = 1);
 
 		uint32_t MaxRigidBodies();
@@ -244,7 +252,7 @@ namespace OpenCLPhysics
 
 		// triangles
 		std::vector< structBVHNodeTriangle > m_listBVHNodeTriangles;
-		std::vector< int32_t > m_listBVHNodeTrianglesOffsets;
+		std::vector< structBVHNodeTriangleOffset > m_listBVHNodeTrianglesOffsets;
 	};
 
 }

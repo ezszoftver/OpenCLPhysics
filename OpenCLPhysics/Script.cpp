@@ -11,6 +11,30 @@ typedef struct
 }
 Vector3;
 
+typedef struct
+{
+	float m11;
+	float m12;
+	float m13;
+	float m14;
+
+	float m21;
+	float m22;
+	float m23;
+	float m24;
+
+	float m31;
+	float m32;
+	float m33;
+	float m34;
+
+	float m41;
+	float m42;
+	float m43;
+	float m44;
+}
+Matrix4;
+
 Vector3 XYZToVector3(float x, float y, float z) 
 {
 	Vector3 ret;
@@ -38,6 +62,16 @@ float3 XYZToFloat3(float x, float y, float z)
 	return ret;
 }
 
+float4 XYZWToFloat4(float x, float y, float z, float w)
+{
+	float4 ret;
+	ret.x = x;
+	ret.y = y;
+	ret.z = z;
+	ret.w = w;
+	return ret;
+}
+
 float3 Vector3ToFloat3(Vector3 v)
 {
 	float3 ret;
@@ -56,12 +90,226 @@ Vector3 Vector3_Add(Vector3 a, Vector3 b)
 	return ret;
 }
 
+Matrix4 Mult_Mat4Mat4(Matrix4 T2, Matrix4 T1)
+{
+	Matrix4 ret;
+
+	float4 T1row1 = XYZWToFloat4(T1.m11, T1.m12, T1.m13, T1.m14);
+	float4 T1row2 = XYZWToFloat4(T1.m21, T1.m22, T1.m23, T1.m24);
+	float4 T1row3 = XYZWToFloat4(T1.m31, T1.m32, T1.m33, T1.m34);
+	float4 T1row4 = XYZWToFloat4(T1.m41, T1.m42, T1.m43, T1.m44);
+
+	float4 T2column1 = XYZWToFloat4(T2.m11, T2.m21, T2.m31, T2.m41);
+	float4 T2column2 = XYZWToFloat4(T2.m12, T2.m22, T2.m32, T2.m42);
+	float4 T2column3 = XYZWToFloat4(T2.m13, T2.m23, T2.m33, T2.m43);
+	float4 T2column4 = XYZWToFloat4(T2.m14, T2.m24, T2.m34, T2.m44);
+
+	float m11 = dot(T1row1, T2column1);
+	float m12 = dot(T1row1, T2column2);
+	float m13 = dot(T1row1, T2column3);
+	float m14 = dot(T1row1, T2column4);
+
+	float m21 = dot(T1row2, T2column1);
+	float m22 = dot(T1row2, T2column2);
+	float m23 = dot(T1row2, T2column3);
+	float m24 = dot(T1row2, T2column4);
+
+	float m31 = dot(T1row3, T2column1);
+	float m32 = dot(T1row3, T2column2);
+	float m33 = dot(T1row3, T2column3);
+	float m34 = dot(T1row3, T2column4);
+
+	float m41 = dot(T1row4, T2column1);
+	float m42 = dot(T1row4, T2column2);
+	float m43 = dot(T1row4, T2column3);
+	float m44 = dot(T1row4, T2column4);
+
+	ret.m11 = m11;
+	ret.m12 = m12;
+	ret.m13 = m13;
+	ret.m14 = m14;
+
+	ret.m21 = m21;
+	ret.m22 = m22;
+	ret.m23 = m23;
+	ret.m24 = m24;
+
+	ret.m31 = m31;
+	ret.m32 = m32;
+	ret.m33 = m33;
+	ret.m34 = m34;
+
+	ret.m41 = m41;
+	ret.m42 = m42;
+	ret.m43 = m43;
+	ret.m44 = m44;
+
+	return ret;
+}
+
+Matrix4 Mat4_CreateTranslate(Vector3 v3Translate) 
+{
+	Matrix4 ret;
+
+	ret.m11 = 1.0f;
+	ret.m12 = 0.0f;
+	ret.m13 = 0.0f;
+	ret.m14 = v3Translate.x;
+
+	ret.m21 = 0.0f;
+	ret.m22 = 1.0f;
+	ret.m23 = 0.0f;
+	ret.m24 = v3Translate.y;
+
+	ret.m31 = 0.0f;
+	ret.m32 = 0.0f;
+	ret.m33 = 1.0f;
+	ret.m34 = v3Translate.z;
+
+	ret.m41 = 0.0f;
+	ret.m42 = 0.0f;
+	ret.m43 = 0.0f;
+	ret.m44 = 1.0f;
+
+	return ret;
+}
+
+Matrix4 Mat4_CreateRotateX(float fRad)
+{
+	Matrix4 ret;
+
+	ret.m11 = 1.0f;
+	ret.m12 = 0.0f;
+	ret.m13 = 0.0f;
+	ret.m14 = 0.0f;
+
+	ret.m21 = 0.0f;
+	ret.m22 = cos(fRad);
+	ret.m23 = sin(fRad);
+	ret.m24 = 0.0f;
+
+	ret.m31 = 0.0f;
+	ret.m32 = -sin(fRad);
+	ret.m33 = cos(fRad);
+	ret.m34 = 0.0f;
+
+	ret.m41 = 0.0f;
+	ret.m42 = 0.0f;
+	ret.m43 = 0.0f;
+	ret.m44 = 1.0f;
+
+	return ret;
+}
+
+Matrix4 Mat4_CreateRotateY(float fRad)
+{
+	Matrix4 ret;
+
+	ret.m11 = cos(fRad);
+	ret.m12 = 0.0f;
+	ret.m13 = sin(fRad);
+	ret.m14 = 0.0f;
+
+	ret.m21 = 0.0f;
+	ret.m22 = 1.0f;
+	ret.m23 = 0.0f;
+	ret.m24 = 0.0f;
+
+	ret.m31 = -sin(fRad);
+	ret.m32 = 0.0f;
+	ret.m33 = cos(fRad);
+	ret.m34 = 0.0f;
+
+	ret.m41 = 0.0f;
+	ret.m42 = 0.0f;
+	ret.m43 = 0.0f;
+	ret.m44 = 1.0f;
+
+	return ret;
+}
+
+Matrix4 Mat4_CreateRotateZ(float fRad)
+{
+	Matrix4 ret;
+
+	ret.m11 = cos(fRad);
+	ret.m12 = sin(fRad);
+	ret.m13 = 0.0f;
+	ret.m14 = 0.0f;
+
+	ret.m21 = -sin(fRad);
+	ret.m22 = cos(fRad);
+	ret.m23 = 0.0f;
+	ret.m24 = 0.0f;
+
+	ret.m31 = 0.0f;
+	ret.m32 = 0.0f;
+	ret.m33 = 1.0f;
+	ret.m34 = 0.0f;
+
+	ret.m41 = 0.0f;
+	ret.m42 = 0.0f;
+	ret.m43 = 0.0f;
+	ret.m44 = 1.0f;
+
+	return ret;
+}
+
+Matrix4 Mat4_CreateEulerRotate(Vector3 v3Rotate)
+{
+	Matrix4 T1 = Mat4_CreateRotateX(v3Rotate.x);
+	Matrix4 T2 = Mat4_CreateRotateY(v3Rotate.y);
+	Matrix4 T3 = Mat4_CreateRotateZ(v3Rotate.z);
+
+	Matrix4 ret = Mult_Mat4Mat4(T3, Mult_Mat4Mat4(T2, T1));
+	return ret;
+}
+
+Vector3 Mult_Mat4Vector3(Matrix4 T, Vector3 v3In, float w) 
+{
+	float4 v = XYZWToFloat4(v3In.x, v3In.y, v3In.z, w);
+	float4 ret;
+
+	ret.x = dot(XYZWToFloat4(T.m11, T.m12, T.m13, T.m14), v);
+	ret.y = dot(XYZWToFloat4(T.m21, T.m22, T.m23, T.m24), v);
+	ret.z = dot(XYZWToFloat4(T.m31, T.m32, T.m33, T.m34), v);
+	ret.w = dot(XYZWToFloat4(T.m41, T.m42, T.m43, T.m44), v);
+
+	return XYZToVector3(ret.x, ret.y, ret.z);
+}
+
 typedef struct
 {
 	Vector3 v3Min;
 	Vector3 v3Max;
 }
 BBox;
+
+typedef struct
+{
+	Vector3 v3A;
+	Vector3 v3B;
+	Vector3 v3C;
+	Vector3 v3N;
+}
+Triangle;
+
+typedef struct
+{
+	int nLeft;
+	int nRight;
+
+	Triangle triangle;
+	BBox bbox;
+}
+BVHNodeTriangle;
+
+typedef struct
+{
+	int nOffset;
+	int nCount;
+}
+BVHNodeTriangleOffset;
 
 typedef struct 
 {
@@ -148,7 +396,7 @@ BBox CreateBBox(BBox a, BBox b)
 	return bbox;
 }
 
-__kernel void UpdateBVHObjects(__global BVHObject *inoutBVHObjects, __global RigidBody* inoutRigidBodies, int nOffset, int nCount)
+__kernel void UpdateBVHObjects(__global BVHObject *inoutBVHObjects, __global RigidBody* inoutRigidBodies, int nOffset, int nCount, __global BVHNodeTriangle* inBVHNodeTriangles, __global BVHNodeTriangleOffset* inBVHNodeTrianglesOffsets)
 {
     int id = get_global_id(0);
 
@@ -158,6 +406,66 @@ __kernel void UpdateBVHObjects(__global BVHObject *inoutBVHObjects, __global Rig
 	{
 		RigidBody rigidBody = inoutRigidBodies[id];
 		BBox bbox = rigidBody.bbox;
+
+		if (rigidBody.fMass > 0.0f)
+		{
+			//Matrix4 mat4Translate = Mat4_CreateTranslate(rigidBody.v3Position);
+			//Matrix4 mat4EulerRotate = Mat4_CreateEulerRotate(rigidBody.v3Rotate);
+			//Matrix4 mat4Transform = Mult_Mat4Mat4(mat4Translate, mat4EulerRotate);
+			Matrix4 mat4Transform = Mat4_CreateEulerRotate(rigidBody.v3Rotate);
+			
+			Vector3 v3Min;
+			Vector3 v3Max;
+			v3Min.x = 1000000000.0f;
+			v3Min.y = 1000000000.0f;
+			v3Min.z = 1000000000.0f;
+			v3Max.x = -1000000000.0f;
+			v3Max.y = -1000000000.0f;
+			v3Max.z = -1000000000.0f;
+			BVHNodeTriangleOffset offset = inBVHNodeTrianglesOffsets[rigidBody.nTriMeshId];
+			for (int i = 0; i < offset.nCount; i++)
+			{
+				Triangle triangle = inBVHNodeTriangles[offset.nOffset + i].triangle;
+			
+				// transform
+				triangle.v3A = Mult_Mat4Vector3(mat4Transform, triangle.v3A, 1.0f);
+				triangle.v3B = Mult_Mat4Vector3(mat4Transform, triangle.v3B, 1.0f);
+				triangle.v3C = Mult_Mat4Vector3(mat4Transform, triangle.v3C, 1.0f);
+		
+				// A
+				v3Min.x = min(v3Min.x, triangle.v3A.x);
+				v3Min.y = min(v3Min.y, triangle.v3A.y);
+				v3Min.z = min(v3Min.z, triangle.v3A.z);
+		
+				v3Max.x = max(v3Max.x, triangle.v3A.x);
+				v3Max.y = max(v3Max.y, triangle.v3A.y);
+				v3Max.z = max(v3Max.z, triangle.v3A.z);
+		
+				// B
+				v3Min.x = min(v3Min.x, triangle.v3B.x);
+				v3Min.y = min(v3Min.y, triangle.v3B.y);
+				v3Min.z = min(v3Min.z, triangle.v3B.z);
+		
+				v3Max.x = max(v3Max.x, triangle.v3B.x);
+				v3Max.y = max(v3Max.y, triangle.v3B.y);
+				v3Max.z = max(v3Max.z, triangle.v3B.z);
+		
+				// C
+				v3Min.x = min(v3Min.x, triangle.v3C.x);
+				v3Min.y = min(v3Min.y, triangle.v3C.y);
+				v3Min.z = min(v3Min.z, triangle.v3C.z);
+		
+				v3Max.x = max(v3Max.x, triangle.v3C.x);
+				v3Max.y = max(v3Max.y, triangle.v3C.y);
+				v3Max.z = max(v3Max.z, triangle.v3C.z);
+			}
+		
+			inoutRigidBodies[id].bbox.v3Min = v3Min;
+			inoutRigidBodies[id].bbox.v3Max = v3Max;
+		
+			rigidBody = inoutRigidBodies[id];
+			bbox = rigidBody.bbox;
+		}
 
 		bbox.v3Min = Vector3_Add(bbox.v3Min, rigidBody.v3Position);
 		bbox.v3Max = Vector3_Add(bbox.v3Max, rigidBody.v3Position);
