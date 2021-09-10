@@ -436,20 +436,9 @@ __kernel void UpdateBVHObjects(__global BVHObject *inoutBVHObjects, __global Rig
 			Vector3 v3Out7 = Mult_Mat4Vector3(mat4Transform, v3In7, 1.0f);
 			Vector3 v3Out8 = Mult_Mat4Vector3(mat4Transform, v3In8, 1.0f);
 
-			v3Min.x = 1000000000.0f;
-			v3Min.y = 1000000000.0f;
-			v3Min.z = 1000000000.0f;
-			v3Max.x = -1000000000.0f;
-			v3Max.y = -1000000000.0f;
-			v3Max.z = -1000000000.0f;
-
 			// 1
-			v3Min.x = min(v3Min.x, v3Out1.x);
-			v3Min.y = min(v3Min.y, v3Out1.y);
-			v3Min.z = min(v3Min.z, v3Out1.z);
-			v3Max.x = max(v3Max.x, v3Out1.x);
-			v3Max.y = max(v3Max.y, v3Out1.y);
-			v3Max.z = max(v3Max.z, v3Out1.z);
+			v3Min = v3Out1;
+			v3Max = v3Out1;
 
 			// 2
 			v3Min.x = min(v3Min.x, v3Out2.x);
