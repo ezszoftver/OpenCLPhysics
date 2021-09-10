@@ -503,7 +503,7 @@ namespace OpenCLPhysics
 		// update
 		structRigidBody newRigidBody;
 		newRigidBody.m_nRigidBodyId = nRigidBodyId;
-		newRigidBody.m_BBox = m_listRigidBodies.at(nFromId).m_BBox;
+		newRigidBody.m_inBBox = m_listRigidBodies.at(nFromId).m_inBBox;
 		m_listRigidBodies.at(nRigidBodyId) = newRigidBody;
 
 		delete m_listTriMeshs.at(nTriMeshId);
@@ -607,7 +607,7 @@ namespace OpenCLPhysics
 			glm::vec3 v = pListVertices->at(i);
 			pBBox->Add(v);
 		}
-		theRigidBody.m_BBox = pBBox->GetStructBBox();
+		theRigidBody.m_inBBox = pBBox->GetStructBBox();
 		delete pBBox;
 
 		m_listRigidBodies[nId/*pTheTriMesh->m_nRigidBodyId*/] = theRigidBody;
@@ -1075,7 +1075,7 @@ namespace OpenCLPhysics
 			structBVHObject element;
 
 			structRigidBody theRigidBody = m_listRigidBodies.at(0);
-			element.m_BBox = theRigidBody.m_BBox;
+			element.m_BBox = theRigidBody.m_inBBox;
 			element.m_nRigidBodyId = 0;
 
 			element.m_nLeft = -1;
@@ -1100,7 +1100,7 @@ namespace OpenCLPhysics
 					structBVHObject element;
 
 					structRigidBody theRigidBody = m_listRigidBodies.at(i);
-					element.m_BBox = theRigidBody.m_BBox;
+					element.m_BBox = theRigidBody.m_inBBox;
 					element.m_nRigidBodyId = i;
 
 					element.m_nLeft = -1;
@@ -1256,8 +1256,6 @@ namespace OpenCLPhysics
 			err |= clSetKernelArg(m_kernelUpdateBVHObjects, 1, sizeof(cl_mem), &m_clmem_inoutRigidBodies);
 			err |= clSetKernelArg(m_kernelUpdateBVHObjects, 2, sizeof(int32_t), &nOffset);
 			err |= clSetKernelArg(m_kernelUpdateBVHObjects, 3, sizeof(int32_t), &nCount);
-			err |= clSetKernelArg(m_kernelUpdateBVHObjects, 4, sizeof(cl_mem), &m_clmem_inBVHNodeTriangles);
-			err |= clSetKernelArg(m_kernelUpdateBVHObjects, 5, sizeof(cl_mem), &m_clmem_inBVHNodeTrianglesOffsets);
 			err |= clEnqueueNDRangeKernel(m_command_queue, m_kernelUpdateBVHObjects, 1, NULL, &nGlobal, &nLocal, 0, NULL, NULL);
 			clFinish(m_command_queue);
 

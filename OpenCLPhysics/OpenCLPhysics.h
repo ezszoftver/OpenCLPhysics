@@ -40,6 +40,7 @@ namespace OpenCLPhysics
 		int32_t m_nTriMeshId = -1;
 		int32_t m_nIsEnabled = 1;
 
+		structBBox m_inBBox;
 		structBBox m_BBox;
 
 		float m_fMass = 0;
