@@ -105,7 +105,7 @@ bool MainWindow::Init()
     // 2/2 - physics
     Model physicsmodel;
     physicsmodel.Load("Scene", "Physics.obj", glm::mat4(1.0f), false);
-    static_id = m_physics.CreateTriMesh(physicsmodel.GetAllVertices(), false);
+    static_id = m_physics.CreateTriMesh(physicsmodel.GetAllVertices());
     m_physics.SetMass(static_id, 0.0f); // static
 
     // dynamic
@@ -132,12 +132,12 @@ bool MainWindow::Init()
                 int dynamic_id = -1;
                 if (-1 == from_dynamic_id)
                 {
-                    from_dynamic_id = m_physics.CreateTriMesh(m_dynamicmodel.GetAllVertices(), false);
+                    from_dynamic_id = m_physics.CreateTriMesh(m_dynamicmodel.GetAllVertices());
                     dynamic_id = from_dynamic_id;
                 }
                 else 
                 {
-                    dynamic_id = m_physics.CreateFromId(from_dynamic_id, false);
+                    dynamic_id = m_physics.CreateFromId(from_dynamic_id);
                 }
 
                 float fScale = 2.1f;
@@ -152,11 +152,6 @@ bool MainWindow::Init()
                 m_listRigidBodiesTextureId.push_back(textures[id]);
             }
         }
-    }
-
-    if (false == m_physics.Commit()) 
-    {
-        return false;
     }
 
     // gravity
