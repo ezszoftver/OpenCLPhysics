@@ -427,6 +427,18 @@ namespace OpenCLPhysics
 			return -1;
 		}
 
+		cl_int err = 0;
+		if (0 != m_clmem_inoutHits)
+		{
+			err = clEnqueueReadBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHit) * m_listHits.size(), &(m_listHits[0]), 0, NULL, NULL);
+			if (err != CL_SUCCESS) { return -1; }
+		}
+		if (0 != m_clmem_inoutIsCollisionResponse)
+		{
+			err = clEnqueueReadBuffer(m_command_queue, m_clmem_inoutIsCollisionResponse, CL_TRUE, 0, sizeof(int32_t) * m_listIsCollisionResponse.size(), &(m_listIsCollisionResponse[0]), 0, NULL, NULL);
+			if (err != CL_SUCCESS) { return -1; }
+		}
+
 		// get free id
 		int32_t nId = m_listFreeIds.at(0);
 		m_listFreeIds.erase(m_listFreeIds.begin() + 0);
@@ -439,6 +451,13 @@ namespace OpenCLPhysics
 			structRigidBody newRigidBody;
 			newRigidBody.m_nRigidBodyId = (int32_t)m_listRigidBodies.size();
 			m_listRigidBodies.push_back(newRigidBody);
+
+			m_listIsCollisionResponse.push_back(0);
+		}
+		while ( m_listHits.size() < ((nId * (int32_t)MAX_HITS_COUNT_PER_OBJECTS) + (int32_t)MAX_HITS_COUNT_PER_OBJECTS) )
+		{
+			structHit hit;
+			m_listHits.push_back(hit);
 		}
 
 		// new trimesh
@@ -480,6 +499,18 @@ namespace OpenCLPhysics
 			return -1;
 		}
 
+		cl_int err = 0;
+		if (0 != m_clmem_inoutHits)
+		{
+			err = clEnqueueReadBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHit) * m_listHits.size(), &(m_listHits[0]), 0, NULL, NULL);
+			if (err != CL_SUCCESS) { return -1; }
+		}
+		if (0 != m_clmem_inoutIsCollisionResponse)
+		{
+			err = clEnqueueReadBuffer(m_command_queue, m_clmem_inoutIsCollisionResponse, CL_TRUE, 0, sizeof(int32_t) * m_listIsCollisionResponse.size(), &(m_listIsCollisionResponse[0]), 0, NULL, NULL);
+			if (err != CL_SUCCESS) { return -1; }
+		}
+
 		// get free id
 		int32_t nId = m_listFreeIds.at(0);
 		m_listFreeIds.erase(m_listFreeIds.begin() + 0);
@@ -492,6 +523,13 @@ namespace OpenCLPhysics
 			structRigidBody newRigidBody;
 			newRigidBody.m_nRigidBodyId = (int32_t)m_listRigidBodies.size();
 			m_listRigidBodies.push_back(newRigidBody);
+
+			m_listIsCollisionResponse.push_back(0);
+		}
+		while (m_listHits.size() < ((nId * (int32_t)MAX_HITS_COUNT_PER_OBJECTS) + (int32_t)MAX_HITS_COUNT_PER_OBJECTS))
+		{
+			structHit hit;
+			m_listHits.push_back(hit);
 		}
 
 		// new trimesh
@@ -728,10 +766,10 @@ namespace OpenCLPhysics
 			// set
 			m_listBVHNodeTriangles.push_back(node);
 		}
-		structBVHNodeTriangleOffset offset;
+		/*structBVHNodeTriangleOffset offset;
 		offset.m_nOffset = nOffset;
 		offset.m_nCount = nCount;
-		m_listBVHNodeTrianglesOffsets.push_back(offset);
+		m_listBVHNodeTrianglesOffsets.push_back(offset);*/
 	}
 
 	void Physics::SetGravity(glm::vec3 vec3Gravity)
@@ -934,6 +972,17 @@ namespace OpenCLPhysics
 			m_clmem_inBVHNodeTrianglesOffsets = 0;
 		}
 
+		if (0 != m_clmem_inoutHits)
+		{
+			clReleaseMemObject(m_clmem_inoutHits);
+			m_clmem_inoutHits = 0;
+		}
+		if (0 != m_clmem_inoutIsCollisionResponse)
+		{
+			clReleaseMemObject(m_clmem_inoutIsCollisionResponse);
+			m_clmem_inoutIsCollisionResponse = 0;
+		}
+
 		// create rigidBodies buffer
 		m_clmem_inoutRigidBodies = clCreateBuffer(m_context, CL_MEM_READ_WRITE, sizeof(structRigidBody) * m_listRigidBodies.size(), NULL, NULL);
 		if (!m_clmem_inoutRigidBodies) { return false; }
@@ -957,10 +1006,37 @@ namespace OpenCLPhysics
 		if (err != CL_SUCCESS) { return false; }
 
 		// create BVHNodeTrianglesOffsets buffer
+		m_listBVHNodeTrianglesOffsets.clear();
+		int32_t nOffset = 0;
+		for (int32_t i = 0; i < m_listTriMeshs.size(); i++) 
+		{
+			TriMesh *pMesh = m_listTriMeshs.at(i);
+			int32_t nCount = (int32_t)pMesh->m_pListBVHNodeTriangles->size();
+
+			structBVHNodeTriangleOffset offset;
+			offset.m_nOffset = nOffset;
+			offset.m_nCount = nCount;
+			m_listBVHNodeTrianglesOffsets.push_back(offset);
+
+			nOffset += nCount;
+		}
 		m_clmem_inBVHNodeTrianglesOffsets = clCreateBuffer(m_context, CL_MEM_READ_ONLY, sizeof(structBVHNodeTriangleOffset) * m_listBVHNodeTrianglesOffsets.size(), NULL, NULL);
 		if (!m_clmem_inBVHNodeTrianglesOffsets) { return false; }
 		// -> copy
 		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inBVHNodeTrianglesOffsets, CL_TRUE, 0, sizeof(structBVHNodeTriangleOffset) * m_listBVHNodeTrianglesOffsets.size(), m_listBVHNodeTrianglesOffsets.data(), 0, NULL, NULL);
+		if (err != CL_SUCCESS) { return false; }
+
+		// create HitsBuffer
+		m_clmem_inoutHits = clCreateBuffer(m_context, CL_MEM_READ_WRITE, sizeof(structHit) * m_listHits.size(), NULL, NULL);
+		if (!m_clmem_inoutHits) { return false; }
+		// -> copy
+		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHit) * m_listHits.size(), m_listHits.data(), 0, NULL, NULL);
+		if (err != CL_SUCCESS) { return false; }
+
+		m_clmem_inoutIsCollisionResponse = clCreateBuffer(m_context, CL_MEM_READ_WRITE, sizeof(int32_t) * m_listIsCollisionResponse.size(), NULL, NULL);
+		if (!m_clmem_inoutIsCollisionResponse) { return false; }
+		// -> copy
+		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutIsCollisionResponse, CL_TRUE, 0, sizeof(int32_t) * m_listIsCollisionResponse.size(), m_listIsCollisionResponse.data(), 0, NULL, NULL);
 		if (err != CL_SUCCESS) { return false; }
 
 		return true;

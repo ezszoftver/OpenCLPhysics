@@ -125,9 +125,9 @@ bool MainWindow::Init()
     int from_dynamic_id = -1;
     for (int x = -5; x < 5; x++)
     {
-        for (int z = -5; z < 5; z++)
+        //for (int z = -5; z < 5; z++)
         {
-            for (int y = 0; y < (1/*100db*/ * 50/*5000db*/); y++)
+            //for (int y = 0; y < (1/*100db*/ * 50/*5000db*/); y++)
             {
                 int dynamic_id = -1;
                 if (-1 == from_dynamic_id)
@@ -141,10 +141,10 @@ bool MainWindow::Init()
                 }
 
                 float fScale = 2.1f;
-                m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 20 + (y * fScale), z * fScale));
-                //m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale/*10*/, 1, 5));
+                //m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 20 + (y * fScale), z * fScale));
+                m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale/*10*/, 1, 5));
                 m_physics.SetMass(dynamic_id, 85.0f); // dynamic
-                m_physics.SetAngularVelocity(dynamic_id, glm::vec3(0.3f, 0.2f, 0.1f));
+                //m_physics.SetAngularVelocity(dynamic_id, glm::vec3(0.3f, 0.2f, 0.1f));
 
                 m_listDynamicIds.push_back(dynamic_id);
 

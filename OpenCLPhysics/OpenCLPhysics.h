@@ -238,9 +238,10 @@ namespace OpenCLPhysics
 		cl_kernel m_kernelIntegrate;
 		cl_mem m_clmem_inoutRigidBodies = 0;
 		cl_mem m_clmem_inoutBVHObjects = 0;
-
 		cl_mem m_clmem_inBVHNodeTriangles = 0;
 		cl_mem m_clmem_inBVHNodeTrianglesOffsets = 0;
+		cl_mem m_clmem_inoutHits = 0;
+		cl_mem m_clmem_inoutIsCollisionResponse = 0;
 
 		structVector3 m_v3Gravity;
 		std::vector< int32_t > m_listFreeIds;
@@ -254,6 +255,10 @@ namespace OpenCLPhysics
 		// triangles
 		std::vector< structBVHNodeTriangle > m_listBVHNodeTriangles;
 		std::vector< structBVHNodeTriangleOffset > m_listBVHNodeTrianglesOffsets;
+
+		// hits
+		std::vector < structHit > m_listHits;
+		std::vector < int32_t > m_listIsCollisionResponse;
 	};
 
 }
