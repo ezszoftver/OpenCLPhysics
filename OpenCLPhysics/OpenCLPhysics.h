@@ -117,6 +117,13 @@ namespace OpenCLPhysics
 	}
 	structHit;
 
+	typedef struct _structHits 
+	{
+		int32_t m_nNumHits = 0;
+		structHit m_hits[MAX_HITS_COUNT_PER_OBJECTS];
+	}
+	structHits;
+
 	typedef struct _structBVHNodeTriangle 
 	{
 		int32_t m_nLeft = -1;
@@ -257,7 +264,7 @@ namespace OpenCLPhysics
 		std::vector< structBVHNodeTriangleOffset > m_listBVHNodeTrianglesOffsets;
 
 		// hits
-		std::vector < structHit > m_listHits;
+		std::vector < structHits > m_listHits;
 		std::vector < int32_t > m_listIsCollisionResponse;
 	};
 

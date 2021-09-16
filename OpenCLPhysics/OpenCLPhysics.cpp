@@ -430,7 +430,7 @@ namespace OpenCLPhysics
 		cl_int err = 0;
 		if (0 != m_clmem_inoutHits)
 		{
-			err = clEnqueueReadBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHit) * m_listHits.size(), &(m_listHits[0]), 0, NULL, NULL);
+			err = clEnqueueReadBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHits) * m_listHits.size(), &(m_listHits[0]), 0, NULL, NULL);
 			if (err != CL_SUCCESS) { return -1; }
 		}
 		if (0 != m_clmem_inoutIsCollisionResponse)
@@ -452,12 +452,10 @@ namespace OpenCLPhysics
 			newRigidBody.m_nRigidBodyId = (int32_t)m_listRigidBodies.size();
 			m_listRigidBodies.push_back(newRigidBody);
 
+			structHits hits;
+			m_listHits.push_back(hits);
 			m_listIsCollisionResponse.push_back(0);
-		}
-		while ( m_listHits.size() < ((nId * (int32_t)MAX_HITS_COUNT_PER_OBJECTS) + (int32_t)MAX_HITS_COUNT_PER_OBJECTS) )
-		{
-			structHit hit;
-			m_listHits.push_back(hit);
+			
 		}
 
 		// new trimesh
@@ -502,7 +500,7 @@ namespace OpenCLPhysics
 		cl_int err = 0;
 		if (0 != m_clmem_inoutHits)
 		{
-			err = clEnqueueReadBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHit) * m_listHits.size(), &(m_listHits[0]), 0, NULL, NULL);
+			err = clEnqueueReadBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHits) * m_listHits.size(), &(m_listHits[0]), 0, NULL, NULL);
 			if (err != CL_SUCCESS) { return -1; }
 		}
 		if (0 != m_clmem_inoutIsCollisionResponse)
@@ -524,14 +522,11 @@ namespace OpenCLPhysics
 			newRigidBody.m_nRigidBodyId = (int32_t)m_listRigidBodies.size();
 			m_listRigidBodies.push_back(newRigidBody);
 
+			structHits hits;
+			m_listHits.push_back(hits);
 			m_listIsCollisionResponse.push_back(0);
 		}
-		while (m_listHits.size() < ((nId * (int32_t)MAX_HITS_COUNT_PER_OBJECTS) + (int32_t)MAX_HITS_COUNT_PER_OBJECTS))
-		{
-			structHit hit;
-			m_listHits.push_back(hit);
-		}
-
+		
 		// new trimesh
 		int32_t nTriMeshId = nId;
 
@@ -1027,10 +1022,10 @@ namespace OpenCLPhysics
 		if (err != CL_SUCCESS) { return false; }
 
 		// create HitsBuffer
-		m_clmem_inoutHits = clCreateBuffer(m_context, CL_MEM_READ_WRITE, sizeof(structHit) * m_listHits.size(), NULL, NULL);
+		m_clmem_inoutHits = clCreateBuffer(m_context, CL_MEM_READ_WRITE, sizeof(structHits) * m_listHits.size(), NULL, NULL);
 		if (!m_clmem_inoutHits) { return false; }
 		// -> copy
-		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHit) * m_listHits.size(), m_listHits.data(), 0, NULL, NULL);
+		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHits) * m_listHits.size(), m_listHits.data(), 0, NULL, NULL);
 		if (err != CL_SUCCESS) { return false; }
 
 		m_clmem_inoutIsCollisionResponse = clCreateBuffer(m_context, CL_MEM_READ_WRITE, sizeof(int32_t) * m_listIsCollisionResponse.size(), NULL, NULL);
@@ -1388,11 +1383,11 @@ namespace OpenCLPhysics
 		return true;
 	}
 
-	bool GetHits(structRigidBody structRigidBody1, structRigidBody structRigidBody2, int32_t id, structHit *pHits)
+	structHits GetHits(structRigidBody structRigidBody1, structRigidBody structRigidBody2, int32_t id)
 	{
+		structHits hits;
 
-
-		return false;
+		return hits;
 	}
 
 	void Physics::CollisionDetection() 
@@ -1403,7 +1398,7 @@ namespace OpenCLPhysics
 		inoutBVHObjects.resize(m_listBVHObjects.size());
 		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutBVHObjects, CL_TRUE, 0, sizeof(structBVHObject) * m_listBVHObjects.size(), &(inoutBVHObjects[0]), 0, NULL, NULL);
 		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), &(m_listRigidBodies[0]), 0, NULL, NULL);
-		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHit) * m_listHits.size(), &(m_listHits[0]), 0, NULL, NULL);
+		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHits) * m_listHits.size(), &(m_listHits[0]), 0, NULL, NULL);
 		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutIsCollisionResponse, CL_TRUE, 0, sizeof(int32_t) * m_listIsCollisionResponse.size(), &(m_listIsCollisionResponse[0]), 0, NULL, NULL);
 
 		if (err != CL_SUCCESS)
@@ -1449,8 +1444,9 @@ namespace OpenCLPhysics
 
 						if (true == IsCollide(structRigidBody1.m_BBox, bboxRigidBody2))
 						{
-							structHit hits[MAX_HITS_COUNT_PER_OBJECTS];
-							bool bIsHaveHits = GetHits(structRigidBody1, structRigidBody2, id1, hits);
+							structHits hits = GetHits(structRigidBody1, structRigidBody2, id1);
+
+							;
 						}
 					}
 				}
