@@ -455,7 +455,6 @@ namespace OpenCLPhysics
 			structHits hits;
 			m_listHits.push_back(hits);
 			m_listIsCollisionResponse.push_back(0);
-			
 		}
 
 		// new trimesh
@@ -1383,9 +1382,11 @@ namespace OpenCLPhysics
 		return true;
 	}
 
-	structHits GetHits(structRigidBody structRigidBody1, structRigidBody structRigidBody2, int32_t id)
+	structHits GetHits(structRigidBody structRigidBody1, structRigidBody structRigidBody2)
 	{
 		structHits hits;
+
+		;
 
 		return hits;
 	}
@@ -1411,6 +1412,18 @@ namespace OpenCLPhysics
 			// EZ MEGY MAJD AZ OPENCL FUGGVENYBE
 			structRigidBody structRigidBody1 = m_listRigidBodies.at(id1);
 
+			// isEnabled == false, akkor nem kell
+			if (0 == structRigidBody1.m_nIsEnabled) 
+			{
+				continue;
+			}
+
+			// ha static, akkor nem kell
+			if (structRigidBody1.m_fMass <= 0.0f) 
+			{
+				continue;
+			}
+
 			int nTop = -1;
 			int arrStack[64];
 
@@ -1429,7 +1442,7 @@ namespace OpenCLPhysics
 					// saját magával nem kell ütközésvizsgálatot csinálni
 					int id2 = structBVHObject.m_nRigidBodyId;
 
-					if (id1 < id2)
+					if (id1 != id2)
 					{
 						structRigidBody structRigidBody2 = m_listRigidBodies.at(id2);
 
@@ -1444,9 +1457,17 @@ namespace OpenCLPhysics
 
 						if (true == IsCollide(structRigidBody1.m_BBox, bboxRigidBody2))
 						{
-							structHits hits = GetHits(structRigidBody1, structRigidBody2, id1);
+							structHits hits = GetHits(structRigidBody1, structRigidBody2);
 
-							;
+							if (hits.m_nNumHits == 0) // nincs utkozes
+							{
+								m_listIsCollisionResponse[id1] = 1;
+							}
+							else // van utkozes => szettolas
+							{
+								m_listIsCollisionResponse[id1] = 0;
+								m_listHits[id1] = hits;
+							}
 						}
 					}
 				}
