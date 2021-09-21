@@ -164,6 +164,8 @@ namespace OpenCLPhysics
 		~TriMesh();
 
 		std::vector< BVHNodeTriangle* > *m_pListBVHNodeTriangles;
+		int32_t m_nOffset;
+		int32_t m_nCount;
 	};
 
 	class Physics

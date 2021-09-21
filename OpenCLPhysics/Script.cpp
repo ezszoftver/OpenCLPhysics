@@ -408,104 +408,97 @@ __kernel void UpdateBVHObjects(__global BVHObject *inoutBVHObjects, __global Rig
 		RigidBody rigidBody = inoutRigidBodies[id];
 		BBox bbox = rigidBody.inBBox;
 
-		if (rigidBody.fMass > 0.0f)
-		{
-			//Matrix4 mat4Translate = Mat4_CreateTranslate(rigidBody.v3Position);
-			//Matrix4 mat4EulerRotate = Mat4_CreateEulerRotate(rigidBody.v3Rotate);
-			//Matrix4 mat4Transform = Mult_Mat4Mat4(mat4Translate, mat4EulerRotate);
-			Matrix4 mat4Transform = Mat4_CreateEulerRotate(rigidBody.v3Rotate);
-			
-			Vector3 v3Min = bbox.v3Min;
-			Vector3 v3Max = bbox.v3Max;
+		Matrix4 mat4Translate = Mat4_CreateTranslate(rigidBody.v3Position);
+		Matrix4 mat4EulerRotate = Mat4_CreateEulerRotate(rigidBody.v3Rotate);
+		Matrix4 mat4Transform = Mult_Mat4Mat4(mat4Translate, mat4EulerRotate);
+		
+		Vector3 v3Min = bbox.v3Min;
+		Vector3 v3Max = bbox.v3Max;
 
-			Vector3 v3In1 = XYZToVector3(v3Min.x, v3Min.y, v3Min.z);
-			Vector3 v3In2 = XYZToVector3(v3Max.x, v3Min.y, v3Min.z);
-			Vector3 v3In3 = XYZToVector3(v3Max.x, v3Min.y, v3Max.z);
-			Vector3 v3In4 = XYZToVector3(v3Min.x, v3Min.y, v3Max.z);
-			Vector3 v3In5 = XYZToVector3(v3Min.x, v3Max.y, v3Min.z);
-			Vector3 v3In6 = XYZToVector3(v3Max.x, v3Max.y, v3Min.z);
-			Vector3 v3In7 = XYZToVector3(v3Max.x, v3Max.y, v3Max.z);
-			Vector3 v3In8 = XYZToVector3(v3Min.x, v3Max.y, v3Max.z);
+		Vector3 v3In1 = XYZToVector3(v3Min.x, v3Min.y, v3Min.z);
+		Vector3 v3In2 = XYZToVector3(v3Max.x, v3Min.y, v3Min.z);
+		Vector3 v3In3 = XYZToVector3(v3Max.x, v3Min.y, v3Max.z);
+		Vector3 v3In4 = XYZToVector3(v3Min.x, v3Min.y, v3Max.z);
+		Vector3 v3In5 = XYZToVector3(v3Min.x, v3Max.y, v3Min.z);
+		Vector3 v3In6 = XYZToVector3(v3Max.x, v3Max.y, v3Min.z);
+		Vector3 v3In7 = XYZToVector3(v3Max.x, v3Max.y, v3Max.z);
+		Vector3 v3In8 = XYZToVector3(v3Min.x, v3Max.y, v3Max.z);
 
-			Vector3 v3Out1 = Mult_Mat4Vector3(mat4Transform, v3In1, 1.0f);
-			Vector3 v3Out2 = Mult_Mat4Vector3(mat4Transform, v3In2, 1.0f);
-			Vector3 v3Out3 = Mult_Mat4Vector3(mat4Transform, v3In3, 1.0f);
-			Vector3 v3Out4 = Mult_Mat4Vector3(mat4Transform, v3In4, 1.0f);
-			Vector3 v3Out5 = Mult_Mat4Vector3(mat4Transform, v3In5, 1.0f);
-			Vector3 v3Out6 = Mult_Mat4Vector3(mat4Transform, v3In6, 1.0f);
-			Vector3 v3Out7 = Mult_Mat4Vector3(mat4Transform, v3In7, 1.0f);
-			Vector3 v3Out8 = Mult_Mat4Vector3(mat4Transform, v3In8, 1.0f);
+		Vector3 v3Out1 = Mult_Mat4Vector3(mat4Transform, v3In1, 1.0f);
+		Vector3 v3Out2 = Mult_Mat4Vector3(mat4Transform, v3In2, 1.0f);
+		Vector3 v3Out3 = Mult_Mat4Vector3(mat4Transform, v3In3, 1.0f);
+		Vector3 v3Out4 = Mult_Mat4Vector3(mat4Transform, v3In4, 1.0f);
+		Vector3 v3Out5 = Mult_Mat4Vector3(mat4Transform, v3In5, 1.0f);
+		Vector3 v3Out6 = Mult_Mat4Vector3(mat4Transform, v3In6, 1.0f);
+		Vector3 v3Out7 = Mult_Mat4Vector3(mat4Transform, v3In7, 1.0f);
+		Vector3 v3Out8 = Mult_Mat4Vector3(mat4Transform, v3In8, 1.0f);
 
-			// 1
-			v3Min = v3Out1;
-			v3Max = v3Out1;
+		// 1
+		v3Min = v3Out1;
+		v3Max = v3Out1;
 
-			// 2
-			v3Min.x = min(v3Min.x, v3Out2.x);
-			v3Min.y = min(v3Min.y, v3Out2.y);
-			v3Min.z = min(v3Min.z, v3Out2.z);
-			v3Max.x = max(v3Max.x, v3Out2.x);
-			v3Max.y = max(v3Max.y, v3Out2.y);
-			v3Max.z = max(v3Max.z, v3Out2.z);
+		// 2
+		v3Min.x = min(v3Min.x, v3Out2.x);
+		v3Min.y = min(v3Min.y, v3Out2.y);
+		v3Min.z = min(v3Min.z, v3Out2.z);
+		v3Max.x = max(v3Max.x, v3Out2.x);
+		v3Max.y = max(v3Max.y, v3Out2.y);
+		v3Max.z = max(v3Max.z, v3Out2.z);
 
-			// 3
-			v3Min.x = min(v3Min.x, v3Out3.x);
-			v3Min.y = min(v3Min.y, v3Out3.y);
-			v3Min.z = min(v3Min.z, v3Out3.z);
-			v3Max.x = max(v3Max.x, v3Out3.x);
-			v3Max.y = max(v3Max.y, v3Out3.y);
-			v3Max.z = max(v3Max.z, v3Out3.z);
+		// 3
+		v3Min.x = min(v3Min.x, v3Out3.x);
+		v3Min.y = min(v3Min.y, v3Out3.y);
+		v3Min.z = min(v3Min.z, v3Out3.z);
+		v3Max.x = max(v3Max.x, v3Out3.x);
+		v3Max.y = max(v3Max.y, v3Out3.y);
+		v3Max.z = max(v3Max.z, v3Out3.z);
 
-			// 4
-			v3Min.x = min(v3Min.x, v3Out4.x);
-			v3Min.y = min(v3Min.y, v3Out4.y);
-			v3Min.z = min(v3Min.z, v3Out4.z);
-			v3Max.x = max(v3Max.x, v3Out4.x);
-			v3Max.y = max(v3Max.y, v3Out4.y);
-			v3Max.z = max(v3Max.z, v3Out4.z);
+		// 4
+		v3Min.x = min(v3Min.x, v3Out4.x);
+		v3Min.y = min(v3Min.y, v3Out4.y);
+		v3Min.z = min(v3Min.z, v3Out4.z);
+		v3Max.x = max(v3Max.x, v3Out4.x);
+		v3Max.y = max(v3Max.y, v3Out4.y);
+		v3Max.z = max(v3Max.z, v3Out4.z);
 
-			// 5
-			v3Min.x = min(v3Min.x, v3Out5.x);
-			v3Min.y = min(v3Min.y, v3Out5.y);
-			v3Min.z = min(v3Min.z, v3Out5.z);
-			v3Max.x = max(v3Max.x, v3Out5.x);
-			v3Max.y = max(v3Max.y, v3Out5.y);
-			v3Max.z = max(v3Max.z, v3Out5.z);
+		// 5
+		v3Min.x = min(v3Min.x, v3Out5.x);
+		v3Min.y = min(v3Min.y, v3Out5.y);
+		v3Min.z = min(v3Min.z, v3Out5.z);
+		v3Max.x = max(v3Max.x, v3Out5.x);
+		v3Max.y = max(v3Max.y, v3Out5.y);
+		v3Max.z = max(v3Max.z, v3Out5.z);
 
-			// 6
-			v3Min.x = min(v3Min.x, v3Out6.x);
-			v3Min.y = min(v3Min.y, v3Out6.y);
-			v3Min.z = min(v3Min.z, v3Out6.z);
-			v3Max.x = max(v3Max.x, v3Out6.x);
-			v3Max.y = max(v3Max.y, v3Out6.y);
-			v3Max.z = max(v3Max.z, v3Out6.z);
+		// 6
+		v3Min.x = min(v3Min.x, v3Out6.x);
+		v3Min.y = min(v3Min.y, v3Out6.y);
+		v3Min.z = min(v3Min.z, v3Out6.z);
+		v3Max.x = max(v3Max.x, v3Out6.x);
+		v3Max.y = max(v3Max.y, v3Out6.y);
+		v3Max.z = max(v3Max.z, v3Out6.z);
 
-			// 7
-			v3Min.x = min(v3Min.x, v3Out7.x);
-			v3Min.y = min(v3Min.y, v3Out7.y);
-			v3Min.z = min(v3Min.z, v3Out7.z);
-			v3Max.x = max(v3Max.x, v3Out7.x);
-			v3Max.y = max(v3Max.y, v3Out7.y);
-			v3Max.z = max(v3Max.z, v3Out7.z);
+		// 7
+		v3Min.x = min(v3Min.x, v3Out7.x);
+		v3Min.y = min(v3Min.y, v3Out7.y);
+		v3Min.z = min(v3Min.z, v3Out7.z);
+		v3Max.x = max(v3Max.x, v3Out7.x);
+		v3Max.y = max(v3Max.y, v3Out7.y);
+		v3Max.z = max(v3Max.z, v3Out7.z);
 
-			// 8
-			v3Min.x = min(v3Min.x, v3Out8.x);
-			v3Min.y = min(v3Min.y, v3Out8.y);
-			v3Min.z = min(v3Min.z, v3Out8.z);
-			v3Max.x = max(v3Max.x, v3Out8.x);
-			v3Max.y = max(v3Max.y, v3Out8.y);
-			v3Max.z = max(v3Max.z, v3Out8.z);
+		// 8
+		v3Min.x = min(v3Min.x, v3Out8.x);
+		v3Min.y = min(v3Min.y, v3Out8.y);
+		v3Min.z = min(v3Min.z, v3Out8.z);
+		v3Max.x = max(v3Max.x, v3Out8.x);
+		v3Max.y = max(v3Max.y, v3Out8.y);
+		v3Max.z = max(v3Max.z, v3Out8.z);
 
-			inoutRigidBodies[id].bbox.v3Min = v3Min;
-			inoutRigidBodies[id].bbox.v3Max = v3Max;
-			
-			rigidBody = inoutRigidBodies[id];
-			bbox = rigidBody.bbox;
-		}
-
-		bbox.v3Min = Vector3_Add(bbox.v3Min, rigidBody.v3Position);
-		bbox.v3Max = Vector3_Add(bbox.v3Max, rigidBody.v3Position);
-
+		inoutRigidBodies[id].bbox.v3Min = v3Min;
+		inoutRigidBodies[id].bbox.v3Max = v3Max;
+		
+		rigidBody = inoutRigidBodies[id];
+		bbox = rigidBody.bbox;
+		
 		bvhObject.bbox = bbox;
 	}
 	else if (bvhObject.nLeft > -1 && bvhObject.nRight == -1) // is bbox?

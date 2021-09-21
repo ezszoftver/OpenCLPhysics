@@ -213,6 +213,8 @@ namespace OpenCLPhysics
 	TriMesh::TriMesh()
 	{
 		m_pListBVHNodeTriangles = nullptr;
+		m_nOffset = -1;
+		m_nCount = 0;
 	}
 
 	TriMesh::~TriMesh()
@@ -760,6 +762,9 @@ namespace OpenCLPhysics
 			// set
 			m_listBVHNodeTriangles.push_back(node);
 		}
+
+		pTheTriMesh->m_nOffset = nOffset;
+		pTheTriMesh->m_nCount = nCount;
 		/*structBVHNodeTriangleOffset offset;
 		offset.m_nOffset = nOffset;
 		offset.m_nCount = nCount;
@@ -1001,19 +1006,17 @@ namespace OpenCLPhysics
 
 		// create BVHNodeTrianglesOffsets buffer
 		m_listBVHNodeTrianglesOffsets.clear();
-		int32_t nOffset = 0;
-		for (int32_t i = 0; i < m_listTriMeshs.size(); i++) 
+		for (int32_t i = 0; i < m_listRigidBodies.size(); i++) 
 		{
-			TriMesh *pMesh = m_listTriMeshs.at(i);
-			int32_t nCount = (int32_t)pMesh->m_pListBVHNodeTriangles->size();
+			int32_t nTriMeshId = m_listRigidBodies.at(i).m_nTriMeshId;
+			TriMesh* pMesh = m_listTriMeshs.at(nTriMeshId);
 
 			structBVHNodeTriangleOffset offset;
-			offset.m_nOffset = nOffset;
-			offset.m_nCount = nCount;
+			offset.m_nOffset = pMesh->m_nOffset;
+			offset.m_nCount = pMesh->m_nCount;
 			m_listBVHNodeTrianglesOffsets.push_back(offset);
-
-			nOffset += nCount;
 		}
+
 		m_clmem_inBVHNodeTrianglesOffsets = clCreateBuffer(m_context, CL_MEM_READ_ONLY, sizeof(structBVHNodeTriangleOffset) * m_listBVHNodeTrianglesOffsets.size(), NULL, NULL);
 		if (!m_clmem_inBVHNodeTrianglesOffsets) { return false; }
 		// -> copy
@@ -1382,11 +1385,99 @@ namespace OpenCLPhysics
 		return true;
 	}
 
-	structHits GetHits(structRigidBody structRigidBody1, structRigidBody structRigidBody2)
+	bool IsLeaf(structBVHNodeTriangle node)
+	{
+		if (-1 == node.m_nLeft && -1 == node.m_nRight) 
+		{
+			return true;
+		}
+		return false;
+	}
+
+	structHits GetHits(structRigidBody structRigidBody1, structRigidBody structRigidBody2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle *pListBVHNodeTriangles)
 	{
 		structHits hits;
 
-		;
+		int nTop = -1;
+		structBVHNodeTriangle arrStack[256];
+
+		structBVHNodeTriangle parent1 = pListBVHNodeTriangles[offset1.m_nOffset];
+		structBVHNodeTriangle parent2 = pListBVHNodeTriangles[offset2.m_nOffset];
+
+		if (-1 != parent1.m_nLeft)
+		{
+			structBBox bbox1 = pListBVHNodeTriangles[parent1.m_nLeft].m_BBox;
+
+			if (-1 != parent2.m_nLeft) 
+			{
+				structBBox bbox2 = pListBVHNodeTriangles[parent2.m_nLeft].m_BBox;
+
+				if (true == IsCollide(bbox1, bbox2)) 
+				{
+					structBVHNodeTriangle node;
+					node.m_nLeft = parent1.m_nLeft;
+					node.m_nRight = parent2.m_nLeft;
+
+					nTop++;
+					arrStack[nTop] = node;
+				}
+			}
+			if (-1 != parent2.m_nRight) 
+			{
+				structBBox bbox2 = pListBVHNodeTriangles[parent2.m_nRight].m_BBox;
+
+				if (true == IsCollide(bbox1, bbox2))
+				{
+					structBVHNodeTriangle node;
+					node.m_nLeft = parent1.m_nLeft;
+					node.m_nRight = parent2.m_nRight;
+
+					nTop++;
+					arrStack[nTop] = node;
+				}
+			}
+		}
+		if (-1 != parent1.m_nRight)
+		{
+			structBBox bbox1 = pListBVHNodeTriangles[parent1.m_nRight].m_BBox;
+
+			if (-1 != parent2.m_nLeft)
+			{
+				structBBox bbox2 = pListBVHNodeTriangles[parent2.m_nLeft].m_BBox;
+
+				if (true == IsCollide(bbox1, bbox2))
+				{
+					structBVHNodeTriangle node;
+					node.m_nLeft = parent1.m_nRight;
+					node.m_nRight = parent2.m_nLeft;
+
+					nTop++;
+					arrStack[nTop] = node;
+				}
+			}
+			if (-1 != parent2.m_nRight)
+			{
+				structBBox bbox2 = pListBVHNodeTriangles[parent2.m_nRight].m_BBox;
+
+				if (true == IsCollide(bbox1, bbox2))
+				{
+					structBVHNodeTriangle node;
+					node.m_nLeft = parent1.m_nRight;
+					node.m_nRight = parent2.m_nRight;
+
+					nTop++;
+					arrStack[nTop] = node;
+				}
+			}
+		}
+
+		while (nTop > -1)
+		{
+			structBVHNodeTriangle node = arrStack[nTop];
+			nTop--;
+
+			;
+		}
 
 		return hits;
 	}
@@ -1418,11 +1509,11 @@ namespace OpenCLPhysics
 				continue;
 			}
 
-			// ha static, akkor nem kell
-			if (structRigidBody1.m_fMass <= 0.0f) 
-			{
-				continue;
-			}
+			//// ha static, akkor nem kell
+			//if (structRigidBody1.m_fMass <= 0.0f) 
+			//{
+			//	continue;
+			//}
 
 			int nTop = -1;
 			int arrStack[64];
@@ -1457,7 +1548,7 @@ namespace OpenCLPhysics
 
 						if (true == IsCollide(structRigidBody1.m_BBox, bboxRigidBody2))
 						{
-							structHits hits = GetHits(structRigidBody1, structRigidBody2);
+							structHits hits = GetHits(structRigidBody1, structRigidBody2, m_listBVHNodeTrianglesOffsets[structRigidBody1.m_nTriMeshId], m_listBVHNodeTrianglesOffsets[structRigidBody2.m_nTriMeshId], &m_listBVHNodeTriangles[0]);
 
 							if (hits.m_nNumHits == 0) // nincs utkozes
 							{
