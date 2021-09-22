@@ -3,6 +3,8 @@
 #include <vector>
 #include <string>
 #include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtx/euler_angles.hpp"
 #include "CL/cl.h"
 
 #define MAX_HITS_COUNT_PER_OBJECTS 32

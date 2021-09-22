@@ -142,7 +142,7 @@ bool MainWindow::Init()
 
                 float fScale = 2.1f;
                 //m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 20 + (y * fScale), z * fScale));
-                m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale/*10*/, 1, 5));
+                m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 1.0f, 5));
                 m_physics.SetMass(dynamic_id, 85.0f); // dynamic
                 //m_physics.SetAngularVelocity(dynamic_id, glm::vec3(0.3f, 0.2f, 0.1f));
 
@@ -383,6 +383,23 @@ void MainWindow::TimerTick()
     glLoadMatrixf(glm::value_ptr(mCameraView * mWorld));
     
     //// Draw BBOXs
+    //{
+    //    glm::vec3 v3Position = m_physics.GetPosition(static_id);
+    //    glm::vec3 v3Min = v3Position + m_physics.GetBBoxMin(static_id);
+    //    glm::vec3 v3Max = v3Position + m_physics.GetBBoxMax(static_id);
+    //
+    //    glPointSize(20.0f);
+    //
+    //    glBegin(GL_POINTS);
+    //    {
+    //        glColor3f(1.0f, 0.0f, 0.0f);
+    //        glVertex3f(v3Min.x, v3Min.y, v3Min.z);
+    //        glVertex3f(v3Max.x, v3Max.y, v3Max.z);
+    //        glColor3f(1.0f, 1.0f, 1.0f);
+    //    }
+    //    glEnd();
+    //}
+    //
     //for (int i = 0; i < m_listDynamicIds.size(); i++)
     //{
     //    int dynamic_id = m_listDynamicIds.at(i);

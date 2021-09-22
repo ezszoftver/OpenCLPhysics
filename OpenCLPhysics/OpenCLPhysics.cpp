@@ -1,13 +1,10 @@
-#include "OpenCLPhysics.h"
+﻿#include "OpenCLPhysics.h"
 #include "Script.h"
 
 // sort algorithm example
 #include <iostream>     // std::cout
 #include <algorithm>    // std::sort
 #include <vector>       // std::vector
-
-#include "glm/gtc/matrix_transform.hpp"
-#include "glm/gtx/euler_angles.hpp"
 
 namespace OpenCLPhysics 
 {
@@ -85,6 +82,9 @@ namespace OpenCLPhysics
 			pBBox->Add(v);
 		}
 		
+		pBBox->m_v3Min -= glm::vec3(0.001f, 0.001f, 0.001f);
+		pBBox->m_v3Max += glm::vec3(0.001f, 0.001f, 0.001f);
+
 		return pBBox;
 	}
 
@@ -105,6 +105,9 @@ namespace OpenCLPhysics
 			glm::vec3 v = vertices[i];
 			pBBox->Add(v);
 		}
+
+		pBBox->m_v3Min -= glm::vec3(0.001f, 0.001f, 0.001f);
+		pBBox->m_v3Max += glm::vec3(0.001f, 0.001f, 0.001f);
 
 		return pBBox;
 	}
@@ -129,6 +132,9 @@ namespace OpenCLPhysics
 			glm::vec3 v = vertices[i];
 			pBBox->Add(v);
 		}
+
+		pBBox->m_v3Min -= glm::vec3(0.001f, 0.001f, 0.001f);
+		pBBox->m_v3Max += glm::vec3(0.001f, 0.001f, 0.001f);
 
 		return pBBox;
 	}
@@ -590,9 +596,12 @@ namespace OpenCLPhysics
 
 	bool SortTrianglesFunc(Triangle *a, Triangle *b) 
 	{ 
-		if (fabs(a->m_v3PosA.x - b->m_v3PosA.x) > 0.0001f) { return (a->m_v3PosA.x < b->m_v3PosA.x); }
-		if (fabs(a->m_v3PosA.y - b->m_v3PosA.y) > 0.0001f) { return (a->m_v3PosA.y < b->m_v3PosA.y); }
-		return (a->m_v3PosA.z < b->m_v3PosA.z);
+		glm::vec3 v3CenterA = (a->m_v3PosA + a->m_v3PosB + a->m_v3PosC) / 3.0f;
+		glm::vec3 v3CenterB = (b->m_v3PosA + b->m_v3PosB + b->m_v3PosC) / 3.0f;
+
+		if (fabs(v3CenterA.x - v3CenterB.x) > 0.00001f) { return (v3CenterA.x < v3CenterB.x); }
+		if (fabs(v3CenterA.y - v3CenterB.y) > 0.00001f) { return (v3CenterA.y < v3CenterB.y); }
+		return (v3CenterA.z < v3CenterB.z);
 	}
 
 	int SearchNeightboorBBox(BBox *pBBoxA, std::vector< BVHNodeTriangle* > *pListBBoxs, int nRange)
@@ -666,6 +675,10 @@ namespace OpenCLPhysics
 		std::vector< BVHNodeTriangle* > *pIN = nullptr;
 		std::vector< BVHNodeTriangle* >* pOUT = new std::vector< BVHNodeTriangle* >();
 
+		// root
+		BVHNodeTriangle* pRoot = new BVHNodeTriangle(0);
+		pTheTriMesh->m_pListBVHNodeTriangles->push_back(pRoot);
+
 		// triangles to bboxs
 		while (listTriangles.size() > 0)
 		{
@@ -732,13 +745,12 @@ namespace OpenCLPhysics
 		while (pIN->size() > 1);
 
 		// root
-		BVHNodeTriangle* pRoot = new BVHNodeTriangle(0);
 		pRoot->m_pLeft = pIN->at(0);
 		pRoot->m_pBBox = BBox::Create(pRoot->m_pLeft->m_pBBox);
 		pIN->erase(pIN->begin() + 0);
 
 		// add
-		pTheTriMesh->m_pListBVHNodeTriangles->insert(pTheTriMesh->m_pListBVHNodeTriangles->begin(), pRoot);
+		pTheTriMesh->m_pListBVHNodeTriangles->at(0) = pRoot;
 
 		// create structBVHTriangle array
 		int32_t nOffset = (int32_t)m_listBVHNodeTriangles.size();
@@ -1381,7 +1393,7 @@ namespace OpenCLPhysics
 		if (bbox1.v3Max.x < bbox2.v3Min.x || bbox1.v3Min.x > bbox2.v3Max.x) return false;
 		if (bbox1.v3Max.y < bbox2.v3Min.y || bbox1.v3Min.y > bbox2.v3Max.y) return false;
 		if (bbox1.v3Max.z < bbox2.v3Min.z || bbox1.v3Min.z > bbox2.v3Max.z) return false;
-
+		
 		return true;
 	}
 
@@ -1394,89 +1406,104 @@ namespace OpenCLPhysics
 		return false;
 	}
 
-	structHits GetHits(structRigidBody structRigidBody1, structRigidBody structRigidBody2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle *pListBVHNodeTriangles)
+	structBBox TranslateBBox(glm::vec3 v3Translate, structBBox bbox)
+	{
+		structBBox ret;
+
+		glm::vec3 v3Min = ToVector3(bbox.v3Min);
+		glm::vec3 v3Max = ToVector3(bbox.v3Max);
+
+		v3Min += v3Translate;
+		v3Max += v3Translate;
+
+		ret.v3Min = ToVector3(v3Min);
+		ret.v3Max = ToVector3(v3Max);
+
+		return ret;
+	}
+
+	structHits GetHits(structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles)
 	{
 		structHits hits;
 
-		int nTop = -1;
-		structBVHNodeTriangle arrStack[256];
+		// TRANSFORM 1
+		glm::vec3 v3Rotate1 = ToVector3(structRigidBody1.m_v3Rotate);
+		glm::vec3 v3Position1 = ToVector3(structRigidBody1.m_v3Position);
+		glm::mat4 T1 = glm::translate(glm::mat4(1.0f), v3Position1) * glm::eulerAngleXYZ(v3Rotate1.x, v3Rotate1.y, v3Rotate1.z);
 
-		structBVHNodeTriangle parent1 = pListBVHNodeTriangles[offset1.m_nOffset];
-		structBVHNodeTriangle parent2 = pListBVHNodeTriangles[offset2.m_nOffset];
+		// TRANSFORM 2
+		glm::vec3 v3Rotate2 = ToVector3(structRigidBody2.m_v3Rotate);
+		glm::vec3 v3Position2 = ToVector3(structRigidBody2.m_v3Position);
+		glm::mat4 T2 = glm::translate(glm::mat4(1.0f), v3Position2) * glm::eulerAngleXYZ(v3Rotate2.x, v3Rotate2.y, v3Rotate2.z);
 
-		if (-1 != parent1.m_nLeft)
+		for (int nId1 = offset1.m_nOffset; nId1 < (offset1.m_nOffset + offset1.m_nCount); nId1++)
 		{
-			structBBox bbox1 = pListBVHNodeTriangles[parent1.m_nLeft].m_BBox;
-
-			if (-1 != parent2.m_nLeft) 
+			if (false == IsLeaf(pListBVHNodeTriangles[nId1]))
 			{
-				structBBox bbox2 = pListBVHNodeTriangles[parent2.m_nLeft].m_BBox;
+				continue;
+			}
 
-				if (true == IsCollide(bbox1, bbox2)) 
+			// TRANSFORM TRIANGLE 1
+			structBBox structTriangle1_BBox = TranslateBBox(v3Position1, pListBVHNodeTriangles[nId1].m_BBox);
+
+			structTriangle triangle1 = pListBVHNodeTriangles[nId1].m_Triangle; // minden egyes RigidBody1 triangle-hez, ...
+			glm::vec3 tri1_a = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3PosA), 1.0f));
+			glm::vec3 tri1_b = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3PosB), 1.0f));
+			glm::vec3 tri1_c = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3PosC), 1.0f));
+			glm::vec3 tri1_n = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3Normal), 0.0f));
+
+			// ..., megkeresni a metsző háromszögeket a RigidBody2 -ből. ...
+			int nTop = -1;
+			int arrStack[64];
+
+			nTop++;
+			arrStack[nTop] = offset2.m_nOffset;
+
+			while (nTop > -1)
+			{
+				int nId2 = arrStack[nTop];
+				nTop--;
+
+				structBVHNodeTriangle structNodeOrTriangle = pListBVHNodeTriangles[nId2];
+			
+				// TRANSFORM BBOX 2
+				structNodeOrTriangle.m_BBox = TranslateBBox(v3Position2, structNodeOrTriangle.m_BBox);
+
+				if (true == IsLeaf(structNodeOrTriangle)) // ... Ha találtunk háromszöget, akkor tri-tri collision-detection. ...
 				{
-					structBVHNodeTriangle node;
-					node.m_nLeft = parent1.m_nLeft;
-					node.m_nRight = parent2.m_nLeft;
+					if (true == IsCollide(structTriangle1_BBox, structNodeOrTriangle.m_BBox))
+					{
+						// TRANSFORM TRIANGLE 2
+						structTriangle triangle2 = structNodeOrTriangle.m_Triangle;
 
-					nTop++;
-					arrStack[nTop] = node;
+						glm::vec3 tri2_a = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3PosA), 1.0f));
+						glm::vec3 tri2_b = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3PosB), 1.0f));
+						glm::vec3 tri2_c = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3PosC), 1.0f));
+						glm::vec3 tri2_n = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3Normal), 0.0f));
+
+						// CollisionDetection tri1, tri2
+						;
+					}
+				}
+				else // ... Ha nem találtunk háromszöget, akkor keresés.
+				{
+					if (true == IsCollide(structTriangle1_BBox, structNodeOrTriangle.m_BBox))
+					{
+						if (structNodeOrTriangle.m_nLeft != -1)
+						{
+							nTop++;
+							arrStack[nTop] = structNodeOrTriangle.m_nLeft;
+						}
+
+						if (structNodeOrTriangle.m_nRight != -1)
+						{
+							nTop++;
+							arrStack[nTop] = structNodeOrTriangle.m_nRight;
+						}
+					}
 				}
 			}
-			if (-1 != parent2.m_nRight) 
-			{
-				structBBox bbox2 = pListBVHNodeTriangles[parent2.m_nRight].m_BBox;
 
-				if (true == IsCollide(bbox1, bbox2))
-				{
-					structBVHNodeTriangle node;
-					node.m_nLeft = parent1.m_nLeft;
-					node.m_nRight = parent2.m_nRight;
-
-					nTop++;
-					arrStack[nTop] = node;
-				}
-			}
-		}
-		if (-1 != parent1.m_nRight)
-		{
-			structBBox bbox1 = pListBVHNodeTriangles[parent1.m_nRight].m_BBox;
-
-			if (-1 != parent2.m_nLeft)
-			{
-				structBBox bbox2 = pListBVHNodeTriangles[parent2.m_nLeft].m_BBox;
-
-				if (true == IsCollide(bbox1, bbox2))
-				{
-					structBVHNodeTriangle node;
-					node.m_nLeft = parent1.m_nRight;
-					node.m_nRight = parent2.m_nLeft;
-
-					nTop++;
-					arrStack[nTop] = node;
-				}
-			}
-			if (-1 != parent2.m_nRight)
-			{
-				structBBox bbox2 = pListBVHNodeTriangles[parent2.m_nRight].m_BBox;
-
-				if (true == IsCollide(bbox1, bbox2))
-				{
-					structBVHNodeTriangle node;
-					node.m_nLeft = parent1.m_nRight;
-					node.m_nRight = parent2.m_nRight;
-
-					nTop++;
-					arrStack[nTop] = node;
-				}
-			}
-		}
-
-		while (nTop > -1)
-		{
-			structBVHNodeTriangle node = arrStack[nTop];
-			nTop--;
-
-			;
 		}
 
 		return hits;
@@ -1509,11 +1536,11 @@ namespace OpenCLPhysics
 				continue;
 			}
 
-			//// ha static, akkor nem kell
-			//if (structRigidBody1.m_fMass <= 0.0f) 
-			//{
-			//	continue;
-			//}
+			// ha static, akkor nem kell
+			if (structRigidBody1.m_fMass <= 0.0f) 
+			{
+				continue;
+			}
 
 			int nTop = -1;
 			int arrStack[64];
@@ -1530,7 +1557,7 @@ namespace OpenCLPhysics
 
 				if (structBVHObject.m_nLeft == -1 && structBVHObject.m_nRight == -1) 
 				{
-					// saj�t mag�val nem kell �tk�z�svizsg�latot csin�lni
+					// saját magával nem kell ütközésvizsgálatot csinálni
 					int id2 = structBVHObject.m_nRigidBodyId;
 
 					if (id1 != id2)

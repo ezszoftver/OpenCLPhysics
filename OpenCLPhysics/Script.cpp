@@ -408,9 +408,10 @@ __kernel void UpdateBVHObjects(__global BVHObject *inoutBVHObjects, __global Rig
 		RigidBody rigidBody = inoutRigidBodies[id];
 		BBox bbox = rigidBody.inBBox;
 
-		Matrix4 mat4Translate = Mat4_CreateTranslate(rigidBody.v3Position);
-		Matrix4 mat4EulerRotate = Mat4_CreateEulerRotate(rigidBody.v3Rotate);
-		Matrix4 mat4Transform = Mult_Mat4Mat4(mat4Translate, mat4EulerRotate);
+		//Matrix4 mat4Translate = Mat4_CreateTranslate(rigidBody.v3Position);
+		//Matrix4 mat4EulerRotate = Mat4_CreateEulerRotate(rigidBody.v3Rotate);
+		//Matrix4 mat4Transform = Mult_Mat4Mat4(mat4Translate, mat4EulerRotate);
+		Matrix4 mat4Transform = Mat4_CreateEulerRotate(rigidBody.v3Rotate);
 		
 		Vector3 v3Min = bbox.v3Min;
 		Vector3 v3Max = bbox.v3Max;
