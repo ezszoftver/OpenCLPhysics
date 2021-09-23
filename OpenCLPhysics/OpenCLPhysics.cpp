@@ -1497,9 +1497,106 @@ namespace OpenCLPhysics
 		return ret;
 	}
 
-	structHits GetHits(structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles)
+	structHits Intersect_LineTriangle(glm::vec3 v3LineA, glm::vec3 v3LineB, glm::vec3 v3TriA, glm::vec3 v3TriB, glm::vec3 v3TriC, glm::vec3 v3TriN)
 	{
-		structHits hits;
+		structHits ret;
+
+		ret.m_nNumHits = 0;
+
+		glm::vec3 v3Dir = glm::normalize(v3LineB - v3LineA);
+
+		float cost = glm::dot(v3Dir, v3TriN);
+		if (std::fabs(cost) < 0.001f)
+		{
+			return ret;
+		}
+			
+		float t = glm::dot(v3TriA - v3LineA, v3TriN) / cost;
+		float fMaxLenght = glm::distance(v3LineA, v3LineB);
+		if (t < 0.0f || t > fMaxLenght)
+		{
+			return ret;
+		}
+			
+		glm::vec3 v3P = v3LineA + (v3Dir * t);
+
+		glm::vec3 v3N2;
+		v3N2 = glm::cross(v3TriB - v3TriA, v3P - v3TriA);
+		float c1 = glm::dot(v3TriN, v3N2);
+
+		v3N2 = glm::cross(v3TriC - v3TriB, v3P - v3TriB);
+		float c2 = glm::dot(v3TriN, v3N2);
+
+		v3N2 = glm::cross(v3TriA - v3TriC, v3P - v3TriC);
+		float c3 = glm::dot(v3TriN, v3N2);
+
+		if ((c1 > 0.0f && c2 > 0.0f && c3 > 0.0f) || (c1 < 0.0f && c2 < 0.0f && c3 < 0.0f))
+		{
+			structHit hit;
+			hit.m_v3HitPointInWorld = ToVector3(v3P);
+			hit.m_v3Normal = ToVector3(v3TriN);
+
+			ret.m_nNumHits = 1;
+			ret.m_hits[0] = hit;
+
+			return ret;
+		}
+
+		return ret;
+	}
+
+	structHits Intersect_TriangleTriangle(glm::vec3 tri1_a, glm::vec3 tri1_b, glm::vec3 tri1_c, glm::vec3 tri1_n, glm::vec3 tri2_a, glm::vec3 tri2_b, glm::vec3 tri2_c, glm::vec3 tri2_n)
+	{
+		structHits hits1 = Intersect_LineTriangle(tri1_a, tri1_b, tri2_a, tri2_b, tri2_c, tri2_n);
+		structHits hits2 = Intersect_LineTriangle(tri1_b, tri1_c, tri2_a, tri2_b, tri2_c, tri2_n);
+		structHits hits3 = Intersect_LineTriangle(tri1_c, tri1_a, tri2_a, tri2_b, tri2_c, tri2_n);
+
+		structHits hits4 = Intersect_LineTriangle(tri2_a, tri2_b, tri1_a, tri1_b, tri1_c, tri1_n);
+		structHits hits5 = Intersect_LineTriangle(tri2_b, tri2_c, tri1_a, tri1_b, tri1_c, tri1_n);
+		structHits hits6 = Intersect_LineTriangle(tri2_c, tri2_a, tri1_a, tri1_b, tri1_c, tri1_n);
+
+		structHits ret;
+
+		if (1 == hits1.m_nNumHits) { ret.m_hits[ret.m_nNumHits] = hits1.m_hits[0]; ret.m_nNumHits++; }
+		if (1 == hits2.m_nNumHits) { ret.m_hits[ret.m_nNumHits] = hits2.m_hits[0]; ret.m_nNumHits++; }
+		if (1 == hits3.m_nNumHits) { ret.m_hits[ret.m_nNumHits] = hits3.m_hits[0]; ret.m_nNumHits++; }
+		if (1 == hits4.m_nNumHits) { ret.m_hits[ret.m_nNumHits] = hits4.m_hits[0]; ret.m_nNumHits++; }
+		if (1 == hits5.m_nNumHits) { ret.m_hits[ret.m_nNumHits] = hits5.m_hits[0]; ret.m_nNumHits++; }
+		if (1 == hits6.m_nNumHits) { ret.m_hits[ret.m_nNumHits] = hits6.m_hits[0]; ret.m_nNumHits++; }
+
+		return ret;
+	}									  
+
+	bool IsEqual(structHit hit1, structHit hit2)
+	{
+		if (glm::distance(ToVector3(hit1.m_v3HitPointInWorld), ToVector3(hit2.m_v3HitPointInWorld)) < 0.001f) 
+		{
+			if (glm::angle(ToVector3(hit1.m_v3Normal), ToVector3(hit2.m_v3Normal)) < (3.141592f / 180.0f)) // 1 degree 
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	bool IsContains(structHits hits, structHit hit2)
+	{
+		for (int i = 0; i < hits.m_nNumHits; i++)
+		{
+			structHit hit1 = hits.m_hits[i];
+			if (true == IsEqual(hit1, hit2))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	structHits SearchHits(structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles)
+	{
+		structHits ret;
 
 		// TRANSFORM 1
 		glm::vec3 v3Rotate1 = ToVector3(structRigidBody1.m_v3Rotate);
@@ -1557,7 +1654,22 @@ namespace OpenCLPhysics
 						glm::vec3 tri2_n = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3Normal), 0.0f));
 
 						// CollisionDetection tri1, tri2
-						;
+						structHits hits = Intersect_TriangleTriangle(tri1_a, tri1_b, tri1_c, tri1_n, tri2_a, tri2_b, tri2_c, tri2_n);
+
+						for (int i = 0; i < hits.m_nNumHits; i++) 
+						{
+							if (false == IsContains(ret, hits.m_hits[i]))
+							{
+								ret.m_hits[ret.m_nNumHits] = hits.m_hits[i];
+								ret.m_nNumHits++;
+
+								if (ret.m_nNumHits >= MAX_HITS)
+								{
+									return ret;
+								}
+							}
+							
+						}
 					}
 				}
 				else // ... Ha nem találtunk háromszöget, akkor keresés.
@@ -1581,7 +1693,7 @@ namespace OpenCLPhysics
 
 		}
 
-		return hits;
+		return ret;
 	}
 
 	void Physics::CollisionDetection() 
@@ -1600,9 +1712,19 @@ namespace OpenCLPhysics
 			return;
 		}
 
+		// hits-ek törlése
+		for (int32_t i = 0; i < m_listHits.size(); i++)
+		{
+			// 1 - EZ MEGY MAJD AZ OPENCL FUGGVENYBE
+			structHits hits = m_listHits[i];
+			hits.m_nNumHits = 0;
+			m_listHits[i] = hits;
+		}
+
+		// ütközés keresés
 		for (int32_t id1 = 0; id1 < m_listRigidBodies.size(); id1++)
 		{
-			// EZ MEGY MAJD AZ OPENCL FUGGVENYBE
+			// 2 - EZ MEGY MAJD AZ OPENCL FUGGVENYBE
 			structRigidBody structRigidBody1 = m_listRigidBodies.at(id1);
 
 			// isEnabled == false, akkor nem kell
@@ -1650,7 +1772,7 @@ namespace OpenCLPhysics
 
 						if (true == IsCollide(structRigidBody1.m_BBox, bboxRigidBody2))
 						{
-							structHits hits = GetHits(structRigidBody1, structRigidBody2, m_listBVHNodeTrianglesOffsets[structRigidBody1.m_nTriMeshId], m_listBVHNodeTrianglesOffsets[structRigidBody2.m_nTriMeshId], &m_listBVHNodeTriangles[0]);
+							structHits hits = SearchHits(structRigidBody1, structRigidBody2, m_listBVHNodeTrianglesOffsets[structRigidBody1.m_nTriMeshId], m_listBVHNodeTrianglesOffsets[structRigidBody2.m_nTriMeshId], &m_listBVHNodeTriangles[0]);
 
 							if (hits.m_nNumHits == 0) // nincs utkozes
 							{
@@ -1659,7 +1781,21 @@ namespace OpenCLPhysics
 							else // van utkozes => szettolas
 							{
 								m_listIsCollisionResponse[id1] = 0;
-								m_listHits[id1] = hits;
+
+								for (int i = 0; i < hits.m_nNumHits; i++) 
+								{
+									if (m_listHits[id1].m_nNumHits >= MAX_HITS) 
+									{
+										continue;
+									}
+
+									m_listHits[id1].m_hits[m_listHits[id1].m_nNumHits].m_nRigidBodyAId = id1;
+									m_listHits[id1].m_hits[m_listHits[id1].m_nNumHits].m_nRigidBodyBId = id2;
+
+									m_listHits[id1].m_hits[m_listHits[id1].m_nNumHits] = hits.m_hits[i];
+									m_listHits[id1].m_nNumHits++;
+								}
+								
 							}
 						}
 					}
@@ -1685,6 +1821,11 @@ namespace OpenCLPhysics
 			}
 			
 		}
+	}
+
+	std::vector < structHits >* Physics::GetHits() 
+	{
+		return &m_listHits;
 	}
 
 	void Physics::CollisionResponse()

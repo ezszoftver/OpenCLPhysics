@@ -142,10 +142,10 @@ bool MainWindow::Init()
 
                 float fScale = 2.1f;
                 //m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 20 + (y * fScale), z * fScale));
-                m_physics.SetPosition(dynamic_id, glm::vec3(/*x * fScale*/5, 1.0f, 5));
-                m_physics.SetEulerRotate(dynamic_id, glm::vec3(0,0,0.785f));
+                m_physics.SetPosition(dynamic_id, glm::vec3(/*x * fScale*/10, 0.0f, 5));
+                m_physics.SetEulerRotate(dynamic_id, glm::vec3(0,0,0));
                 m_physics.SetMass(dynamic_id, 85.0f); // dynamic
-                //m_physics.SetAngularVelocity(dynamic_id, glm::vec3(0.3f, 0.2f, 0.1f));
+                m_physics.SetAngularVelocity(dynamic_id, glm::vec3(0.3f, 0.2f, 0.1f));
 
                 m_listDynamicIds.push_back(dynamic_id);
 
@@ -156,7 +156,7 @@ bool MainWindow::Init()
     }
 
     // gravity
-    m_physics.SetGravity(glm::vec3(0, -0.1, 0));
+    m_physics.SetGravity(glm::vec3(0, -0.0, 0));
 
     // Avatar
     m_Camera.Init(glm::vec3(15, 3, 15), glm::vec3(0, 0, 0));
@@ -418,13 +418,45 @@ void MainWindow::TimerTick()
     //
     //    glBegin(GL_POINTS);
     //    {
-    //        glColor3f(1.0f, 0.0f, 0.0f);
+    //        glColor3f(1.0f, 1.0f, 0.0f);
     //        glVertex3f(v3Min.x, v3Min.y, v3Min.z);
     //        glVertex3f(v3Max.x, v3Max.y, v3Max.z);
     //        glColor3f(1.0f, 1.0f, 1.0f);
     //    }
     //    glEnd();
     //}
+
+    // Draw hits
+    std::vector < structHits > *pListHits = m_physics.GetHits();
+    for (int32_t i = 0; i < pListHits->size(); i++)
+    {
+        structHits hits = pListHits->at(i);
+
+        for (int32_t j = 0; j < hits.m_nNumHits; j++) 
+        {
+            structVector3 p1 = hits.m_hits[j].m_v3HitPointInWorld;
+            structVector3 p2 = hits.m_hits[j].m_v3Normal;
+
+            glPointSize(20.0f);
+
+            glBegin(GL_POINTS);
+            {
+                glColor3f(1.0f, 0.0f, 0.0f);
+                glVertex3f(p1.x, p1.y, p1.z);
+                glColor3f(1.0f, 1.0f, 1.0f);
+            }
+            glEnd();
+
+            glBegin(GL_LINES);
+            {
+                glColor3f(0.0f, 1.0f, 0.0f);
+                glVertex3f(p1.x, p1.y, p1.z);
+                glVertex3f(p1.x + p2.x, p1.y + p2.y, p1.z + p2.z);
+                glColor3f(1.0f, 1.0f, 1.0f);
+            }
+            glEnd();
+        }
+    }
 
     m_SkyBox.Draw(v3CameraPos, 300.0f);
     

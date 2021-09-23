@@ -5,9 +5,10 @@
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtx/euler_angles.hpp"
+#include "glm/gtx/vector_angle.hpp"
 #include "CL/cl.h"
 
-#define MAX_HITS_COUNT_PER_OBJECTS 32
+#define MAX_HITS 100
 
 namespace OpenCLPhysics
 {
@@ -122,7 +123,7 @@ namespace OpenCLPhysics
 	typedef struct _structHits 
 	{
 		int32_t m_nNumHits = 0;
-		structHit m_hits[MAX_HITS_COUNT_PER_OBJECTS];
+		structHit m_hits[MAX_HITS];
 	}
 	structHits;
 
@@ -231,6 +232,8 @@ namespace OpenCLPhysics
 
 		uint32_t MaxRigidBodies();
 		uint32_t NumRigidBodies();
+
+		std::vector < structHits >* GetHits();
 
 	private:
 		void SetTriMesh(int32_t nId, std::vector<glm::vec3>* pListVertices);
