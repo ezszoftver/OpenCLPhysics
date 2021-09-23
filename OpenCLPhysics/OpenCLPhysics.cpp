@@ -1406,15 +1406,90 @@ namespace OpenCLPhysics
 		return false;
 	}
 
-	structBBox TranslateBBox(glm::vec3 v3Translate, structBBox bbox)
+	structBBox TransformBBox(glm::mat4 T, structBBox bbox)
 	{
 		structBBox ret;
 
 		glm::vec3 v3Min = ToVector3(bbox.v3Min);
 		glm::vec3 v3Max = ToVector3(bbox.v3Max);
 
-		v3Min += v3Translate;
-		v3Max += v3Translate;
+		glm::vec3 v3In1 = glm::vec3(v3Min.x, v3Min.y, v3Min.z);
+		glm::vec3 v3In2 = glm::vec3(v3Max.x, v3Min.y, v3Min.z);
+		glm::vec3 v3In3 = glm::vec3(v3Max.x, v3Min.y, v3Max.z);
+		glm::vec3 v3In4 = glm::vec3(v3Min.x, v3Min.y, v3Max.z);
+		glm::vec3 v3In5 = glm::vec3(v3Min.x, v3Max.y, v3Min.z);
+		glm::vec3 v3In6 = glm::vec3(v3Max.x, v3Max.y, v3Min.z);
+		glm::vec3 v3In7 = glm::vec3(v3Max.x, v3Max.y, v3Max.z);
+		glm::vec3 v3In8 = glm::vec3(v3Min.x, v3Max.y, v3Max.z);
+
+		glm::vec3 v3Out1 = glm::vec3(T * glm::vec4(v3In1, 1.0f));
+		glm::vec3 v3Out2 = glm::vec3(T * glm::vec4(v3In2, 1.0f));
+		glm::vec3 v3Out3 = glm::vec3(T * glm::vec4(v3In3, 1.0f));
+		glm::vec3 v3Out4 = glm::vec3(T * glm::vec4(v3In4, 1.0f));
+		glm::vec3 v3Out5 = glm::vec3(T * glm::vec4(v3In5, 1.0f));
+		glm::vec3 v3Out6 = glm::vec3(T * glm::vec4(v3In6, 1.0f));
+		glm::vec3 v3Out7 = glm::vec3(T * glm::vec4(v3In7, 1.0f));
+		glm::vec3 v3Out8 = glm::vec3(T * glm::vec4(v3In8, 1.0f));
+
+		// 1
+		v3Min = v3Out1;
+		v3Max = v3Out1;
+
+		// 2
+		v3Min.x = std::fmin(v3Min.x, v3Out2.x);
+		v3Min.y = std::fmin(v3Min.y, v3Out2.y);
+		v3Min.z = std::fmin(v3Min.z, v3Out2.z);
+		v3Max.x = std::fmax(v3Max.x, v3Out2.x);
+		v3Max.y = std::fmax(v3Max.y, v3Out2.y);
+		v3Max.z = std::fmax(v3Max.z, v3Out2.z);
+
+		// 3
+		v3Min.x = std::fmin(v3Min.x, v3Out3.x);
+		v3Min.y = std::fmin(v3Min.y, v3Out3.y);
+		v3Min.z = std::fmin(v3Min.z, v3Out3.z);
+		v3Max.x = std::fmax(v3Max.x, v3Out3.x);
+		v3Max.y = std::fmax(v3Max.y, v3Out3.y);
+		v3Max.z = std::fmax(v3Max.z, v3Out3.z);
+
+		// 4
+		v3Min.x = std::fmin(v3Min.x, v3Out4.x);
+		v3Min.y = std::fmin(v3Min.y, v3Out4.y);
+		v3Min.z = std::fmin(v3Min.z, v3Out4.z);
+		v3Max.x = std::fmax(v3Max.x, v3Out4.x);
+		v3Max.y = std::fmax(v3Max.y, v3Out4.y);
+		v3Max.z = std::fmax(v3Max.z, v3Out4.z);
+
+		// 5
+		v3Min.x = std::fmin(v3Min.x, v3Out5.x);
+		v3Min.y = std::fmin(v3Min.y, v3Out5.y);
+		v3Min.z = std::fmin(v3Min.z, v3Out5.z);
+		v3Max.x = std::fmax(v3Max.x, v3Out5.x);
+		v3Max.y = std::fmax(v3Max.y, v3Out5.y);
+		v3Max.z = std::fmax(v3Max.z, v3Out5.z);
+
+		// 6
+		v3Min.x = std::fmin(v3Min.x, v3Out6.x);
+		v3Min.y = std::fmin(v3Min.y, v3Out6.y);
+		v3Min.z = std::fmin(v3Min.z, v3Out6.z);
+		v3Max.x = std::fmax(v3Max.x, v3Out6.x);
+		v3Max.y = std::fmax(v3Max.y, v3Out6.y);
+		v3Max.z = std::fmax(v3Max.z, v3Out6.z);
+
+		// 7
+		v3Min.x = std::fmin(v3Min.x, v3Out7.x);
+		v3Min.y = std::fmin(v3Min.y, v3Out7.y);
+		v3Min.z = std::fmin(v3Min.z, v3Out7.z);
+		v3Max.x = std::fmax(v3Max.x, v3Out7.x);
+		v3Max.y = std::fmax(v3Max.y, v3Out7.y);
+		v3Max.z = std::fmax(v3Max.z, v3Out7.z);
+
+		// 8
+		v3Min.x = std::fmin(v3Min.x, v3Out8.x);
+		v3Min.y = std::fmin(v3Min.y, v3Out8.y);
+		v3Min.z = std::fmin(v3Min.z, v3Out8.z);
+		v3Max.x = std::fmax(v3Max.x, v3Out8.x);
+		v3Max.y = std::fmax(v3Max.y, v3Out8.y);
+		v3Max.z = std::fmax(v3Max.z, v3Out8.z);
 
 		ret.v3Min = ToVector3(v3Min);
 		ret.v3Max = ToVector3(v3Max);
@@ -1444,7 +1519,7 @@ namespace OpenCLPhysics
 			}
 
 			// TRANSFORM TRIANGLE 1
-			structBBox structTriangle1_BBox = TranslateBBox(v3Position1, pListBVHNodeTriangles[nId1].m_BBox);
+			structBBox structTriangle1_BBox = TransformBBox(T1, pListBVHNodeTriangles[nId1].m_BBox);
 
 			structTriangle triangle1 = pListBVHNodeTriangles[nId1].m_Triangle; // minden egyes RigidBody1 triangle-hez, ...
 			glm::vec3 tri1_a = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3PosA), 1.0f));
@@ -1467,7 +1542,7 @@ namespace OpenCLPhysics
 				structBVHNodeTriangle structNodeOrTriangle = pListBVHNodeTriangles[nId2];
 			
 				// TRANSFORM BBOX 2
-				structNodeOrTriangle.m_BBox = TranslateBBox(v3Position2, structNodeOrTriangle.m_BBox);
+				structNodeOrTriangle.m_BBox = TransformBBox(T2, structNodeOrTriangle.m_BBox);
 
 				if (true == IsLeaf(structNodeOrTriangle)) // ... Ha találtunk háromszöget, akkor tri-tri collision-detection. ...
 				{
