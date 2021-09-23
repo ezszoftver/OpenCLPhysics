@@ -1518,13 +1518,9 @@ namespace OpenCLPhysics
 				continue;
 			}
 
-			// TRANSFORM TRIANGLE 1
+			// TRANSFORM BBOX 1
 			structBBox structTriangle1_BBox = TransformBBox(T1, pListBVHNodeTriangles[nId1].m_BBox);
-
 			structTriangle triangle1 = pListBVHNodeTriangles[nId1].m_Triangle; // minden egyes RigidBody1 triangle-hez, ...
-			glm::vec3 tri1_a = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3PosA), 1.0f));
-			glm::vec3 tri1_b = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3PosB), 1.0f));
-			glm::vec3 tri1_c = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3PosC), 1.0f));
 			glm::vec3 tri1_n = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3Normal), 0.0f));
 
 			// ..., megkeresni a metsző háromszögeket a RigidBody2 -ből. ...
@@ -1543,18 +1539,31 @@ namespace OpenCLPhysics
 			
 				// TRANSFORM BBOX 2
 				structNodeOrTriangle.m_BBox = TransformBBox(T2, structNodeOrTriangle.m_BBox);
+				structTriangle triangle2 = structNodeOrTriangle.m_Triangle;
+				glm::vec3 tri2_n = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3Normal), 0.0f));
+
+				if (glm::dot(tri1_n, tri2_n) > 0.0f) 
+				{
+					continue;
+				}
 
 				if (true == IsLeaf(structNodeOrTriangle)) // ... Ha találtunk háromszöget, akkor tri-tri collision-detection. ...
 				{
 					if (true == IsCollide(structTriangle1_BBox, structNodeOrTriangle.m_BBox))
 					{
-						// TRANSFORM TRIANGLE 2
-						structTriangle triangle2 = structNodeOrTriangle.m_Triangle;
+						// TRANSFORM TRIANGLE 1
+						//structTriangle triangle1 = pListBVHNodeTriangles[nId1].m_Triangle; // minden egyes RigidBody1 triangle-hez, ...
+						glm::vec3 tri1_a = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3PosA), 1.0f));
+						glm::vec3 tri1_b = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3PosB), 1.0f));
+						glm::vec3 tri1_c = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3PosC), 1.0f));
+						//glm::vec3 tri1_n = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3Normal), 0.0f));
 
+						// TRANSFORM TRIANGLE 2
+						//structTriangle triangle2 = structNodeOrTriangle.m_Triangle;
 						glm::vec3 tri2_a = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3PosA), 1.0f));
 						glm::vec3 tri2_b = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3PosB), 1.0f));
 						glm::vec3 tri2_c = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3PosC), 1.0f));
-						glm::vec3 tri2_n = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3Normal), 0.0f));
+						//glm::vec3 tri2_n = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3Normal), 0.0f));
 
 						// CollisionDetection tri1, tri2
 						;
