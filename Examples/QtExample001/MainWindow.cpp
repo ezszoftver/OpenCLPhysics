@@ -156,7 +156,7 @@ bool MainWindow::Init()
     }
 
     // gravity
-    m_physics.SetGravity(glm::vec3(0, -0.0, 0));
+    m_physics.SetGravity(glm::vec3(0, -9.81, 0));
 
     // Avatar
     m_Camera.Init(glm::vec3(15, 3, 15), glm::vec3(0, 0, 0));
@@ -221,7 +221,7 @@ void MainWindow::TimerTick()
         dt = 1.0f / 10.0f;
     }
 
-    m_physics.Update(dt);
+    m_physics.Update(dt, 1);
 
     int nWidth = ui.glWidget->width();
     int nHeight = ui.glWidget->height();
@@ -308,10 +308,10 @@ void MainWindow::TimerTick()
     
             int dynamic_id = m_listDynamicIds.at(i);
     
-            if (false == m_physics.IsEnabled(dynamic_id))
-            {
-                continue;
-            }
+            //if (false == m_physics.IsEnabled(dynamic_id))
+            //{
+            //    continue;
+            //}
     
             glm::mat4 mWorld = m_physics.GetTransform(dynamic_id);
             m_shaderShadowMap.SetMatrix("matWorld", &mWorld);
@@ -360,10 +360,10 @@ void MainWindow::TimerTick()
     
             int dynamic_id = m_listDynamicIds.at(i);
     
-            if (false == m_physics.IsEnabled(dynamic_id))
-            {
-                continue;
-            }
+            //if (false == m_physics.IsEnabled(dynamic_id))
+            //{
+            //    continue;
+            //}
     
             glm::mat4 mWorld = m_physics.GetTransform(dynamic_id);
             m_shaderDraw.SetMatrix("matWorld", &mWorld);
@@ -405,10 +405,10 @@ void MainWindow::TimerTick()
     //{
     //    int dynamic_id = m_listDynamicIds.at(i);
     //
-    //    if (false == m_physics.IsEnabled(dynamic_id))
-    //    {
-    //        continue;
-    //    }
+    //    //if (false == m_physics.IsEnabled(dynamic_id))
+    //    //{
+    //    //    continue;
+    //    //}
     //
     //    glm::vec3 v3Position = m_physics.GetPosition(dynamic_id);
     //    glm::vec3 v3Min = v3Position + m_physics.GetBBoxMin(dynamic_id);

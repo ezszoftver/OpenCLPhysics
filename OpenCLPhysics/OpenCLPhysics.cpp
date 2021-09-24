@@ -1124,7 +1124,7 @@ namespace OpenCLPhysics
 		CollisionDetection();
 
 		// 6. CollisionResponse
-		CollisionResponse();
+		CollisionResponse(dt);
 
 		// 7. read to RAM for CPU
 		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), &(m_listRigidBodies[0]), 0, NULL, NULL);
@@ -1719,6 +1719,8 @@ namespace OpenCLPhysics
 			structHits hits = m_listHits[i];
 			hits.m_nNumHits = 0;
 			m_listHits[i] = hits;
+
+			m_listIsCollisionResponse[i] = 0;
 		}
 
 		// ütközés keresés
@@ -1728,10 +1730,10 @@ namespace OpenCLPhysics
 			structRigidBody structRigidBody1 = m_listRigidBodies.at(id1);
 
 			// isEnabled == false, akkor nem kell
-			if (0 == structRigidBody1.m_nIsEnabled) 
-			{
-				continue;
-			}
+			//if (0 == structRigidBody1.m_nIsEnabled) 
+			//{
+			//	continue;
+			//}
 
 			// ha static, akkor nem kell
 			if (structRigidBody1.m_fMass <= 0.0f) 
@@ -1828,7 +1830,82 @@ namespace OpenCLPhysics
 		return &m_listHits;
 	}
 
-	void Physics::CollisionResponse()
+	bool IsEqualNormals(structVector3 v3Normal1, structVector3 v3Normal2)
 	{
+		if (glm::angle(ToVector3(v3Normal1), ToVector3(v3Normal2)) < (3.141592f / 180.0f)) // 1 degree 
+		{
+			return true;
+		}
+	}
+
+	bool IsContainsNormal(structHits separateDirs, structVector3 v3Normal)
+	{
+		for (int i = 0; i < separateDirs.m_nNumHits; i++)
+		{
+			if (true == IsEqualNormals(separateDirs.m_hits[i].m_v3Normal, v3Normal)) 
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	void Physics::CollisionResponse(float dt)
+	{
+		for (int32_t i = 0; i < m_listHits.size(); i++)
+		{
+			// EZ MEGY AZ OPENCL FUGGVENYBE
+			structHits hits = m_listHits[i];
+
+			if (m_listIsCollisionResponse[i] == 0 && hits.m_nNumHits > 0) // van utkozes, szettolas
+			{
+				SetEnabled(i, false);
+
+				// megkeresi a kulonbozo normal vector-okat
+				structHits separateDirs;
+				for (int j = 0; j < hits.m_nNumHits; j++)
+				{
+					if (false == IsContainsNormal(separateDirs, hits.m_hits[j].m_v3Normal)) 
+					{
+						separateDirs.m_hits[separateDirs.m_nNumHits].m_v3Normal = hits.m_hits[j].m_v3Normal;
+						separateDirs.m_nNumHits++;
+					}
+				}
+
+				// irany szamitasa
+				glm::vec3 v3Dir(0, 0, 0);
+				for (int j = 0; j < separateDirs.m_nNumHits; j++)
+				{
+					v3Dir += ToVector3(separateDirs.m_hits[j].m_v3Normal);
+				}
+				v3Dir = glm::normalize(v3Dir);
+
+				// szettolas
+				glm::vec3 v3Pos = ToVector3(m_listRigidBodies[i].m_v3Position);
+				float fSeparateSpeed = 0.2f;
+				glm::vec3 v3NewPos = v3Pos + (v3Dir * fSeparateSpeed * dt);
+				m_listRigidBodies[i].m_v3Position = ToVector3(v3NewPos);
+			}
+
+			if (m_listIsCollisionResponse[i] == 1) // nincs utkozes, collision response az elozo utkozo adatok alapjan
+			{
+				// cheat
+				m_listRigidBodies[i].m_v3LinearVelocity.y = 0;
+			}
+
+			if (hits.m_nNumHits == 0)
+			{
+				SetEnabled(i, true);
+			}
+		}
+
+		// DEBUG EZ MAJD NEM KELL
+		cl_int err = 0;
+		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), m_listRigidBodies.data(), 0, NULL, NULL);
+		if (err != CL_SUCCESS) 
+		{ 
+			return; 
+		}
 	}
 }
