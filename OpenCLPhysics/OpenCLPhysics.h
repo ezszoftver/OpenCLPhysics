@@ -8,7 +8,7 @@
 #include "glm/gtx/vector_angle.hpp"
 #include "CL/cl.h"
 
-#define MAX_HITS 100
+#include "Script.h"
 
 namespace OpenCLPhysics
 {
@@ -123,7 +123,7 @@ namespace OpenCLPhysics
 	typedef struct _structHits 
 	{
 		int32_t m_nNumHits = 0;
-		structHit m_hits[MAX_HITS];
+		structHit m_hits[MAX_HITS_PER_OBJECT];
 	}
 	structHits;
 
@@ -242,7 +242,7 @@ namespace OpenCLPhysics
 		bool UpdateBVHObjects();
 		void ReleaseBVHObjects();
 		bool Integrate(float dt);
-		void CollisionDetection();
+		bool CollisionDetection();
 		void CollisionResponse(float dt);
 
 		cl_context m_context;
@@ -250,6 +250,7 @@ namespace OpenCLPhysics
 		cl_program m_program;
 		cl_kernel m_kernelUpdateBVHObjects;
 		cl_kernel m_kernelIntegrate;
+		cl_kernel m_kernelCollisionDetection;
 		cl_mem m_clmem_inoutRigidBodies = 0;
 		cl_mem m_clmem_inoutBVHObjects = 0;
 		cl_mem m_clmem_inBVHNodeTriangles = 0;

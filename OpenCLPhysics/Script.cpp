@@ -1,6 +1,6 @@
 #include "Script.h"
 
-const char* Script::strOpenCLScript = TOSTRING
+std::string Script::s_strOpenCLScript = TOSTRING
 (
 
 typedef struct 
@@ -320,6 +320,23 @@ typedef struct
 }
 BVHObject;
 
+typedef struct 
+{
+	int nRigidBodyAId;
+	int nRigidBodyBId;
+
+	Vector3 v3HitPointInWorld;
+	Vector3 v3Normal;
+}
+Hit;
+
+typedef struct 
+{
+	int nNumHits;
+	Hit m_hits[#MAX_HITS_PER_OBJECT#];
+}
+Hits;
+
 typedef struct
 {
 	int nId;
@@ -589,9 +606,64 @@ __kernel void Integrate(__global RigidBody* inoutRigidBodies, int nCount, float 
 	inoutRigidBodies[id].v3Rotate              = Float3ToVector3(f3Rotate);
 }
 
+__kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCount, __global BVHObject* inoutBVHObjects, __global Hits* inoutHits, __global int* inoutIsCollisionResponse)
+{
+	int i = get_global_id(0);
+
+	// get RigidBody
+	RigidBody rigidBody = inoutRigidBodies[i];
+
+	// if disabled, then return
+	if (0 == rigidBody.nIsEnabled)
+	{
+		return;
+	}
+
+	// if static, then return
+	if (rigidBody.fMass <= 0.0f)
+	{
+		return;
+	}
+
+	// init hits
+	Hits hits = inoutHits[i];
+	hits.nNumHits = 0;
+
+	// init isCollisionResponse
+	inoutIsCollisionResponse[i] = 0;
+
+	int nTop = -1;
+	int arrStack[64];
+	
+	nTop++;
+	arrStack[nTop] = 0;
+
+	while (nTop > -1)
+	{
+		int nOtherId = arrStack[nTop];
+		nTop--;
+
+		;
+	}
+
+	inoutHits[i] = hits;
+}
+
 );
 
 const char* Script::GetText() 
 {
-    return strOpenCLScript;
+	Replace(s_strOpenCLScript, "#MAX_HITS_PER_OBJECT#", std::to_string(MAX_HITS_PER_OBJECT));
+
+    return s_strOpenCLScript.c_str();
+}
+
+void Script::Replace(std::string& strRet, const std::string& strFrom, const std::string& strTo) 
+{
+	size_t nStart = 0;
+	while ((nStart = strRet.find(strFrom, nStart)) != std::string::npos) 
+	{
+		strRet.replace(nStart, strFrom.length(), strTo);
+		nStart += strTo.length();
+	}
 }
