@@ -187,5 +187,6 @@
     <CopyFileToFolders Include="Scene\Physics.obj">
       <Filter>Scene</Filter>
     </CopyFileToFolders>
+    <CopyFileToFolders Include="..\..\OpenCLPhysics\OpenCLScript.txt" />
   </ItemGroup>
 </Project>

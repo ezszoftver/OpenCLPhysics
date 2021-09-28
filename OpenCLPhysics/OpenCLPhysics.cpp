@@ -384,6 +384,7 @@ namespace OpenCLPhysics
 
 					// create program
 					const char* strText = Script::GetText();
+					if (nullptr == strText) { return false; }
 					m_program = clCreateProgramWithSource(m_context, 1, (const char**)&strText, NULL, &status);
 					if (status != CL_SUCCESS) { return false; }
 
@@ -1710,8 +1711,10 @@ namespace OpenCLPhysics
 		err |= clSetKernelArg(m_kernelCollisionDetection, 0, sizeof(cl_mem), &m_clmem_inoutRigidBodies);
 		err |= clSetKernelArg(m_kernelCollisionDetection, 1, sizeof(int32_t), &nCount);
 		err |= clSetKernelArg(m_kernelCollisionDetection, 2, sizeof(cl_mem), &m_clmem_inoutBVHObjects);
-		err |= clSetKernelArg(m_kernelCollisionDetection, 3, sizeof(cl_mem), &m_clmem_inoutHits);
-		err |= clSetKernelArg(m_kernelCollisionDetection, 4, sizeof(cl_mem), &m_clmem_inoutIsCollisionResponse);
+		err |= clSetKernelArg(m_kernelCollisionDetection, 3, sizeof(cl_mem), &m_clmem_inBVHNodeTriangles);
+		err |= clSetKernelArg(m_kernelCollisionDetection, 4, sizeof(cl_mem), &m_clmem_inBVHNodeTrianglesOffsets);
+		err |= clSetKernelArg(m_kernelCollisionDetection, 5, sizeof(cl_mem), &m_clmem_inoutHits);
+		err |= clSetKernelArg(m_kernelCollisionDetection, 6, sizeof(cl_mem), &m_clmem_inoutIsCollisionResponse);
 		
 		err |= clEnqueueNDRangeKernel(m_command_queue, m_kernelCollisionDetection, 1, NULL, &nGlobal, &nLocal, 0, NULL, NULL);
 		clFinish(m_command_queue);
