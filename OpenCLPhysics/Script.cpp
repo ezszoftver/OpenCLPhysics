@@ -32,28 +32,3 @@ void Script::Replace(std::string& strRet, const std::string& strFrom, const std:
 		nStart += strTo.length();
 	}
 }
-
-bool Script::LoadFileContents(std::string const& name, std::vector<char>& contents)
-{
-	std::ifstream in(name, std::ios::in);
-
-	if (in)
-	{
-		contents.clear();
-
-		std::streamoff beg = in.tellg();
-
-		in.seekg(0, std::ios::end);
-
-		std::streamoff fileSize = in.tellg() - beg;
-
-		in.seekg(0, std::ios::beg);
-
-		contents.resize(static_cast<unsigned>(fileSize));
-
-		in.read(&contents[0], fileSize);
-		return true;
-	}
-	
-	return false;
-}
