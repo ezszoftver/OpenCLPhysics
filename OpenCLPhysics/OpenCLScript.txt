@@ -734,7 +734,43 @@ Hits SearchHits(RigidBody structRigidBody1/*only dynamic*/, RigidBody structRigi
 		// TRANSFORM BBOX 1
 		BBox structTriangle1_BBox = TransformBBox(T1, pListBVHNodeTriangles[nId1].bbox);
 
-		;
+		int nTop = -1;
+		int arrStack[64];
+
+		nTop++;
+		arrStack[nTop] = offset2.nOffset;
+
+		while (nTop > -1)
+		{
+			int nId2 = arrStack[nTop];
+			nTop--;
+
+			BVHNodeTriangle structNodeOrTriangle = pListBVHNodeTriangles[nId2];
+
+			// TRANSFORM BBOX 2
+			structNodeOrTriangle.bbox = TransformBBox(T2, structNodeOrTriangle.bbox);
+
+			if (true == IsLeaf(structNodeOrTriangle))
+			{
+			}
+			else
+			{
+				if (true == IsCollide(structTriangle1_BBox, structNodeOrTriangle.bbox))
+				{
+					if (structNodeOrTriangle.nLeft != -1)
+					{
+						nTop++;
+						arrStack[nTop] = structNodeOrTriangle.nLeft;
+					}
+
+					if (structNodeOrTriangle.nRight != -1)
+					{
+						nTop++;
+						arrStack[nTop] = structNodeOrTriangle.nRight;
+					}
+				}
+			}
+		}
 	}
 
 	return ret;
