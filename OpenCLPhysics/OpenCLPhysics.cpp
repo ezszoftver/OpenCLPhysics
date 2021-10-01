@@ -1684,16 +1684,16 @@ namespace OpenCLPhysics
 		structHits ret;
 		
 		// TRANSFORM 1
-		glm::vec3 v3Rotate1 = ToVector3(structRigidBody1.m_v3Rotate);
-		glm::vec3 v3Position1 = ToVector3(structRigidBody1.m_v3Position);
-		glm::mat4 T1 = glm::translate(glm::mat4(1.0f), v3Position1) * glm::eulerAngleXYZ(v3Rotate1.x, v3Rotate1.y, v3Rotate1.z);
+		//glm::vec3 v3Rotate1 = ToVector3(structRigidBody1.m_v3Rotate);
+		//glm::vec3 v3Position1 = ToVector3(structRigidBody1.m_v3Position);
+		//glm::mat4 T1 = glm::translate(glm::mat4(1.0f), v3Position1) * glm::eulerAngleXYZ(v3Rotate1.x, v3Rotate1.y, v3Rotate1.z);
 		
 		// TRANSFORM 2
-		glm::vec3 v3Rotate2 = ToVector3(structRigidBody2.m_v3Rotate);
-		glm::vec3 v3Position2 = ToVector3(structRigidBody2.m_v3Position);
-		glm::mat4 T2 = glm::translate(glm::mat4(1.0f), v3Position2) * glm::eulerAngleXYZ(v3Rotate2.x, v3Rotate2.y, v3Rotate2.z);
+		//glm::vec3 v3Rotate2 = ToVector3(structRigidBody2.m_v3Rotate);
+		//glm::vec3 v3Position2 = ToVector3(structRigidBody2.m_v3Position);
+		//glm::mat4 T2 = glm::translate(glm::mat4(1.0f), v3Position2) * glm::eulerAngleXYZ(v3Rotate2.x, v3Rotate2.y, v3Rotate2.z);
 		
-		structBBox structRigidBody1_BBox = TransformBBox(T1, structRigidBody1.m_BBox);
+		//structBBox structRigidBody1_BBox = TransformBBox(T1, structRigidBody1.m_BBox);
 
 		int nTop = -1;
 		int arrStack[64];
@@ -1707,19 +1707,18 @@ namespace OpenCLPhysics
 			nTop--;
 
 			structBVHNodeTriangle structNodeOrTriangle = pListBVHNodeTriangles[nId2];
-			// TRANSFORM BBOX 2
-			structNodeOrTriangle.m_BBox = TransformBBox(T2, structNodeOrTriangle.m_BBox);
+			//structNodeOrTriangle.m_BBox = TransformBBox(T2, structNodeOrTriangle.m_BBox);
 
 			if (true == IsLeaf(structNodeOrTriangle)) 
 			{
-				if (true == IsCollide(structRigidBody1_BBox, structNodeOrTriangle.m_BBox)) 
+				if (true == IsCollide(structRigidBody1.m_BBox, structNodeOrTriangle.m_BBox))
 				{
-					;
+					printf("alma\n");
 				}
 			}
 			else 
 			{
-				if (true == IsCollide(structRigidBody1_BBox, structNodeOrTriangle.m_BBox))
+				if (true == IsCollide(structRigidBody1.m_BBox, structNodeOrTriangle.m_BBox))
 				{
 					if (structNodeOrTriangle.m_nLeft != -1)
 					{

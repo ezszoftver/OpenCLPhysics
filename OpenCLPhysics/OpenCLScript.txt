@@ -715,16 +715,16 @@ Hits SearchHits(RigidBody structRigidBody1/*only dynamic*/, RigidBody structRigi
 	Hits ret;
 
 	// TRANSFORM 1
-	Matrix4 mat4Translate = Mat4_CreateTranslate(structRigidBody1.v3Position);
-	Matrix4 mat4EulerRotate = Mat4_CreateEulerRotate(structRigidBody1.v3Rotate);
-	Matrix4 T1 = Mult_Mat4Mat4(mat4Translate, mat4EulerRotate);
+	//Matrix4 mat4Translate = Mat4_CreateTranslate(structRigidBody1.v3Position);
+	//Matrix4 mat4EulerRotate = Mat4_CreateEulerRotate(structRigidBody1.v3Rotate);
+	//Matrix4 T1 = Mult_Mat4Mat4(mat4Translate, mat4EulerRotate);
 	
 	// TRANSFORM 2
-	mat4Translate = Mat4_CreateTranslate(structRigidBody2.v3Position);
-	mat4EulerRotate = Mat4_CreateEulerRotate(structRigidBody2.v3Rotate);
-	Matrix4 T2 = Mult_Mat4Mat4(mat4Translate, mat4EulerRotate);
+	//mat4Translate = Mat4_CreateTranslate(structRigidBody2.v3Position);
+	//mat4EulerRotate = Mat4_CreateEulerRotate(structRigidBody2.v3Rotate);
+	//Matrix4 T2 = Mult_Mat4Mat4(mat4Translate, mat4EulerRotate);
 	
-	BBox structRigidBody1_BBox = TransformBBox(T1, structRigidBody1.bbox);
+	//BBox structRigidBody1_BBox = TransformBBox(T1, structRigidBody1.bbox);
 
 	int nTop = -1;
 	int arrStack[64];
@@ -732,26 +732,26 @@ Hits SearchHits(RigidBody structRigidBody1/*only dynamic*/, RigidBody structRigi
 	nTop++;
 	arrStack[nTop] = offset2.nOffset;
 
+	int nId2;
+	BVHNodeTriangle structNodeOrTriangle;
+
 	while (nTop > -1)
 	{
-		int nId2 = arrStack[nTop];
+		nId2 = arrStack[nTop];
 		nTop--;
 
-		BVHNodeTriangle structNodeOrTriangle = pListBVHNodeTriangles[nId2];
-
-		// TRANSFORM BBOX 2
-		structNodeOrTriangle.bbox = TransformBBox(T2, structNodeOrTriangle.bbox);
+		structNodeOrTriangle = pListBVHNodeTriangles[nId2];
 
 		if (true == IsLeaf(structNodeOrTriangle))
 		{
-			if (true == IsCollide(structRigidBody1_BBox, structNodeOrTriangle.bbox)) 
+			if (true == IsCollide(structRigidBody1.bbox, structNodeOrTriangle.bbox)) 
 			{
 				;
 			}
 		}
 		else
 		{
-			if (true == IsCollide(structRigidBody1_BBox, structNodeOrTriangle.bbox))
+			if (true == IsCollide(structRigidBody1.bbox, structNodeOrTriangle.bbox))
 			{
 				if (structNodeOrTriangle.nLeft != -1)
 				{
