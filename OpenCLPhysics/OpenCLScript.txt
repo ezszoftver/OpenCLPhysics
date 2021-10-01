@@ -420,10 +420,10 @@ __kernel void UpdateBVHObjects(__global BVHObject *inoutBVHObjects, __global Rig
 		RigidBody rigidBody = inoutRigidBodies[id];
 		BBox bbox = rigidBody.inBBox;
 
-		//Matrix4 mat4Translate = Mat4_CreateTranslate(rigidBody.v3Position);
-		//Matrix4 mat4EulerRotate = Mat4_CreateEulerRotate(rigidBody.v3Rotate);
-		//Matrix4 mat4Transform = Mult_Mat4Mat4(mat4Translate, mat4EulerRotate);
-		Matrix4 mat4Transform = Mat4_CreateEulerRotate(rigidBody.v3Rotate);
+		Matrix4 mat4Translate = Mat4_CreateTranslate(rigidBody.v3Position);
+		Matrix4 mat4EulerRotate = Mat4_CreateEulerRotate(rigidBody.v3Rotate);
+		Matrix4 mat4Transform = Mult_Mat4Mat4(mat4Translate, mat4EulerRotate);
+		//Matrix4 mat4Transform = Mat4_CreateEulerRotate(rigidBody.v3Rotate);
 		
 		Vector3 v3Min = bbox.v3Min;
 		Vector3 v3Max = bbox.v3Max;
@@ -451,60 +451,60 @@ __kernel void UpdateBVHObjects(__global BVHObject *inoutBVHObjects, __global Rig
 		v3Max = v3Out1;
 
 		// 2
-		v3Min.x = min(v3Min.x, v3Out2.x);
-		v3Min.y = min(v3Min.y, v3Out2.y);
-		v3Min.z = min(v3Min.z, v3Out2.z);
-		v3Max.x = max(v3Max.x, v3Out2.x);
-		v3Max.y = max(v3Max.y, v3Out2.y);
-		v3Max.z = max(v3Max.z, v3Out2.z);
+		v3Min.x = fmin(v3Min.x, v3Out2.x);
+		v3Min.y = fmin(v3Min.y, v3Out2.y);
+		v3Min.z = fmin(v3Min.z, v3Out2.z);
+		v3Max.x = fmax(v3Max.x, v3Out2.x);
+		v3Max.y = fmax(v3Max.y, v3Out2.y);
+		v3Max.z = fmax(v3Max.z, v3Out2.z);
 
 		// 3
-		v3Min.x = min(v3Min.x, v3Out3.x);
-		v3Min.y = min(v3Min.y, v3Out3.y);
-		v3Min.z = min(v3Min.z, v3Out3.z);
-		v3Max.x = max(v3Max.x, v3Out3.x);
-		v3Max.y = max(v3Max.y, v3Out3.y);
-		v3Max.z = max(v3Max.z, v3Out3.z);
+		v3Min.x = fmin(v3Min.x, v3Out3.x);
+		v3Min.y = fmin(v3Min.y, v3Out3.y);
+		v3Min.z = fmin(v3Min.z, v3Out3.z);
+		v3Max.x = fmax(v3Max.x, v3Out3.x);
+		v3Max.y = fmax(v3Max.y, v3Out3.y);
+		v3Max.z = fmax(v3Max.z, v3Out3.z);
 
 		// 4
-		v3Min.x = min(v3Min.x, v3Out4.x);
-		v3Min.y = min(v3Min.y, v3Out4.y);
-		v3Min.z = min(v3Min.z, v3Out4.z);
-		v3Max.x = max(v3Max.x, v3Out4.x);
-		v3Max.y = max(v3Max.y, v3Out4.y);
-		v3Max.z = max(v3Max.z, v3Out4.z);
+		v3Min.x = fmin(v3Min.x, v3Out4.x);
+		v3Min.y = fmin(v3Min.y, v3Out4.y);
+		v3Min.z = fmin(v3Min.z, v3Out4.z);
+		v3Max.x = fmax(v3Max.x, v3Out4.x);
+		v3Max.y = fmax(v3Max.y, v3Out4.y);
+		v3Max.z = fmax(v3Max.z, v3Out4.z);
 
 		// 5
-		v3Min.x = min(v3Min.x, v3Out5.x);
-		v3Min.y = min(v3Min.y, v3Out5.y);
-		v3Min.z = min(v3Min.z, v3Out5.z);
-		v3Max.x = max(v3Max.x, v3Out5.x);
-		v3Max.y = max(v3Max.y, v3Out5.y);
-		v3Max.z = max(v3Max.z, v3Out5.z);
+		v3Min.x = fmin(v3Min.x, v3Out5.x);
+		v3Min.y = fmin(v3Min.y, v3Out5.y);
+		v3Min.z = fmin(v3Min.z, v3Out5.z);
+		v3Max.x = fmax(v3Max.x, v3Out5.x);
+		v3Max.y = fmax(v3Max.y, v3Out5.y);
+		v3Max.z = fmax(v3Max.z, v3Out5.z);
 
 		// 6
-		v3Min.x = min(v3Min.x, v3Out6.x);
-		v3Min.y = min(v3Min.y, v3Out6.y);
-		v3Min.z = min(v3Min.z, v3Out6.z);
-		v3Max.x = max(v3Max.x, v3Out6.x);
-		v3Max.y = max(v3Max.y, v3Out6.y);
-		v3Max.z = max(v3Max.z, v3Out6.z);
+		v3Min.x = fmin(v3Min.x, v3Out6.x);
+		v3Min.y = fmin(v3Min.y, v3Out6.y);
+		v3Min.z = fmin(v3Min.z, v3Out6.z);
+		v3Max.x = fmax(v3Max.x, v3Out6.x);
+		v3Max.y = fmax(v3Max.y, v3Out6.y);
+		v3Max.z = fmax(v3Max.z, v3Out6.z);
 
 		// 7
-		v3Min.x = min(v3Min.x, v3Out7.x);
-		v3Min.y = min(v3Min.y, v3Out7.y);
-		v3Min.z = min(v3Min.z, v3Out7.z);
-		v3Max.x = max(v3Max.x, v3Out7.x);
-		v3Max.y = max(v3Max.y, v3Out7.y);
-		v3Max.z = max(v3Max.z, v3Out7.z);
+		v3Min.x = fmin(v3Min.x, v3Out7.x);
+		v3Min.y = fmin(v3Min.y, v3Out7.y);
+		v3Min.z = fmin(v3Min.z, v3Out7.z);
+		v3Max.x = fmax(v3Max.x, v3Out7.x);
+		v3Max.y = fmax(v3Max.y, v3Out7.y);
+		v3Max.z = fmax(v3Max.z, v3Out7.z);
 
 		// 8
-		v3Min.x = min(v3Min.x, v3Out8.x);
-		v3Min.y = min(v3Min.y, v3Out8.y);
-		v3Min.z = min(v3Min.z, v3Out8.z);
-		v3Max.x = max(v3Max.x, v3Out8.x);
-		v3Max.y = max(v3Max.y, v3Out8.y);
-		v3Max.z = max(v3Max.z, v3Out8.z);
+		v3Min.x = fmin(v3Min.x, v3Out8.x);
+		v3Min.y = fmin(v3Min.y, v3Out8.y);
+		v3Min.z = fmin(v3Min.z, v3Out8.z);
+		v3Max.x = fmax(v3Max.x, v3Out8.x);
+		v3Max.y = fmax(v3Max.y, v3Out8.y);
+		v3Max.z = fmax(v3Max.z, v3Out8.z);
 
 		inoutRigidBodies[id].bbox.v3Min = v3Min;
 		inoutRigidBodies[id].bbox.v3Max = v3Max;
@@ -723,51 +723,46 @@ Hits SearchHits(RigidBody structRigidBody1/*only dynamic*/, RigidBody structRigi
 	mat4Translate = Mat4_CreateTranslate(structRigidBody2.v3Position);
 	mat4EulerRotate = Mat4_CreateEulerRotate(structRigidBody2.v3Rotate);
 	Matrix4 T2 = Mult_Mat4Mat4(mat4Translate, mat4EulerRotate);
+	
+	BBox structRigidBody1_BBox = TransformBBox(T1, structRigidBody1.bbox);
 
-	for (int nId1 = offset1.nOffset; nId1 < (offset1.nOffset + offset1.nCount); nId1++) 
+	int nTop = -1;
+	int arrStack[64];
+
+	nTop++;
+	arrStack[nTop] = offset2.nOffset;
+
+	while (nTop > -1)
 	{
-		if (false == IsLeaf(pListBVHNodeTriangles[nId1]))
+		int nId2 = arrStack[nTop];
+		nTop--;
+
+		BVHNodeTriangle structNodeOrTriangle = pListBVHNodeTriangles[nId2];
+
+		// TRANSFORM BBOX 2
+		structNodeOrTriangle.bbox = TransformBBox(T2, structNodeOrTriangle.bbox);
+
+		if (true == IsLeaf(structNodeOrTriangle))
 		{
-			continue;
-		}
-
-		// TRANSFORM BBOX 1
-		BBox structTriangle1_BBox = TransformBBox(T1, pListBVHNodeTriangles[nId1].bbox);
-
-		int nTop = -1;
-		int arrStack[64];
-
-		nTop++;
-		arrStack[nTop] = offset2.nOffset;
-
-		while (nTop > -1)
-		{
-			int nId2 = arrStack[nTop];
-			nTop--;
-
-			BVHNodeTriangle structNodeOrTriangle = pListBVHNodeTriangles[nId2];
-
-			// TRANSFORM BBOX 2
-			structNodeOrTriangle.bbox = TransformBBox(T2, structNodeOrTriangle.bbox);
-
-			if (true == IsLeaf(structNodeOrTriangle))
+			if (true == IsCollide(structRigidBody1_BBox, structNodeOrTriangle.bbox)) 
 			{
+				;
 			}
-			else
+		}
+		else
+		{
+			if (true == IsCollide(structRigidBody1_BBox, structNodeOrTriangle.bbox))
 			{
-				if (true == IsCollide(structTriangle1_BBox, structNodeOrTriangle.bbox))
+				if (structNodeOrTriangle.nLeft != -1)
 				{
-					if (structNodeOrTriangle.nLeft != -1)
-					{
-						nTop++;
-						arrStack[nTop] = structNodeOrTriangle.nLeft;
-					}
+					nTop++;
+					arrStack[nTop] = structNodeOrTriangle.nLeft;
+				}
 
-					if (structNodeOrTriangle.nRight != -1)
-					{
-						nTop++;
-						arrStack[nTop] = structNodeOrTriangle.nRight;
-					}
+				if (structNodeOrTriangle.nRight != -1)
+				{
+					nTop++;
+					arrStack[nTop] = structNodeOrTriangle.nRight;
 				}
 			}
 		}
@@ -809,30 +804,32 @@ __kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCoun
 	nTop++;
 	arrStack[nTop] = 0;
 
+	int nOtherId;
+	BVHObject structBVHObject;
+	int id2;
+
 	while (nTop > -1)
 	{
-		int nOtherId = arrStack[nTop];
+		nOtherId = arrStack[nTop];
 		nTop--;
 
-		BVHObject structBVHObject = inoutBVHObjects[nOtherId];
+		structBVHObject = inoutBVHObjects[nOtherId];
 		
 		if (structBVHObject.nLeft == -1 && structBVHObject.nRight == -1) 
 		{
 			// can not collision detection with own
-			int id2 = structBVHObject.nRigidBodyId;
+			id2 = structBVHObject.nRigidBodyId;
 			
 			if (id1 != id2)
 			{
 				RigidBody structRigidBody2 = inoutRigidBodies[id2];
-
-				BBox bboxRigidBody2;
-				bboxRigidBody2.v3Min = Vector3_Add(structRigidBody2.bbox.v3Min, structRigidBody2.v3Position);			
-				bboxRigidBody2.v3Max = Vector3_Add(structRigidBody2.bbox.v3Max, structRigidBody2.v3Position);
+			
+				BBox bboxRigidBody2 = structRigidBody2.bbox;
 				
 				if (true == IsCollide(structRigidBody1.bbox, bboxRigidBody2)) 
 				{
 					Hits hits = SearchHits(structRigidBody1, structRigidBody2, inBVHNodeTrianglesOffsets[structRigidBody1.nTriMeshId], inBVHNodeTrianglesOffsets[structRigidBody2.nTriMeshId], inBVHNodeTriangles);
-
+					
 					if (hits.nNumHits == 0) // nincs utkozes
 					{
 						inoutIsCollisionResponse[id1] = 1;
@@ -840,17 +837,17 @@ __kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCoun
 					else // van utkozes => szettolas
 					{
 						inoutIsCollisionResponse[id1] = 0;
-
+					
 						for (int i = 0; i < hits.nNumHits; i++) 
 						{
 							if (inoutHits[id1].nNumHits >= #MAX_HITS_PER_OBJECT#)
 							{
 								return;
 							}
-
+					
 							inoutHits[id1].hits[inoutHits[id1].nNumHits].nRigidBodyAId = id1;
 							inoutHits[id1].hits[inoutHits[id1].nNumHits].nRigidBodyBId = id2;
-
+					
 							inoutHits[id1].hits[inoutHits[id1].nNumHits] = hits.hits[i];
 							inoutHits[id1].nNumHits++;
 						}
