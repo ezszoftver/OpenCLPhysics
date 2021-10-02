@@ -188,5 +188,8 @@
       <Filter>Scene</Filter>
     </CopyFileToFolders>
     <CopyFileToFolders Include="..\..\OpenCLPhysics\OpenCLScript.txt" />
+    <CopyFileToFolders Include="Scene\Music.wav">
+      <Filter>Scene</Filter>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>
