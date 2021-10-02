@@ -67,11 +67,17 @@
     <Link>
       <AdditionalDependencies>opengl32.lib;glew32.lib;FreeImage.lib;OpenAL32.lib;alut.lib;OpenCL.lib;assimp.lib;IrrXML.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Link>
       <AdditionalDependencies>opengl32.lib;glew32.lib;FreeImage.lib;OpenAL32.lib;alut.lib;OpenCL.lib;assimp.lib;IrrXML.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="Configuration">
     <ClCompile>

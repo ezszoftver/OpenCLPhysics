@@ -413,6 +413,11 @@ __kernel void UpdateBVHObjects(__global BVHObject *inoutBVHObjects, __global Rig
 {
     int id = get_global_id(0);
 
+	if (id >= nCount)
+	{
+		return;
+	}
+
 	BVHObject bvhObject = inoutBVHObjects[nOffset + id];
 	
 	if (bvhObject.nLeft == -1 && bvhObject.nRight == -1) // is Leaf?
@@ -554,6 +559,11 @@ bool IsCollide(BBox bbox1, BBox bbox2)
 __kernel void Integrate(__global RigidBody* inoutRigidBodies, int nCount, float dt, Vector3 v3Gravity)
 {
 	int id = get_global_id(0);
+
+	if (id >= nCount)
+	{
+		return;
+	}
 
 	RigidBody rigidBody = inoutRigidBodies[id];
 
@@ -774,6 +784,11 @@ Hits SearchHits(RigidBody structRigidBody1/*only dynamic*/, RigidBody structRigi
 __kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCount, __global BVHObject* inoutBVHObjects, __global BVHNodeTriangle* inBVHNodeTriangles, __global BVHNodeTriangleOffset *inBVHNodeTrianglesOffsets, __global Hits* inoutHits, __global int* inoutIsCollisionResponse)
 {
 	int id1 = get_global_id(0);
+
+	if (id1 >= nCount)
+	{
+		return;
+	}
 
 	// get RigidBody
 	RigidBody structRigidBody1 = inoutRigidBodies[id1];

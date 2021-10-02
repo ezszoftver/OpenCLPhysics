@@ -245,12 +245,19 @@ namespace OpenCLPhysics
 		bool CollisionDetection();
 		void CollisionResponse(float dt);
 
+		cl_device_id m_device;
 		cl_context m_context;
 		cl_command_queue m_command_queue;
 		cl_program m_program;
+
 		cl_kernel m_kernelUpdateBVHObjects;
 		cl_kernel m_kernelIntegrate;
 		cl_kernel m_kernelCollisionDetection;
+
+		int32_t m_nUpdateBVHObjects_Local;
+		int32_t m_nIntegrate_Local;
+		int32_t m_nCollisionDetection_Local;
+
 		cl_mem m_clmem_inoutRigidBodies = 0;
 		cl_mem m_clmem_inoutBVHObjects = 0;
 		cl_mem m_clmem_inBVHNodeTriangles = 0;

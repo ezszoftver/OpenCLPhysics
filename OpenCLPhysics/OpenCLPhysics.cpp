@@ -1,5 +1,7 @@
 ﻿#include "OpenCLPhysics.h"
 
+#include <execution>
+
 // sort algorithm example
 #include <iostream>     // std::cout
 #include <algorithm>    // std::sort
@@ -374,6 +376,8 @@ namespace OpenCLPhysics
 				//listRet.push_back(namestr);
 				if (namestr == strDeviceName)
 				{
+					m_device = deviceId;
+
 					/* Create OpenCL context */
 					m_context = clCreateContext(NULL, 1, &deviceId, NULL, NULL, &status);
 					if (status != CL_SUCCESS) { return false; }
@@ -407,6 +411,14 @@ namespace OpenCLPhysics
 					if (!m_kernelIntegrate || status != CL_SUCCESS) { return false; }
 					m_kernelCollisionDetection = clCreateKernel(m_program, "CollisionDetection", &status);
 					if (!m_kernelCollisionDetection || status != CL_SUCCESS) { return false; }
+
+					// locals
+					status = clGetKernelWorkGroupInfo(m_kernelUpdateBVHObjects, m_device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), &m_nUpdateBVHObjects_Local, NULL);
+					if (status != CL_SUCCESS) { return false; }
+					status = clGetKernelWorkGroupInfo(m_kernelIntegrate, m_device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), &m_nIntegrate_Local, NULL);
+					if (status != CL_SUCCESS) { return false; }
+					status = clGetKernelWorkGroupInfo(m_kernelCollisionDetection, m_device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), &m_nCollisionDetection_Local, NULL);
+					if (status != CL_SUCCESS) { return false; }
 
 					// max trimeshs
 					TRIMESH_COUNT = nTriMeshsCount;
@@ -1104,7 +1116,7 @@ namespace OpenCLPhysics
 		if (err != CL_SUCCESS) { return false; }
 
 		// 2. SORT to BVH
-		std::sort(m_listRigidBodies.begin(), m_listRigidBodies.end(), SortRigidBodiesFunc_BVH);
+		std::sort(std::execution::par_unseq, m_listRigidBodies.begin(), m_listRigidBodies.end(), SortRigidBodiesFunc_BVH);
 		// write to GPU
 		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), m_listRigidBodies.data(), 0, NULL, NULL);
 		if (err != CL_SUCCESS) { return false; }
@@ -1117,7 +1129,7 @@ namespace OpenCLPhysics
 		if (err != CL_SUCCESS) { return false; }
 
 		// 4. SORT to Original
-		std::sort(m_listRigidBodies.begin(), m_listRigidBodies.end(), SortRigidBodiesFunc_Inc);
+		std::sort(std::execution::par_unseq, m_listRigidBodies.begin(), m_listRigidBodies.end(), SortRigidBodiesFunc_Inc);
 		// write to GPU
 		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), m_listRigidBodies.data(), 0, NULL, NULL);
 		if (err != CL_SUCCESS) { return false; }
@@ -1324,7 +1336,7 @@ namespace OpenCLPhysics
 		// update leafs
 		int32_t nOffset = 1;
 		int32_t nCount = 0;
-		size_t nLocal = 1;
+		size_t nLocal = m_nUpdateBVHObjects_Local;
 		for (uint32_t i = 0; i < m_BVHObjectsLevels.size(); i++)
 		{
 			std::vector< structBVHObject > *pCurrentLevel = m_BVHObjectsLevels.at(i);
@@ -1366,7 +1378,7 @@ namespace OpenCLPhysics
 		cl_int err = 0;
 		
 		int32_t nCount = 0;
-		size_t nLocal = 1;
+		size_t nLocal = m_nIntegrate_Local;
 		nCount = (int32_t)m_listRigidBodies.size();
 		size_t nGlobal = nCount;
 		
@@ -1713,7 +1725,7 @@ namespace OpenCLPhysics
 			{
 				if (true == IsCollide(structRigidBody1.m_BBox, structNodeOrTriangle.m_BBox))
 				{
-					printf("alma\n");
+					;
 				}
 			}
 			else 
@@ -1855,7 +1867,7 @@ namespace OpenCLPhysics
 		cl_int err = 0;
 		
 		int32_t nCount = 0;
-		size_t nLocal = 1;
+		size_t nLocal = m_nCollisionDetection_Local;
 		nCount = (int32_t)m_listRigidBodies.size();
 		size_t nGlobal = nCount;
 		
@@ -1918,101 +1930,104 @@ namespace OpenCLPhysics
 		//}
 		//
 		//// ütközés keresés
-		//for (int32_t id1 = 0; id1 < m_listRigidBodies.size(); id1++)
-		//{
-		//	// 2 - EZ MEGY MAJD AZ OPENCL FUGGVENYBE
-		//	structRigidBody structRigidBody1 = m_listRigidBodies.at(id1);
-		//
-		//	// isEnabled == false, akkor nem kell
-		//	//if (0 == structRigidBody1.m_nIsEnabled) 
-		//	//{
-		//	//	continue;
-		//	//}
-		//
-		//	// ha static, akkor nem kell
-		//	if (structRigidBody1.m_fMass <= 0.0f) 
+		////for (int32_t id1 = 0; id1 < m_listRigidBodies.size(); id1++)
+		//std::for_each(std::execution::par_unseq, std::begin(m_listRigidBodies), std::end(m_listRigidBodies), [&](structRigidBody structRigidBody1)
 		//	{
-		//		continue;
-		//	}
+		//		// 2 - EZ MEGY MAJD AZ OPENCL FUGGVENYBE
+		//		//structRigidBody structRigidBody1 = m_listRigidBodies.at(id1);
+		//		int32_t id1 = structRigidBody1.m_nRigidBodyId;
 		//
-		//	int nTop = -1;
-		//	int arrStack[64];
+		//		// isEnabled == false, akkor nem kell
+		//		//if (0 == structRigidBody1.m_nIsEnabled) 
+		//		//{
+		//		//	continue;
+		//		//}
 		//
-		//	nTop++;
-		//	arrStack[nTop] = 0;
-		//
-		//	int ii = 0;
-		//
-		//	while (nTop > -1) 
-		//	{
-		//		ii++;
-		//
-		//		int nOtherId = arrStack[nTop];
-		//		nTop--;
-		//
-		//		structBVHObject structBVHObject = inoutBVHObjects[nOtherId];
-		//
-		//		if (structBVHObject.m_nLeft == -1 && structBVHObject.m_nRight == -1) 
+		//		// ha static, akkor nem kell
+		//		if (structRigidBody1.m_fMass <= 0.0f)
 		//		{
-		//			// saját magával nem kell ütközésvizsgálatot csinálni
-		//			int id2 = structBVHObject.m_nRigidBodyId;
-		//			
-		//			if (id1 != id2)
+		//			//continue;
+		//			return;
+		//		}
+		//
+		//		int nTop = -1;
+		//		int arrStack[64];
+		//
+		//		nTop++;
+		//		arrStack[nTop] = 0;
+		//
+		//		int ii = 0;
+		//
+		//		while (nTop > -1)
+		//		{
+		//			ii++;
+		//
+		//			int nOtherId = arrStack[nTop];
+		//			nTop--;
+		//
+		//			structBVHObject structBVHObject = inoutBVHObjects[nOtherId];
+		//
+		//			if (structBVHObject.m_nLeft == -1 && structBVHObject.m_nRight == -1)
 		//			{
-		//				structRigidBody structRigidBody2 = m_listRigidBodies.at(id2);
-		//				structBBox bboxRigidBody2 = structRigidBody2.m_BBox;
-		//				
-		//				if (true == IsCollide(structRigidBody1.m_BBox, bboxRigidBody2))
+		//				// saját magával nem kell ütközésvizsgálatot csinálni
+		//				int id2 = structBVHObject.m_nRigidBodyId;
+		//
+		//				if (id1 != id2)
 		//				{
-		//					structHits hits = SearchHits(structRigidBody1, structRigidBody2, m_listBVHNodeTrianglesOffsets[structRigidBody1.m_nTriMeshId], m_listBVHNodeTrianglesOffsets[structRigidBody2.m_nTriMeshId], &m_listBVHNodeTriangles[0]);
-		//			
-		//					if (hits.m_nNumHits == 0) // nincs utkozes
+		//					structRigidBody structRigidBody2 = m_listRigidBodies.at(id2);
+		//					structBBox bboxRigidBody2 = structRigidBody2.m_BBox;
+		//
+		//					if (true == IsCollide(structRigidBody1.m_BBox, bboxRigidBody2))
 		//					{
-		//						m_listIsCollisionResponse[id1] = 1;
-		//					}
-		//					else // van utkozes => szettolas
-		//					{
-		//						m_listIsCollisionResponse[id1] = 0;
-		//			
-		//						for (int i = 0; i < hits.m_nNumHits; i++) 
+		//						structHits hits = SearchHits(structRigidBody1, structRigidBody2, m_listBVHNodeTrianglesOffsets[structRigidBody1.m_nTriMeshId], m_listBVHNodeTrianglesOffsets[structRigidBody2.m_nTriMeshId], &m_listBVHNodeTriangles[0]);
+		//
+		//						if (hits.m_nNumHits == 0) // nincs utkozes
 		//						{
-		//							if (m_listHits[id1].m_nNumHits >= MAX_HITS_PER_OBJECT)
-		//							{
-		//								continue;
-		//							}
-		//			
-		//							m_listHits[id1].m_hits[m_listHits[id1].m_nNumHits].m_nRigidBodyAId = id1;
-		//							m_listHits[id1].m_hits[m_listHits[id1].m_nNumHits].m_nRigidBodyBId = id2;
-		//			
-		//							m_listHits[id1].m_hits[m_listHits[id1].m_nNumHits] = hits.m_hits[i];
-		//							m_listHits[id1].m_nNumHits++;
+		//							m_listIsCollisionResponse[id1] = 1;
 		//						}
-		//						
+		//						else // van utkozes => szettolas
+		//						{
+		//							m_listIsCollisionResponse[id1] = 0;
+		//
+		//							for (int i = 0; i < hits.m_nNumHits; i++)
+		//							{
+		//								if (m_listHits[id1].m_nNumHits >= MAX_HITS_PER_OBJECT)
+		//								{
+		//									continue;
+		//								}
+		//
+		//								m_listHits[id1].m_hits[m_listHits[id1].m_nNumHits].m_nRigidBodyAId = id1;
+		//								m_listHits[id1].m_hits[m_listHits[id1].m_nNumHits].m_nRigidBodyBId = id2;
+		//
+		//								m_listHits[id1].m_hits[m_listHits[id1].m_nNumHits] = hits.m_hits[i];
+		//								m_listHits[id1].m_nNumHits++;
+		//							}
+		//
+		//						}
 		//					}
 		//				}
 		//			}
-		//		}
-		//		else 
-		//		{
-		//			if (true == IsCollide(structRigidBody1.m_BBox, structBVHObject.m_BBox))
+		//			else
 		//			{
-		//				if (structBVHObject.m_nLeft != -1)
+		//				if (true == IsCollide(structRigidBody1.m_BBox, structBVHObject.m_BBox))
 		//				{
-		//					nTop++;
-		//					arrStack[nTop] = structBVHObject.m_nLeft;
-		//				}
+		//					if (structBVHObject.m_nLeft != -1)
+		//					{
+		//						nTop++;
+		//						arrStack[nTop] = structBVHObject.m_nLeft;
+		//					}
 		//
-		//				if (structBVHObject.m_nRight != -1)
-		//				{
-		//					nTop++;
-		//					arrStack[nTop] = structBVHObject.m_nRight;
+		//					if (structBVHObject.m_nRight != -1)
+		//					{
+		//						nTop++;
+		//						arrStack[nTop] = structBVHObject.m_nRight;
+		//					}
 		//				}
 		//			}
+		//
 		//		}
-		//		
-		//	}
-		//	
-		//}
+		//
+		//	});
 		//
 		//return true;
 	}

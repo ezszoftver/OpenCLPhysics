@@ -127,7 +127,7 @@ bool MainWindow::Init()
     {
         for (int z = -5; z < 5; z++)
         {
-            for (int y = 0; y < (1/*100db*/ * 50/*5000db*/); y++)
+            for (int y = 0; y < (10/*1000db*/ * 5/*5000db*/); y++)
             {
                 int dynamic_id = -1;
                 if (-1 == from_dynamic_id)
@@ -328,7 +328,7 @@ void MainWindow::TimerTick()
     
     // 2/2 - draw to screen with shadow
     glm::mat4 mCameraView = glm::lookAtRH(v3CameraPos, v3CameraAt, glm::vec3(0, 1, 0));
-    glm::mat4 mCameraProj = glm::perspectiveRH(glm::radians(45.0f), (float)nWidth / (float)nHeight, 0.1f, 1000.0f);
+    glm::mat4 mCameraProj = glm::perspectiveRH(glm::radians(45.0f), (float)nWidth / (float)nHeight, 0.1f, 10000.0f);
     
     glClearColor(0.5f, 0.5f, 1.0f, 1.0f);
     glViewport(0, 0, nWidth, nHeight);
@@ -427,7 +427,7 @@ void MainWindow::TimerTick()
     //    }
     //    glEnd();
     //}
-
+    
     // Draw hits
     std::vector < structHits > *pListHits = m_physics.GetHits();
     for (int32_t i = 0; i < pListHits->size(); i++)
@@ -459,8 +459,8 @@ void MainWindow::TimerTick()
             glEnd();
         }
     }
-
-    m_SkyBox.Draw(v3CameraPos, 300.0f);
+    
+    m_SkyBox.Draw(v3CameraPos, 5000.0f);
     
     SwapBuffers(hDC);
 }
