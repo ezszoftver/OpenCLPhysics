@@ -1346,14 +1346,8 @@ namespace OpenCLPhysics
 			}
 
 			nCount = (int32_t)pCurrentLevel->size();
-			
-			int WG_SIZE = m_nUpdateBVHObjects_Local;
-			int GROUP_BLOCK_SIZE_SCAN = (WG_SIZE);
-			int NUM_GROUPS_BOTTOM_LEVEL_SCAN = (nCount + GROUP_BLOCK_SIZE_SCAN - 1) / GROUP_BLOCK_SIZE_SCAN;
-			int NUM_GROUPS_TOP_LEVEL_SCAN = (NUM_GROUPS_BOTTOM_LEVEL_SCAN + GROUP_BLOCK_SIZE_SCAN - 1) / GROUP_BLOCK_SIZE_SCAN;
-
-			size_t nLocal[] = { (size_t)WG_SIZE };
-			size_t nGlobal[] = { (size_t)(NUM_GROUPS_BOTTOM_LEVEL_SCAN * WG_SIZE) };
+			size_t nLocal = m_nUpdateBVHObjects_Local;
+			size_t nGlobal = ((nCount + nLocal - 1) / nLocal) * nLocal;
 
 			cl_int err = 0;
 
@@ -1361,7 +1355,7 @@ namespace OpenCLPhysics
 			err |= clSetKernelArg(m_kernelUpdateBVHObjects, 1, sizeof(cl_mem), &m_clmem_inoutRigidBodies);
 			err |= clSetKernelArg(m_kernelUpdateBVHObjects, 2, sizeof(int32_t), &nOffset);
 			err |= clSetKernelArg(m_kernelUpdateBVHObjects, 3, sizeof(int32_t), &nCount);
-			err |= clEnqueueNDRangeKernel(m_command_queue, m_kernelUpdateBVHObjects, 1, NULL, nGlobal, nLocal, 0, NULL, NULL);
+			err |= clEnqueueNDRangeKernel(m_command_queue, m_kernelUpdateBVHObjects, 1, NULL, &nGlobal, &nLocal, 0, NULL, NULL);
 			clFinish(m_command_queue);
 
 			// debug check
@@ -1384,21 +1378,15 @@ namespace OpenCLPhysics
 		cl_int err = 0;
 		
 		int32_t nCount = nCount = (int32_t)m_listRigidBodies.size();
-		
-		int WG_SIZE = m_nIntegrate_Local;
-		int GROUP_BLOCK_SIZE_SCAN = (WG_SIZE);
-		int NUM_GROUPS_BOTTOM_LEVEL_SCAN = (nCount + GROUP_BLOCK_SIZE_SCAN - 1) / GROUP_BLOCK_SIZE_SCAN;
-		int NUM_GROUPS_TOP_LEVEL_SCAN = (NUM_GROUPS_BOTTOM_LEVEL_SCAN + GROUP_BLOCK_SIZE_SCAN - 1) / GROUP_BLOCK_SIZE_SCAN;
-
-		size_t nLocal[] = { (size_t)WG_SIZE };
-		size_t nGlobal[] = { (size_t)(NUM_GROUPS_BOTTOM_LEVEL_SCAN * WG_SIZE) };
+		size_t nLocal = m_nIntegrate_Local;
+		size_t nGlobal = ((nCount + nLocal - 1) / nLocal) * nLocal;
 
 		// calc
 		err |= clSetKernelArg(m_kernelIntegrate, 0, sizeof(cl_mem), &m_clmem_inoutRigidBodies);
 		err |= clSetKernelArg(m_kernelIntegrate, 1, sizeof(int32_t), &nCount);
 		err |= clSetKernelArg(m_kernelIntegrate, 2, sizeof(float), &dt);
 		err |= clSetKernelArg(m_kernelIntegrate, 3, sizeof(structVector3), &m_v3Gravity);
-		err |= clEnqueueNDRangeKernel(m_command_queue, m_kernelIntegrate, 1, NULL, nGlobal, nLocal, 0, NULL, NULL);
+		err |= clEnqueueNDRangeKernel(m_command_queue, m_kernelIntegrate, 1, NULL, &nGlobal, &nLocal, 0, NULL, NULL);
 		clFinish(m_command_queue);
 		
 		/*std::vector<structRigidBody> results;
@@ -1878,14 +1866,8 @@ namespace OpenCLPhysics
 		cl_int err = 0;
 		
 		int32_t nCount = (int32_t)m_listRigidBodies.size();
-
-		int WG_SIZE = m_nCollisionDetection_Local;
-		int GROUP_BLOCK_SIZE_SCAN = (WG_SIZE);
-		int NUM_GROUPS_BOTTOM_LEVEL_SCAN = (nCount + GROUP_BLOCK_SIZE_SCAN - 1) / GROUP_BLOCK_SIZE_SCAN;
-		int NUM_GROUPS_TOP_LEVEL_SCAN = (NUM_GROUPS_BOTTOM_LEVEL_SCAN + GROUP_BLOCK_SIZE_SCAN - 1) / GROUP_BLOCK_SIZE_SCAN;
-
-		size_t nLocal[] = { (size_t)WG_SIZE };
-		size_t nGlobal[] = { (size_t)(NUM_GROUPS_BOTTOM_LEVEL_SCAN * WG_SIZE) };
+		size_t nLocal = m_nCollisionDetection_Local;
+		size_t nGlobal = ((nCount + nLocal - 1) / nLocal) * nLocal;
 		
 		// calc
 		err |= clSetKernelArg(m_kernelCollisionDetection, 0, sizeof(cl_mem), &m_clmem_inoutRigidBodies);
@@ -1896,7 +1878,7 @@ namespace OpenCLPhysics
 		err |= clSetKernelArg(m_kernelCollisionDetection, 5, sizeof(cl_mem), &m_clmem_inoutHits);
 		err |= clSetKernelArg(m_kernelCollisionDetection, 6, sizeof(cl_mem), &m_clmem_inoutIsCollisionResponse);
 		
-		err |= clEnqueueNDRangeKernel(m_command_queue, m_kernelCollisionDetection, 1, NULL, nGlobal, nLocal, 0, NULL, NULL);
+		err |= clEnqueueNDRangeKernel(m_command_queue, m_kernelCollisionDetection, 1, NULL, &nGlobal, &nLocal, 0, NULL, NULL);
 		clFinish(m_command_queue);
 		
 		if (err != CL_SUCCESS)
