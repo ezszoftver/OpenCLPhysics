@@ -1377,7 +1377,7 @@ namespace OpenCLPhysics
 	{
 		cl_int err = 0;
 		
-		int32_t nCount = nCount = (int32_t)m_listRigidBodies.size();
+		int32_t nCount = (int32_t)m_listRigidBodies.size();
 		size_t nLocal = m_nIntegrate_Local;
 		size_t nGlobal = ((nCount + nLocal - 1) / nLocal) * nLocal;
 
