@@ -2040,7 +2040,7 @@ namespace OpenCLPhysics
 			// ha static, akkor nem kell
 			if (structRigidBody1.m_fMass <= 0.0f)
 			{
-				//continue;
+				continue;
 			}
 		
 			structBBox bboxRigidBody1 = structRigidBody1.m_BBox;
