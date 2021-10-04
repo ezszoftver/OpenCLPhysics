@@ -1706,6 +1706,8 @@ namespace OpenCLPhysics
 		glm::vec3 tri2_c = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3PosC), 1.0f));
 		glm::vec3 tri2_n = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3Normal), 0.0f));
 
+		structNodeOrTriangle2.m_BBox = TransformBBox(T2, structNodeOrTriangle2.m_BBox);
+
 		int nTop = -1;
 		int arrStack[64];
 
@@ -1725,7 +1727,7 @@ namespace OpenCLPhysics
 
 			if (true == IsLeaf(structNodeOrTriangle)) 
 			{
-				if (true == IsCollide(structRigidBody2.m_BBox, structNodeOrTriangle.m_BBox)) 
+				if (true == IsCollide(structNodeOrTriangle2.m_BBox, structNodeOrTriangle.m_BBox))
 				{
 					// TRANSFORM TRIANGLE 1
 					structTriangle triangle1 = structNodeOrTriangle.m_Triangle;
@@ -1780,17 +1782,9 @@ namespace OpenCLPhysics
 	{
 		structHits ret;
 		
-		//// TRANSFORM 1
-		//glm::vec3 v3Rotate1 = ToVector3(structRigidBody1.m_v3Rotate);
-		//glm::vec3 v3Position1 = ToVector3(structRigidBody1.m_v3Position);
-		//glm::mat4 T1 = glm::translate(glm::mat4(1.0f), v3Position1) * glm::eulerAngleXYZ(v3Rotate1.x, v3Rotate1.y, v3Rotate1.z);
-		//
-		//// TRANSFORM 2
-		//glm::vec3 v3Rotate2 = ToVector3(structRigidBody2.m_v3Rotate);
-		//glm::vec3 v3Position2 = ToVector3(structRigidBody2.m_v3Position);
-		//glm::mat4 T2 = glm::translate(glm::mat4(1.0f), v3Position2) * glm::eulerAngleXYZ(v3Rotate2.x, v3Rotate2.y, v3Rotate2.z);
-		
-		//structBBox structRigidBody1_BBox = TransformBBox(T1, structRigidBody1.m_BBox);
+		structBBox bboxRigidBody1 = structRigidBody1.m_BBox;
+		bboxRigidBody1.v3Min = ToVector3(ToVector3(bboxRigidBody1.v3Min) + ToVector3(structRigidBody1.m_v3Position));
+		bboxRigidBody1.v3Max = ToVector3(ToVector3(bboxRigidBody1.v3Max) + ToVector3(structRigidBody1.m_v3Position));
 
 		int nTop = -1;
 		int arrStack[64];
@@ -1811,7 +1805,7 @@ namespace OpenCLPhysics
 
 			if (true == IsLeaf(structNodeOrTriangle)) 
 			{
-				if (true == IsCollide(structRigidBody1.m_BBox, structNodeOrTriangle.m_BBox))
+				if (true == IsCollide(bboxRigidBody1, structNodeOrTriangle.m_BBox))
 				{
 					structHits hits = SearchHits2(structRigidBody1, structRigidBody2, nId2, T1, T2, offset1, offset2, pListBVHNodeTriangles);
 
@@ -1833,7 +1827,7 @@ namespace OpenCLPhysics
 			}
 			else 
 			{
-				if (true == IsCollide(structRigidBody1.m_BBox, structNodeOrTriangle.m_BBox))
+				if (true == IsCollide(bboxRigidBody1, structNodeOrTriangle.m_BBox))
 				{
 					if (structNodeOrTriangle.m_nLeft != -1)
 					{
@@ -2046,9 +2040,13 @@ namespace OpenCLPhysics
 			// ha static, akkor nem kell
 			if (structRigidBody1.m_fMass <= 0.0f)
 			{
-				continue;
+				//continue;
 			}
 		
+			structBBox bboxRigidBody1 = structRigidBody1.m_BBox;
+			bboxRigidBody1.v3Min = ToVector3(ToVector3(bboxRigidBody1.v3Min) + ToVector3(structRigidBody1.m_v3Position));
+			bboxRigidBody1.v3Max = ToVector3(ToVector3(bboxRigidBody1.v3Max) + ToVector3(structRigidBody1.m_v3Position));
+
 			// TRANSFORM 1
 			glm::vec3 v3Rotate1 = ToVector3(structRigidBody1.m_v3Rotate);
 			glm::vec3 v3Position1 = ToVector3(structRigidBody1.m_v3Position);
@@ -2078,12 +2076,12 @@ namespace OpenCLPhysics
 					if (id1 != id2)
 					{
 						structRigidBody structRigidBody2 = m_listRigidBodies.at(id2);
-						structBBox bboxRigidBody2 = structRigidBody2.m_BBox;
 
+						structBBox bboxRigidBody2 = structRigidBody2.m_BBox;
 						bboxRigidBody2.v3Min = ToVector3(ToVector3(bboxRigidBody2.v3Min) + ToVector3(structRigidBody2.m_v3Position));
 						bboxRigidBody2.v3Max = ToVector3(ToVector3(bboxRigidBody2.v3Max) + ToVector3(structRigidBody2.m_v3Position));
 
-						if (true == IsCollide(structRigidBody1.m_BBox, bboxRigidBody2))
+						if (true == IsCollide(bboxRigidBody1, bboxRigidBody2))
 						{
 							// TRANSFORM 2
 							glm::vec3 v3Rotate2 = ToVector3(structRigidBody2.m_v3Rotate);
@@ -2120,7 +2118,7 @@ namespace OpenCLPhysics
 				}
 				else
 				{
-					if (true == IsCollide(structRigidBody1.m_BBox, structBVHObject.m_BBox))
+					if (true == IsCollide(bboxRigidBody1, structBVHObject.m_BBox))
 					{
 						if (structBVHObject.m_nLeft != -1)
 						{

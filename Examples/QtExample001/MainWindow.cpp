@@ -123,7 +123,7 @@ bool MainWindow::Init()
 
     // 2/2 - physics
     int from_dynamic_id = -1;
-    for (int x = -5; x < 5; x++)
+    for (int x = -5; x < -3; x++)
     {
         //for (int z = -5; z < 5; z++)
         {
@@ -145,7 +145,7 @@ bool MainWindow::Init()
                 m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 0.2f, 12));
                 m_physics.SetEulerRotate(dynamic_id, glm::vec3(0,0,0));
                 m_physics.SetMass(dynamic_id, 85.0f); // dynamic
-                m_physics.SetAngularVelocity(dynamic_id, glm::vec3(0.3f, 0.2f, 0.1f));
+                m_physics.SetAngularVelocity(dynamic_id, glm::vec3(0.0f, 0.0f, 0.0f));
 
                 m_listDynamicIds.push_back(dynamic_id);
 
@@ -221,6 +221,49 @@ void MainWindow::TimerTick()
     if (dt > 1.0f / 10.0f)
     {
         dt = 1.0f / 10.0f;
+    }
+
+    if (true == m_bKeys[Qt::Key_L]) 
+    {
+        int nId = m_listDynamicIds[0];
+        glm::vec3 v3Pos = m_physics.GetPosition(nId);
+        v3Pos += glm::vec3(+1, 0, 0) * 2.0f * dt;
+        m_physics.SetPosition(nId, v3Pos);
+    }
+    if (true == m_bKeys[Qt::Key_J])
+    {
+        int nId = m_listDynamicIds[0];
+        glm::vec3 v3Pos = m_physics.GetPosition(nId);
+        v3Pos += glm::vec3(-1, 0, 0) * 2.0f * dt;
+        m_physics.SetPosition(nId, v3Pos);
+    }
+    if (true == m_bKeys[Qt::Key_I])
+    {
+        int nId = m_listDynamicIds[0];
+        glm::vec3 v3Pos = m_physics.GetPosition(nId);
+        v3Pos += glm::vec3(0, 0, -1) * 2.0f * dt;
+        m_physics.SetPosition(nId, v3Pos);
+    }
+    if (true == m_bKeys[Qt::Key_K])
+    {
+        int nId = m_listDynamicIds[0];
+        glm::vec3 v3Pos = m_physics.GetPosition(nId);
+        v3Pos += glm::vec3(0, 0, +1) * 2.0f * dt;
+        m_physics.SetPosition(nId, v3Pos);
+    }
+    if (true == m_bKeys[Qt::Key_H])
+    {
+        int nId = m_listDynamicIds[0];
+        glm::vec3 v3Pos = m_physics.GetPosition(nId);
+        v3Pos += glm::vec3(0, -1, 0) * 2.0f * dt;
+        m_physics.SetPosition(nId, v3Pos);
+    }
+    if (true == m_bKeys[Qt::Key_U])
+    {
+        int nId = m_listDynamicIds[0];
+        glm::vec3 v3Pos = m_physics.GetPosition(nId);
+        v3Pos += glm::vec3(0, +1, 0) * 2.0f * dt;
+        m_physics.SetPosition(nId, v3Pos);
     }
 
     m_physics.Update(dt, 1);
