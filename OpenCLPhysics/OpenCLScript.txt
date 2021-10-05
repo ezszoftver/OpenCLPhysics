@@ -508,12 +508,13 @@ __kernel void UpdateBVHObjects(__global BVHObject *inoutBVHObjects, __global Rig
 		v3Max.y = fmax(v3Max.y, v3Out8.y);
 		v3Max.z = fmax(v3Max.z, v3Out8.z);
 
-		inoutRigidBodies[id].bbox.v3Min = v3Min;
-		inoutRigidBodies[id].bbox.v3Max = v3Max;
+		inoutRigidBodies[id].bbox.v3Min = Vector3_Add(v3Min, rigidBody.v3Position);
+		inoutRigidBodies[id].bbox.v3Max = Vector3_Add(v3Max, rigidBody.v3Position);
 		
 		rigidBody = inoutRigidBodies[id];
 		bbox = rigidBody.bbox;
 		
+		bvhObject.nRigidBodyId = rigidBody.nId;
 		bvhObject.bbox = bbox;
 	}
 	else if (bvhObject.nLeft > -1 && bvhObject.nRight == -1) // is bbox?
