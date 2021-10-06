@@ -18,7 +18,8 @@ const char* Script::GetText()
 		return nullptr;
 	}
 
-	Replace(s_strOpenCLScript, "#MAX_HITS_PER_OBJECT#", std::to_string(MAX_HITS_PER_OBJECT));
+	Replace(s_strOpenCLScript, "#MAX_HITS#", std::to_string(MAX_HITS));
+	Replace(s_strOpenCLScript, "#MAX_HITS_OBJECT_OBJECT#", std::to_string(MAX_HITS_OBJECT_OBJECT));
 
     return s_strOpenCLScript.c_str();
 }

@@ -123,7 +123,7 @@ namespace OpenCLPhysics
 	typedef struct _structHits 
 	{
 		int32_t m_nNumHits = 0;
-		structHit m_hits[MAX_HITS_PER_OBJECT];
+		structHit m_hits[MAX_HITS];
 	}
 	structHits;
 

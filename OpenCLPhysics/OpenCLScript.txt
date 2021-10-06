@@ -325,10 +325,10 @@ typedef struct
 }
 Hit;
 
-typedef struct 
+typedef struct
 {
 	int nNumHits;
-	Hit hits[#MAX_HITS_PER_OBJECT#];
+	Hit hits[#MAX_HITS#];
 }
 Hits;
 
@@ -720,28 +720,169 @@ BBox TransformBBox(Matrix4 T, BBox bbox)
 	return ret;
 }
 
-Hits SearchHits2()
+float angle(Vector3 v3A, Vector3 v3B)
 {
-	Hits ret;
-	return ret;
+	float3 f3A = Vector3ToFloat3(v3A);
+	float3 f3B = Vector3ToFloat3(v3B);
+	
+	float fAngle = acos(dot(f3A, f3B));
+	
+	return fAngle;
 }
 
-Hits SearchHits(RigidBody structRigidBody1/*only dynamic*/, RigidBody structRigidBody2/*static or dynamic*/, BVHNodeTriangleOffset offset1, BVHNodeTriangleOffset offset2, __global BVHNodeTriangle* pListBVHNodeTriangles)
+bool IsEqual(Hit hit1, Hit hit2)
 {
-	Hits ret;
+	if ( distance(Vector3ToFloat3(hit1.v3HitPointInWorld), Vector3ToFloat3(hit2.v3HitPointInWorld)) < 0.001f )
+	{
+		if (angle(hit1.v3Normal, hit2.v3Normal) < (3.141592f / 180.0f)) // 1 degree 
+		{
+			return true;
+		}
+	}
 
-	// TRANSFORM 1
-	//Matrix4 mat4Translate = Mat4_CreateTranslate(structRigidBody1.v3Position);
-	//Matrix4 mat4EulerRotate = Mat4_CreateEulerRotate(structRigidBody1.v3Rotate);
-	//Matrix4 T1 = Mult_Mat4Mat4(mat4Translate, mat4EulerRotate);
-	
-	// TRANSFORM 2
-	//mat4Translate = Mat4_CreateTranslate(structRigidBody2.v3Position);
-	//mat4EulerRotate = Mat4_CreateEulerRotate(structRigidBody2.v3Rotate);
-	//Matrix4 T2 = Mult_Mat4Mat4(mat4Translate, mat4EulerRotate);
-	
-	//BBox structRigidBody1_BBox = TransformBBox(T1, structRigidBody1.bbox);
+	return false;
+}
 
+bool IsContains(Hits *pHits, Hit hit)
+{
+	for (int i = 0; i < pHits->nNumHits; i++)
+	{
+		if (true == IsEqual(pHits->hits[i], hit))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void Intersect_LineTriangle(Hits *pHits, bool isInvertNormal, float3 f3LineA, float3 f3LineB, float3 f3TriA, float3 f3TriB, float3 f3TriC, float3 f3TriN)
+{
+	if (pHits->nNumHits >= #MAX_HITS_OBJECT_OBJECT#)
+	{
+		return;
+	}
+
+	float3 f3Dir = normalize(f3LineB - f3LineA);
+
+	float cost = dot(f3Dir, f3TriN);
+	if (fabs(cost) < 0.001f)
+	{
+		return;
+	}
+		
+	float t = dot(f3TriA - f3LineA, f3TriN) / cost;
+	float fMaxLenght = distance(f3LineA, f3LineB);
+	if (t < 0.0f || t > fMaxLenght)
+	{
+		return;
+	}
+		
+	float3 f3P = f3LineA + (f3Dir * t);
+	
+	float3 f3N2;
+	f3N2 = cross(f3TriB - f3TriA, f3P - f3TriA);
+	float c1 = dot(f3TriN, f3N2);
+	
+	f3N2 = cross(f3TriC - f3TriB, f3P - f3TriB);
+	float c2 = dot(f3TriN, f3N2);
+	
+	f3N2 = cross(f3TriA - f3TriC, f3P - f3TriC);
+	float c3 = dot(f3TriN, f3N2);
+	
+	if ((c1 > 0.0f && c2 > 0.0f && c3 > 0.0f) || (c1 < 0.0f && c2 < 0.0f && c3 < 0.0f))
+	{
+		Hit hit;
+		hit.v3HitPointInWorld = Float3ToVector3(f3P);
+		if (false == isInvertNormal) { hit.v3Normal = Float3ToVector3(f3TriN); } else { hit.v3Normal = Float3ToVector3(-1.0f * f3TriN); }
+
+		if (false == IsContains(pHits, hit))
+		{
+			pHits->hits[pHits->nNumHits] = hit;
+			pHits->nNumHits++;
+		}
+	}
+}
+
+void Intersect_TriangleTriangle(Hits *pHits, float3 tri1_a, float3 tri1_b, float3 tri1_c, float3 tri1_n, float3 tri2_a, float3 tri2_b, float3 tri2_c, float3 tri2_n)
+{
+	Intersect_LineTriangle(pHits, false, tri1_a, tri1_b, tri2_a, tri2_b, tri2_c, tri2_n);
+	Intersect_LineTriangle(pHits, false, tri1_b, tri1_c, tri2_a, tri2_b, tri2_c, tri2_n);
+	Intersect_LineTriangle(pHits, false, tri1_c, tri1_a, tri2_a, tri2_b, tri2_c, tri2_n);
+	
+	Intersect_LineTriangle(pHits, true, tri2_a, tri2_b, tri1_a, tri1_b, tri1_c, tri1_n);
+	Intersect_LineTriangle(pHits, true, tri2_b, tri2_c, tri1_a, tri1_b, tri1_c, tri1_n);
+	Intersect_LineTriangle(pHits, true, tri2_c, tri2_a, tri1_a, tri1_b, tri1_c, tri1_n);
+}
+
+void SearchHits2(Hits *pHits, RigidBody structRigidBody1/*only dynamic*/, RigidBody structRigidBody2/*static or dynamic*/, int nId2, Matrix4 T1, Matrix4 T2, BVHNodeTriangleOffset offset1, BVHNodeTriangleOffset offset2, __global BVHNodeTriangle* pListBVHNodeTriangles)
+{
+	BVHNodeTriangle structNodeOrTriangle2 = pListBVHNodeTriangles[nId2];
+	Triangle triangle2 = structNodeOrTriangle2.triangle;
+	float3 tri2_a = Vector3ToFloat3(Mult_Mat4Vector3(T2, triangle2.v3A, 1.0f));
+	float3 tri2_b = Vector3ToFloat3(Mult_Mat4Vector3(T2, triangle2.v3B, 1.0f));
+	float3 tri2_c = Vector3ToFloat3(Mult_Mat4Vector3(T2, triangle2.v3C, 1.0f));
+	float3 tri2_n = Vector3ToFloat3(Mult_Mat4Vector3(T2, triangle2.v3N, 0.0f));
+	
+	structNodeOrTriangle2.bbox = TransformBBox(T2, structNodeOrTriangle2.bbox);
+
+	int nTop = -1;
+	int arrStack[64];
+
+	nTop++;
+	arrStack[nTop] = offset1.nOffset;
+
+	int nId1;
+	BVHNodeTriangle structNodeOrTriangle;
+	
+	while (nTop > -1)
+	{
+		nId1 = arrStack[nTop];
+		nTop--;
+		
+		structNodeOrTriangle = pListBVHNodeTriangles[nId1];
+		structNodeOrTriangle.bbox = TransformBBox(T1, structNodeOrTriangle.bbox);
+		
+		if (true == IsLeaf(structNodeOrTriangle))
+		{
+			if (true == IsCollide(structNodeOrTriangle2.bbox, structNodeOrTriangle.bbox))
+			{
+				Triangle triangle1 = structNodeOrTriangle.triangle;
+				float3 tri1_a = Vector3ToFloat3(Mult_Mat4Vector3(T1, triangle1.v3A, 1.0f));
+				float3 tri1_b = Vector3ToFloat3(Mult_Mat4Vector3(T1, triangle1.v3B, 1.0f));
+				float3 tri1_c = Vector3ToFloat3(Mult_Mat4Vector3(T1, triangle1.v3C, 1.0f));
+				float3 tri1_n = Vector3ToFloat3(Mult_Mat4Vector3(T1, triangle1.v3N, 0.0f));
+				
+				Intersect_TriangleTriangle(pHits, tri1_a, tri1_b, tri1_c, tri1_n, tri2_a, tri2_b, tri2_c, tri2_n);
+
+				if (pHits->nNumHits >= #MAX_HITS_OBJECT_OBJECT#)
+				{
+					return;
+				}
+			}
+		}
+		else
+		{
+			if (true == IsCollide(structNodeOrTriangle2.bbox, structNodeOrTriangle.bbox))
+			{
+				if (structNodeOrTriangle.nLeft != -1)
+				{
+					nTop++;
+					arrStack[nTop] = structNodeOrTriangle.nLeft;
+				}
+
+				if (structNodeOrTriangle.nRight != -1)
+				{
+					nTop++;
+					arrStack[nTop] = structNodeOrTriangle.nRight;
+				}
+			}
+		}
+	}
+}
+
+void SearchHits(Hits *pHits, RigidBody structRigidBody1/*only dynamic*/, RigidBody structRigidBody2/*static or dynamic*/, Matrix4 T1, Matrix4 T2, BVHNodeTriangleOffset offset1, BVHNodeTriangleOffset offset2, __global BVHNodeTriangle* pListBVHNodeTriangles)
+{
 	int nTop = -1;
 	int arrStack[64];
 
@@ -757,12 +898,18 @@ Hits SearchHits(RigidBody structRigidBody1/*only dynamic*/, RigidBody structRigi
 		nTop--;
 
 		structNodeOrTriangle = pListBVHNodeTriangles[nId2];
+		structNodeOrTriangle.bbox = TransformBBox(T2, structNodeOrTriangle.bbox);
 
 		if (true == IsLeaf(structNodeOrTriangle))
 		{
 			if (true == IsCollide(structRigidBody1.bbox, structNodeOrTriangle.bbox)) 
 			{
-				;
+				SearchHits2(pHits, structRigidBody1, structRigidBody2, nId2, T1, T2, offset1, offset2, pListBVHNodeTriangles);
+	
+				if (pHits->nNumHits >= #MAX_HITS_OBJECT_OBJECT#)
+				{
+					return;
+				}			
 			}
 		}
 		else
@@ -783,8 +930,6 @@ Hits SearchHits(RigidBody structRigidBody1/*only dynamic*/, RigidBody structRigi
 			}
 		}
 	}
-
-	return ret;
 }
 
 __kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCount, __global BVHObject* inoutBVHObjects, __global BVHNodeTriangle* inBVHNodeTriangles, __global BVHNodeTriangleOffset *inBVHNodeTrianglesOffsets, __global Hits* inoutHits, __global int* inoutIsCollisionResponse)
@@ -812,12 +957,16 @@ __kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCoun
 	}
 
 	// init hits
-	Hits hits = inoutHits[id1];
-	hits.nNumHits = 0;
-	inoutHits[id1] = hits;
+	Hits allHits;
+	allHits.nNumHits = 0;
 
 	// init isCollisionResponse
 	inoutIsCollisionResponse[id1] = 0;
+
+	// TRANSFORM 1
+	Matrix4 mat4Translate = Mat4_CreateTranslate(structRigidBody1.v3Position);
+	Matrix4 mat4EulerRotate = Mat4_CreateEulerRotate(structRigidBody1.v3Rotate);
+	Matrix4 T1 = Mult_Mat4Mat4(mat4Translate, mat4EulerRotate);
 
 	int nTop = -1;
 	int arrStack[64];
@@ -827,19 +976,23 @@ __kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCoun
 
 	int nOtherId;
 	BVHObject structBVHObject;
-	int id2;
 
 	while (nTop > -1)
 	{
 		nOtherId = arrStack[nTop];
 		nTop--;
 
+		if (allHits.nNumHits >= #MAX_HITS#)
+		{
+			continue;
+		}
+
 		structBVHObject = inoutBVHObjects[nOtherId];
 		
 		if (structBVHObject.nLeft == -1 && structBVHObject.nRight == -1) 
 		{
 			// can not collision detection with own
-			id2 = structBVHObject.nRigidBodyId;
+			int id2 = structBVHObject.nRigidBodyId;
 			
 			if (id1 != id2)
 			{
@@ -849,30 +1002,27 @@ __kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCoun
 				
 				if (true == IsCollide(structRigidBody1.bbox, bboxRigidBody2)) 
 				{
-					Hits hits = SearchHits(structRigidBody1, structRigidBody2, inBVHNodeTrianglesOffsets[structRigidBody1.nTriMeshId], inBVHNodeTrianglesOffsets[structRigidBody2.nTriMeshId], inBVHNodeTriangles);
-					
-					if (hits.nNumHits == 0) // nincs utkozes
+					// TRANSFORM 2
+					Matrix4 mat4Translate = Mat4_CreateTranslate(structRigidBody2.v3Position);
+					Matrix4 mat4EulerRotate = Mat4_CreateEulerRotate(structRigidBody2.v3Rotate);
+					Matrix4 T2 = Mult_Mat4Mat4(mat4Translate, mat4EulerRotate);
+				
+					Hits hits;
+					hits.nNumHits = 0;
+					SearchHits(&hits, structRigidBody1, structRigidBody2, T1, T2, inBVHNodeTrianglesOffsets[structRigidBody1.nTriMeshId], inBVHNodeTrianglesOffsets[structRigidBody2.nTriMeshId], inBVHNodeTriangles);
+
+					for (int i = 0; i < hits.nNumHits; i++) 
 					{
-						inoutIsCollisionResponse[id1] = 1;
-					}
-					else // van utkozes => szettolas
-					{
-						inoutIsCollisionResponse[id1] = 0;
-					
-						for (int i = 0; i < hits.nNumHits; i++) 
+						if (allHits.nNumHits >= #MAX_HITS#)
 						{
-							if (inoutHits[id1].nNumHits >= #MAX_HITS_PER_OBJECT#)
-							{
-								return;
-							}
-					
-							inoutHits[id1].hits[inoutHits[id1].nNumHits].nRigidBodyAId = id1;
-							inoutHits[id1].hits[inoutHits[id1].nNumHits].nRigidBodyBId = id2;
-					
-							inoutHits[id1].hits[inoutHits[id1].nNumHits] = hits.hits[i];
-							inoutHits[id1].nNumHits++;
+							continue;
 						}
-						
+	
+						allHits.hits[allHits.nNumHits].nRigidBodyAId = id1;
+						allHits.hits[allHits.nNumHits].nRigidBodyBId = id2;
+	
+						allHits.hits[allHits.nNumHits] = hits.hits[i];
+						allHits.nNumHits++;
 					}
 				}
 			}
@@ -894,5 +1044,15 @@ __kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCoun
 				}
 			}
 		}
+	}
+
+	if (allHits.nNumHits == 0) // nincs utkozes
+	{
+		inoutIsCollisionResponse[id1] = 1;
+	}
+	else // van utkozes => szettolas
+	{
+		inoutIsCollisionResponse[id1] = 0;
+		inoutHits[id1] = allHits;
 	}
 }

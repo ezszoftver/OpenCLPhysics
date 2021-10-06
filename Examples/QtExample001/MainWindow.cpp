@@ -123,11 +123,11 @@ bool MainWindow::Init()
 
     // 2/2 - physics
     int from_dynamic_id = -1;
-    for (int x = -5; x < -3; x++)
+    for (int x = -5; x < 5; x++)
     {
-        //for (int z = -5; z < 5; z++)
+        for (int z = -5; z < 5; z++)
         {
-            //for (int y = 0; y < (10/*1000db*/ * 5/*5000db*/); y++)
+            for (int y = 0; y < (10/*1000db*/ * 5/*5000db*/); y++)
             {
                 int dynamic_id = -1;
                 if (-1 == from_dynamic_id)
@@ -141,8 +141,8 @@ bool MainWindow::Init()
                 }
 
                 float fScale = 2.1f;
-                //m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 20 + (y * fScale), z * fScale));
-                m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 0.2f, 12));
+                m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 20 + (y * fScale), z * fScale));
+                //m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 0.2f, 12));
                 m_physics.SetEulerRotate(dynamic_id, glm::vec3(0,0,0));
                 m_physics.SetMass(dynamic_id, 85.0f); // dynamic
                 m_physics.SetAngularVelocity(dynamic_id, glm::vec3(0.0f, 0.0f, 0.0f));
@@ -158,7 +158,7 @@ bool MainWindow::Init()
     m_physics.Commit();
 
     // gravity
-    m_physics.SetGravity(glm::vec3(0, 0.0f, 0));
+    m_physics.SetGravity(glm::vec3(0, -0.1f, 0));
 
     // Avatar
     m_Camera.Init(glm::vec3(15, 3, 15), glm::vec3(0, 0, 0));
@@ -472,36 +472,36 @@ void MainWindow::TimerTick()
     //}
     
     // Draw hits
-    std::vector < structHits > *pListHits = m_physics.GetHits();
-    for (int32_t i = 0; i < pListHits->size(); i++)
-    {
-        structHits hits = pListHits->at(i);
-    
-        for (int32_t j = 0; j < hits.m_nNumHits; j++) 
-        {
-            structVector3 p1 = hits.m_hits[j].m_v3HitPointInWorld;
-            structVector3 p2 = hits.m_hits[j].m_v3Normal;
-    
-            glPointSize(20.0f);
-    
-            glBegin(GL_POINTS);
-            {
-                glColor3f(1.0f, 0.0f, 0.0f);
-                glVertex3f(p1.x, p1.y, p1.z);
-                glColor3f(1.0f, 1.0f, 1.0f);
-            }
-            glEnd();
-    
-            glBegin(GL_LINES);
-            {
-                glColor3f(0.0f, 1.0f, 0.0f);
-                glVertex3f(p1.x, p1.y, p1.z);
-                glVertex3f(p1.x + p2.x, p1.y + p2.y, p1.z + p2.z);
-                glColor3f(1.0f, 1.0f, 1.0f);
-            }
-            glEnd();
-        }
-    }
+    //std::vector < structHits > *pListHits = m_physics.GetHits();
+    //for (int32_t i = 0; i < pListHits->size(); i++)
+    //{
+    //    structHits hits = pListHits->at(i);
+    //
+    //    for (int32_t j = 0; j < hits.m_nNumHits; j++) 
+    //    {
+    //        structVector3 p1 = hits.m_hits[j].m_v3HitPointInWorld;
+    //        structVector3 p2 = hits.m_hits[j].m_v3Normal;
+    //
+    //        glPointSize(20.0f);
+    //
+    //        glBegin(GL_POINTS);
+    //        {
+    //            glColor3f(1.0f, 0.0f, 0.0f);
+    //            glVertex3f(p1.x, p1.y, p1.z);
+    //            glColor3f(1.0f, 1.0f, 1.0f);
+    //        }
+    //        glEnd();
+    //
+    //        glBegin(GL_LINES);
+    //        {
+    //            glColor3f(0.0f, 1.0f, 0.0f);
+    //            glVertex3f(p1.x, p1.y, p1.z);
+    //            glVertex3f(p1.x + p2.x, p1.y + p2.y, p1.z + p2.z);
+    //            glColor3f(1.0f, 1.0f, 1.0f);
+    //        }
+    //        glEnd();
+    //    }
+    //}
     
     m_SkyBox.Draw(v3CameraPos, 5000.0f);
     
