@@ -960,9 +960,6 @@ __kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCoun
 	Hits allHits;
 	allHits.nNumHits = 0;
 
-	// init isCollisionResponse
-	inoutIsCollisionResponse[id1] = 0;
-
 	// TRANSFORM 1
 	Matrix4 mat4Translate = Mat4_CreateTranslate(structRigidBody1.v3Position);
 	Matrix4 mat4EulerRotate = Mat4_CreateEulerRotate(structRigidBody1.v3Rotate);
@@ -991,7 +988,7 @@ __kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCoun
 		
 		if (structBVHObject.nLeft == -1 && structBVHObject.nRight == -1) 
 		{
-			// can not collision detection with own
+			// no collision detection with own
 			int id2 = structBVHObject.nRigidBodyId;
 			
 			if (id1 != id2)
