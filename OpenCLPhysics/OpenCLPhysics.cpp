@@ -1601,9 +1601,9 @@ namespace OpenCLPhysics
 		if (1 == hits1.m_nNumHits) { ret.m_hits[ret.m_nNumHits] = hits1.m_hits[0]; ret.m_nNumHits++; }
 		if (1 == hits2.m_nNumHits) { ret.m_hits[ret.m_nNumHits] = hits2.m_hits[0]; ret.m_nNumHits++; }
 		if (1 == hits3.m_nNumHits) { ret.m_hits[ret.m_nNumHits] = hits3.m_hits[0]; ret.m_nNumHits++; }
-		if (1 == hits4.m_nNumHits) { ret.m_hits[ret.m_nNumHits] = hits4.m_hits[0]; ret.m_nNumHits++; }
-		if (1 == hits5.m_nNumHits) { ret.m_hits[ret.m_nNumHits] = hits5.m_hits[0]; ret.m_nNumHits++; }
-		if (1 == hits6.m_nNumHits) { ret.m_hits[ret.m_nNumHits] = hits6.m_hits[0]; ret.m_nNumHits++; }
+		if (1 == hits4.m_nNumHits) { hits4.m_hits[0].m_v3Normal = ToVector3(-1.0f * ToVector3(hits4.m_hits[0].m_v3Normal)); ret.m_hits[ret.m_nNumHits] = hits4.m_hits[0]; ret.m_nNumHits++; }
+		if (1 == hits5.m_nNumHits) { hits5.m_hits[0].m_v3Normal = ToVector3(-1.0f * ToVector3(hits5.m_hits[0].m_v3Normal)); ret.m_hits[ret.m_nNumHits] = hits5.m_hits[0]; ret.m_nNumHits++; }
+		if (1 == hits6.m_nNumHits) { hits6.m_hits[0].m_v3Normal = ToVector3(-1.0f * ToVector3(hits6.m_hits[0].m_v3Normal)); ret.m_hits[ret.m_nNumHits] = hits6.m_hits[0]; ret.m_nNumHits++; }
 
 		return ret;
 	}									  
