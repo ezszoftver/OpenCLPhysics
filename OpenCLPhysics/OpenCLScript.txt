@@ -990,11 +990,10 @@ __kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCoun
 		{
 			// no collision detection with own
 			int id2 = structBVHObject.nRigidBodyId;
+			RigidBody structRigidBody2 = inoutRigidBodies[id2];
 			
-			if (id1 != id2)
+			if ( (id1 != id2) && ((id1 < id2) || (structRigidBody2.fMass <= 0.0f)) )
 			{
-				RigidBody structRigidBody2 = inoutRigidBodies[id2];
-			
 				BBox bboxRigidBody2 = structRigidBody2.bbox;
 				
 				if (true == IsCollide(structRigidBody1.bbox, bboxRigidBody2)) 

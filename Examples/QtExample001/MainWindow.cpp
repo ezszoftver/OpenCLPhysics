@@ -471,7 +471,7 @@ void MainWindow::TimerTick()
     //    glEnd();
     //}
     
-    // Draw hits
+    //// Draw hits
     //std::vector < structHits > *pListHits = m_physics.GetHits();
     //for (int32_t i = 0; i < pListHits->size(); i++)
     //{
