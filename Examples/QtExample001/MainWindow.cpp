@@ -144,7 +144,7 @@ bool MainWindow::Init()
                 float fScale = 1.0f;
                 //m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 20 + (y * fScale), z * fScale));
                 m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 0.8f + (y * fScale), 12));
-                m_physics.SetEulerRotate(dynamic_id, glm::vec3(0.1f, 0.2f, 0.3f));
+                m_physics.SetEulerRotate(dynamic_id, glm::vec3(0.0f, 0.0f, 0.0f));
                 m_physics.SetMass(dynamic_id, 85.0f); // dynamic
                 m_physics.SetLinearVelocity(dynamic_id, glm::vec3(0.0f, 0.0f, 0.0f));
                 m_physics.SetAngularVelocity(dynamic_id, glm::vec3(0.0f, 0.0f, 0.0f));

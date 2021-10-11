@@ -94,7 +94,7 @@ Vector3 Vector3Scale(Vector3 a, float fScale)
 	return ret;
 }
 
-Matrix4 Mult_Mat4Mat4(Matrix4 T1, Matrix4 T2)
+Matrix4 Mult_Mat4Mat4(Matrix4 T2, Matrix4 T1)
 {
 	Matrix4 ret;
 
