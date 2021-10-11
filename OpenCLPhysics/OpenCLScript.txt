@@ -85,7 +85,16 @@ Vector3 Vector3_Add(Vector3 a, Vector3 b)
 	return ret;
 }
 
-Matrix4 Mult_Mat4Mat4(Matrix4 T2, Matrix4 T1)
+Vector3 Vector3Scale(Vector3 a, float fScale)
+{
+	Vector3 ret;
+	ret.x = a.x * fScale;
+	ret.y = a.y * fScale;
+	ret.z = a.z * fScale;
+	return ret;
+}
+
+Matrix4 Mult_Mat4Mat4(Matrix4 T1, Matrix4 T2)
 {
 	Matrix4 ret;
 
@@ -337,6 +346,7 @@ typedef struct
 	int nId;
 	int nTriMeshId;
 	int nIsEnabled;
+	int nIsIntegrateEnabled;
 
 	BBox inBBox;
 	BBox bbox;
@@ -568,6 +578,11 @@ __kernel void Integrate(__global RigidBody* inoutRigidBodies, int nCount, float 
 	RigidBody rigidBody = inoutRigidBodies[id];
 
 	if (0 == rigidBody.nIsEnabled)
+	{
+		return;
+	}
+
+	if (0 == rigidBody.nIsIntegrateEnabled)
 	{
 		return;
 	}
@@ -819,11 +834,12 @@ void SearchHits2(Hits *pHits, RigidBody structRigidBody1/*only dynamic*/, RigidB
 {
 	BVHNodeTriangle structNodeOrTriangle2 = pListBVHNodeTriangles[nId2];
 	Triangle triangle2 = structNodeOrTriangle2.triangle;
+
 	float3 tri2_a = Vector3ToFloat3(Mult_Mat4Vector3(T2, triangle2.v3A, 1.0f));
 	float3 tri2_b = Vector3ToFloat3(Mult_Mat4Vector3(T2, triangle2.v3B, 1.0f));
 	float3 tri2_c = Vector3ToFloat3(Mult_Mat4Vector3(T2, triangle2.v3C, 1.0f));
 	float3 tri2_n = Vector3ToFloat3(Mult_Mat4Vector3(T2, triangle2.v3N, 0.0f));
-	
+
 	structNodeOrTriangle2.bbox = TransformBBox(T2, structNodeOrTriangle2.bbox);
 
 	int nTop = -1;
@@ -848,11 +864,12 @@ void SearchHits2(Hits *pHits, RigidBody structRigidBody1/*only dynamic*/, RigidB
 			if (true == IsCollide(structNodeOrTriangle2.bbox, structNodeOrTriangle.bbox))
 			{
 				Triangle triangle1 = structNodeOrTriangle.triangle;
+
 				float3 tri1_a = Vector3ToFloat3(Mult_Mat4Vector3(T1, triangle1.v3A, 1.0f));
 				float3 tri1_b = Vector3ToFloat3(Mult_Mat4Vector3(T1, triangle1.v3B, 1.0f));
 				float3 tri1_c = Vector3ToFloat3(Mult_Mat4Vector3(T1, triangle1.v3C, 1.0f));
 				float3 tri1_n = Vector3ToFloat3(Mult_Mat4Vector3(T1, triangle1.v3N, 0.0f));
-				
+
 				Intersect_TriangleTriangle(pHits, tri1_a, tri1_b, tri1_c, tri1_n, tri2_a, tri2_b, tri2_c, tri2_n);
 
 				if (pHits->nNumHits >= #MAX_HITS_OBJECT_OBJECT#)
@@ -959,6 +976,7 @@ __kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCoun
 	// init hits
 	Hits allHits;
 	allHits.nNumHits = 0;
+	inoutHits[id1] = allHits;
 
 	// TRANSFORM 1
 	Matrix4 mat4Translate = Mat4_CreateTranslate(structRigidBody1.v3Position);
@@ -1014,10 +1032,11 @@ __kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCoun
 							continue;
 						}
 	
+						allHits.hits[allHits.nNumHits] = hits.hits[i];
+
 						allHits.hits[allHits.nNumHits].nRigidBodyAId = id1;
 						allHits.hits[allHits.nNumHits].nRigidBodyBId = id2;
-	
-						allHits.hits[allHits.nNumHits] = hits.hits[i];
+
 						allHits.nNumHits++;
 					}
 				}
@@ -1042,13 +1061,14 @@ __kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCoun
 		}
 	}
 
+	inoutHits[id1] = allHits;
+
 	if (allHits.nNumHits == 0) // nincs utkozes
 	{
-		inoutIsCollisionResponse[id1] = 1;
+		inoutIsCollisionResponse[id1] = 0;
 	}
 	else // van utkozes => szettolas
 	{
-		inoutIsCollisionResponse[id1] = 0;
-		inoutHits[id1] = allHits;
+		inoutIsCollisionResponse[id1] = 1;
 	}
 }

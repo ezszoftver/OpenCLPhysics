@@ -1991,61 +1991,70 @@ namespace OpenCLPhysics
 		return false;
 	}
 
+	glm::vec3 GetPointVelocity(structRigidBody rigidBodyA, glm::vec3 v3Point)
+	{
+		return (ToVector3(rigidBodyA.m_v3LinearVelocity) + glm::cross(ToVector3(rigidBodyA.m_v3AngularVelocity), v3Point));
+	}
+
 	void Physics::CollisionResponse(float dt)
 	{
-		//for (int32_t i = 0; i < m_listHits.size(); i++)
-		//{
-		//	// EZ MEGY AZ OPENCL FUGGVENYBE
-		//	structHits hits = m_listHits[i];
-		//
-		//	if (m_listIsCollisionResponse[i] == 0 && hits.m_nNumHits > 0) // van utkozes, szettolas
-		//	{
-		//		SetEnabled(i, false);
-		//
-		//		// megkeresi a kulonbozo normal vector-okat
-		//		structHits separateDirs;
-		//		for (int j = 0; j < hits.m_nNumHits; j++)
-		//		{
-		//			if (false == IsContainsNormal(separateDirs, hits.m_hits[j].m_v3Normal)) 
-		//			{
-		//				separateDirs.m_hits[separateDirs.m_nNumHits].m_v3Normal = hits.m_hits[j].m_v3Normal;
-		//				separateDirs.m_nNumHits++;
-		//			}
-		//		}
-		//
-		//		// irany szamitasa
-		//		glm::vec3 v3Dir(0, 0, 0);
-		//		for (int j = 0; j < separateDirs.m_nNumHits; j++)
-		//		{
-		//			v3Dir += ToVector3(separateDirs.m_hits[j].m_v3Normal);
-		//		}
-		//		v3Dir = glm::normalize(v3Dir);
-		//
-		//		// szettolas
-		//		glm::vec3 v3Pos = ToVector3(m_listRigidBodies[i].m_v3Position);
-		//		float fSeparateSpeed = 0.2f;
-		//		glm::vec3 v3NewPos = v3Pos + (v3Dir * fSeparateSpeed * dt);
-		//		m_listRigidBodies[i].m_v3Position = ToVector3(v3NewPos);
-		//	}
-		//
-		//	if (m_listIsCollisionResponse[i] == 1) // nincs utkozes, collision response az elozo utkozo adatok alapjan
-		//	{
-		//		// cheat
-		//		m_listRigidBodies[i].m_v3LinearVelocity.y = 0;
-		//	}
-		//
-		//	if (hits.m_nNumHits == 0)
-		//	{
-		//		SetEnabled(i, true);
-		//	}
-		//}
-		//
-		//// DEBUG EZ MAJD NEM KELL
-		//cl_int err = 0;
-		//err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), m_listRigidBodies.data(), 0, NULL, NULL);
-		//if (err != CL_SUCCESS) 
-		//{ 
-		//	return; 
-		//}
+		for (int32_t id = 0; id < m_listHits.size(); id++)
+		{
+			// EZ MEGY AZ OPENCL FUGGVENYBE
+			structHits hits = m_listHits[id];
+			
+			if (0 == hits.m_nNumHits) 
+			{
+				continue;
+			}
+
+			structRigidBody rigidBodyA = m_listRigidBodies[id];
+
+			if (rigidBodyA.m_fMass <= 0.0f) 
+			{
+				continue;
+			}
+
+			glm::vec3 v3LinearVelocity = ToVector3(rigidBodyA.m_v3LinearVelocity);
+			glm::vec3 v3AngularVelocity = ToVector3(rigidBodyA.m_v3AngularVelocity);
+
+			for (int i = 0; i < hits.m_nNumHits; i++)
+			{
+				structHit hit = hits.m_hits[i];
+
+				// calc contact velocity
+				glm::vec3 rA = ToVector3(hit.m_v3HitPointInWorld) - ToVector3(m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position);
+				glm::vec3 v3RelVelocity = GetPointVelocity(rigidBodyA, rA);
+				float fProjVelocity = glm::dot(v3RelVelocity, ToVector3(hit.m_v3Normal));
+
+				if (fProjVelocity >= 0.0f)
+				{
+					continue;
+				}
+
+				// calc inertia
+				float fNominator = -(1.0f + rigidBodyA.m_fRestitution) * fProjVelocity;
+				float fDenominator = glm::dot((ToVector3(hit.m_v3Normal) / rigidBodyA.m_fMass) + glm::cross(glm::cross(rA, ToVector3(hit.m_v3Normal)), rA) / rigidBodyA.m_fMass, ToVector3(hit.m_v3Normal));
+				
+				float J = fNominator / fDenominator;
+				J /= (float)hits.m_nNumHits;
+
+				// apply velocity
+				v3LinearVelocity += (J * ToVector3(hit.m_v3Normal)) / rigidBodyA.m_fMass;
+				v3AngularVelocity += glm::cross(rA, J * ToVector3(hit.m_v3Normal)) / rigidBodyA.m_fMass;
+			}
+
+			m_listRigidBodies[id].m_v3LinearVelocity = ToVector3(v3LinearVelocity);
+			m_listRigidBodies[id].m_v3AngularVelocity = ToVector3(v3AngularVelocity);
+		}
+		
+		// DEBUG EZ MAJD NEM KELL
+		cl_int err = 0;
+		err |= clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), m_listRigidBodies.data(), 0, NULL, NULL);
+		err |= clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHits) * m_listHits.size(), m_listHits.data(), 0, NULL, NULL);
+		if (err != CL_SUCCESS) 
+		{ 
+			return; 
+		}
 	}
 }
