@@ -94,6 +94,11 @@ Vector3 Vector3Scale(Vector3 a, float fScale)
 	return ret;
 }
 
+float ToRadian(float x) 
+{
+	return (x * (3.141592f / 180.0f));
+}
+
 Matrix4 Mat4_CreateTransform(Vector3 v3Translate, Vector3 v3Rotate)
 {
     float c1 = cos(-v3Rotate.x);
@@ -290,12 +295,6 @@ __kernel void UpdateBVHObjects(__global BVHObject *inoutBVHObjects, __global Rig
 		RigidBody rigidBody = inoutRigidBodies[id];
 		BBox bbox = rigidBody.inBBox;
 
-		//Matrix4 mat4EulerRotate = Mat4_CreateEulerRotate(rigidBody.v3Rotate);
-		//Matrix4 mat4Translate = Mat4_CreateTranslate(rigidBody.v3Position);
-		//Matrix4 mat4Transform = Mult_Mat4Mat4(mat4Translate, mat4EulerRotate);
-		
-		//Matrix4 mat4Transform = Mat4_CreateEulerRotate(rigidBody.v3Rotate);
-
 		Matrix4 mat4Transform = Mat4_CreateTransform(rigidBody.v3Position, rigidBody.v3Rotate);
 
 		Vector3 v3Min = bbox.v3Min;
@@ -378,9 +377,6 @@ __kernel void UpdateBVHObjects(__global BVHObject *inoutBVHObjects, __global Rig
 		v3Max.x = fmax(v3Max.x, v3Out8.x);
 		v3Max.y = fmax(v3Max.y, v3Out8.y);
 		v3Max.z = fmax(v3Max.z, v3Out8.z);
-
-		//v3Min = Vector3_Add(v3Min, rigidBody.v3Position);
-		//v3Max = Vector3_Add(v3Max, rigidBody.v3Position);
 
 		// cheat
 		v3Min = Vector3_Add(v3Min, XYZToVector3(-0.001f, -0.001f, -0.001f));
@@ -845,9 +841,6 @@ __kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCoun
 	}
 
 	// TRANSFORM 1
-	//Matrix4 mat4Translate = Mat4_CreateTranslate(structRigidBody1.v3Position);
-	//Matrix4 mat4EulerRotate = Mat4_CreateEulerRotate(structRigidBody1.v3Rotate);
-	//Matrix4 T1 = Mult_Mat4Mat4(mat4Translate, mat4EulerRotate);
 	Matrix4 T1 = Mat4_CreateTransform(structRigidBody1.v3Position, structRigidBody1.v3Rotate);
 
 	int nTop = -1;
@@ -877,16 +870,12 @@ __kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCoun
 			int id2 = structBVHObject.nRigidBodyId;
 			RigidBody structRigidBody2 = inoutRigidBodies[id2];
 			
-			if ( (id1 != id2) /*&& ((id1 < id2) || (structRigidBody2.fMass <= 0.0f))*/ )
+			if (id1 != id2)
 			{
-				BBox bboxRigidBody2 = structRigidBody2.bbox;
-				
 				if (true == IsCollide(structRigidBody1.bbox, bboxRigidBody2)) 
 				{
+					BBox bboxRigidBody2 = structRigidBody2.bbox;
 					// TRANSFORM 2
-					//Matrix4 mat4Translate = Mat4_CreateTranslate(structRigidBody2.v3Position);
-					//Matrix4 mat4EulerRotate = Mat4_CreateEulerRotate(structRigidBody2.v3Rotate);
-					//Matrix4 T2 = Mult_Mat4Mat4(mat4Translate, mat4EulerRotate);
 					Matrix4 T2 = Mat4_CreateTransform(structRigidBody2.v3Position, structRigidBody2.v3Rotate);
 				
 					Hits hits;
