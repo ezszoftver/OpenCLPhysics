@@ -868,13 +868,14 @@ __kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCoun
 		{
 			// no collision detection with own
 			int id2 = structBVHObject.nRigidBodyId;
-			RigidBody structRigidBody2 = inoutRigidBodies[id2];
 			
 			if (id1 != id2)
 			{
+				RigidBody structRigidBody2 = inoutRigidBodies[id2];
+				BBox bboxRigidBody2 = structRigidBody2.bbox;
+
 				if (true == IsCollide(structRigidBody1.bbox, bboxRigidBody2)) 
-				{
-					BBox bboxRigidBody2 = structRigidBody2.bbox;
+				{	
 					// TRANSFORM 2
 					Matrix4 T2 = Mat4_CreateTransform(structRigidBody2.v3Position, structRigidBody2.v3Rotate);
 				
