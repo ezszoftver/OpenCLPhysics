@@ -143,12 +143,12 @@ bool MainWindow::Init()
 
                 float fScale = 1.0f;
                 //m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 20 + (y * fScale), z * fScale));
-                m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 0.8f + (y * fScale), 12));
-                m_physics.SetEulerRotate(dynamic_id, glm::vec3(0.0f, 0.0f, 0.0f));
+                m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 1.0f + (y * fScale), 12));
+                m_physics.SetEulerRotate(dynamic_id, glm::vec3(0.1f, 0.0f, 0.0f));
                 m_physics.SetMass(dynamic_id, 85.0f); // dynamic
                 m_physics.SetLinearVelocity(dynamic_id, glm::vec3(0.0f, 0.0f, 0.0f));
                 m_physics.SetAngularVelocity(dynamic_id, glm::vec3(0.0f, 0.0f, 0.0f));
-                m_physics.SetRestitution(dynamic_id, 0.5f);
+                m_physics.SetRestitution(dynamic_id, 0.0f);
 
                 m_listDynamicIds.push_back(dynamic_id);
 
@@ -431,48 +431,41 @@ void MainWindow::TimerTick()
     mWorld = glm::mat4(1.0f);
     glLoadMatrixf(glm::value_ptr(mCameraView * mWorld));
     
-    //// Draw BBOXs
-    //{
-    //    glm::vec3 v3Position = m_physics.GetPosition(static_id);
-    //    glm::vec3 v3Min = v3Position + m_physics.GetBBoxMin(static_id);
-    //    glm::vec3 v3Max = v3Position + m_physics.GetBBoxMax(static_id);
-    //
-    //    glPointSize(20.0f);
-    //
-    //    glBegin(GL_POINTS);
-    //    {
-    //        glColor3f(1.0f, 0.0f, 0.0f);
-    //        glVertex3f(v3Min.x, v3Min.y, v3Min.z);
-    //        glVertex3f(v3Max.x, v3Max.y, v3Max.z);
-    //        glColor3f(1.0f, 1.0f, 1.0f);
-    //    }
-    //    glEnd();
-    //}
-    //
-    //for (int i = 0; i < m_listDynamicIds.size(); i++)
-    //{
-    //    int dynamic_id = m_listDynamicIds.at(i);
-    //
-    //    //if (false == m_physics.IsEnabled(dynamic_id))
-    //    //{
-    //    //    continue;
-    //    //}
-    //
-    //    glm::vec3 v3Position = m_physics.GetPosition(dynamic_id);
-    //    glm::vec3 v3Min = v3Position + m_physics.GetBBoxMin(dynamic_id);
-    //    glm::vec3 v3Max = v3Position + m_physics.GetBBoxMax(dynamic_id);
-    //
-    //    glPointSize(20.0f);
-    //
-    //    glBegin(GL_POINTS);
-    //    {
-    //        glColor3f(1.0f, 1.0f, 0.0f);
-    //        glVertex3f(v3Min.x, v3Min.y, v3Min.z);
-    //        glVertex3f(v3Max.x, v3Max.y, v3Max.z);
-    //        glColor3f(1.0f, 1.0f, 1.0f);
-    //    }
-    //    glEnd();
-    //}
+    // Draw BBOXs
+    {
+        glm::vec3 v3Min = m_physics.GetBBoxMin(static_id);
+        glm::vec3 v3Max = m_physics.GetBBoxMax(static_id);
+    
+        glPointSize(20.0f);
+    
+        glBegin(GL_POINTS);
+        {
+            glColor3f(1.0f, 0.0f, 0.0f);
+            glVertex3f(v3Min.x, v3Min.y, v3Min.z);
+            glVertex3f(v3Max.x, v3Max.y, v3Max.z);
+            glColor3f(1.0f, 1.0f, 1.0f);
+        }
+        glEnd();
+    }
+    
+    for (int i = 0; i < m_listDynamicIds.size(); i++)
+    {
+        int dynamic_id = m_listDynamicIds.at(i);
+    
+        glm::vec3 v3Min = m_physics.GetBBoxMin(dynamic_id);
+        glm::vec3 v3Max = m_physics.GetBBoxMax(dynamic_id);
+    
+        glPointSize(20.0f);
+    
+        glBegin(GL_POINTS);
+        {
+            glColor3f(1.0f, 1.0f, 0.0f);
+            glVertex3f(v3Min.x, v3Min.y, v3Min.z);
+            glVertex3f(v3Max.x, v3Max.y, v3Max.z);
+            glColor3f(1.0f, 1.0f, 1.0f);
+        }
+        glEnd();
+    }
     
     // Draw hits
     std::vector < structHits > *pListHits = m_physics.GetHits();
