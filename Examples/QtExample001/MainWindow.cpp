@@ -269,6 +269,34 @@ void MainWindow::TimerTick()
         m_physics.SetPosition(nId, v3Pos);
     }
 
+    int nId = m_listDynamicIds[0];
+    glm::vec3 v3Rotate = m_physics.GetEulerRotate(nId);
+    if (true == m_bKeys[Qt::Key_1])
+    {
+        v3Rotate.x -= 0.2f * dt;
+    }
+    if (true == m_bKeys[Qt::Key_2])
+    {
+        v3Rotate.x += 0.2f * dt;
+    }
+    if (true == m_bKeys[Qt::Key_3])
+    {
+        v3Rotate.y -= 0.2f * dt;
+    }
+    if (true == m_bKeys[Qt::Key_4])
+    {
+        v3Rotate.y += 0.2f * dt;
+    }
+    if (true == m_bKeys[Qt::Key_5])
+    {
+        v3Rotate.z -= 0.2f * dt;
+    }
+    if (true == m_bKeys[Qt::Key_6])
+    {
+        v3Rotate.z += 0.2f * dt;
+    }
+    m_physics.SetEulerRotate(nId, v3Rotate);
+
     m_physics.Update(dt, 1);
 
     int nWidth = ui.glWidget->width();

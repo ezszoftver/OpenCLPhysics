@@ -94,39 +94,190 @@ Vector3 Vector3Scale(Vector3 a, float fScale)
 	return ret;
 }
 
-float ToRadian(float x) 
+Matrix4 Mult_Matrix4Matrix4(Matrix4 T1, Matrix4 T2)
 {
-	return (x * (3.141592f / 180.0f));
+    Matrix4 ret;
+
+    float4 T1row1 = XYZWToFloat4(T1.m11, T1.m12, T1.m13, T1.m14);
+    float4 T1row2 = XYZWToFloat4(T1.m21, T1.m22, T1.m23, T1.m24);
+    float4 T1row3 = XYZWToFloat4(T1.m31, T1.m32, T1.m33, T1.m34);
+    float4 T1row4 = XYZWToFloat4(T1.m41, T1.m42, T1.m43, T1.m44);
+
+    float4 T2column1 = XYZWToFloat4(T2.m11, T2.m21, T2.m31, T2.m41);
+    float4 T2column2 = XYZWToFloat4(T2.m12, T2.m22, T2.m32, T2.m42);
+    float4 T2column3 = XYZWToFloat4(T2.m13, T2.m23, T2.m33, T2.m43);
+    float4 T2column4 = XYZWToFloat4(T2.m14, T2.m24, T2.m34, T2.m44);
+
+    float m11 = dot(T1row1, T2column1);
+    float m12 = dot(T1row1, T2column2);
+    float m13 = dot(T1row1, T2column3);
+    float m14 = dot(T1row1, T2column4);
+                
+    float m21 = dot(T1row2, T2column1);
+    float m22 = dot(T1row2, T2column2);
+    float m23 = dot(T1row2, T2column3);
+    float m24 = dot(T1row2, T2column4);
+                
+    float m31 = dot(T1row3, T2column1);
+    float m32 = dot(T1row3, T2column2);
+    float m33 = dot(T1row3, T2column3);
+    float m34 = dot(T1row3, T2column4);
+                
+    float m41 = dot(T1row4, T2column1);
+    float m42 = dot(T1row4, T2column2);
+    float m43 = dot(T1row4, T2column3);
+    float m44 = dot(T1row4, T2column4);
+
+    ret.m11 = m11;
+    ret.m12 = m12;
+    ret.m13 = m13;
+    ret.m14 = m14;
+
+    ret.m21 = m21;
+    ret.m22 = m22;
+    ret.m23 = m23;
+    ret.m24 = m24;
+
+    ret.m31 = m31;
+    ret.m32 = m32;
+    ret.m33 = m33;
+    ret.m34 = m34;
+
+    ret.m41 = m41;
+    ret.m42 = m42;
+    ret.m43 = m43;
+    ret.m44 = m44;
+
+    return ret;
+}
+
+Matrix4 Mat4_CreateRotateX(float fRad)
+{
+	Matrix4 ret;
+
+	ret.m11 = 1.0f;
+	ret.m12 = 0.0f;
+	ret.m13 = 0.0f;
+	ret.m14 = 0.0f;
+
+	ret.m21 = 0.0f;
+	ret.m22 = cos(-fRad);
+	ret.m23 = sin(-fRad);
+	ret.m24 = 0.0f;
+
+	ret.m31 = 0.0f;
+	ret.m32 = -sin(-fRad);
+	ret.m33 = cos(-fRad);
+	ret.m34 = 0.0f;
+
+	ret.m41 = 0.0f;
+	ret.m42 = 0.0f;
+	ret.m43 = 0.0f;
+	ret.m44 = 1.0f;
+
+	return ret;
+}
+
+Matrix4 Mat4_CreateRotateY(float fRad)
+{
+	Matrix4 ret;
+
+	ret.m11 = cos(-fRad);
+	ret.m12 = 0.0f;
+	ret.m13 = -sin(-fRad);
+	ret.m14 = 0.0f;
+
+	ret.m21 = 0.0f;
+	ret.m22 = 1.0f;
+	ret.m23 = 0.0f;
+	ret.m24 = 0.0f;
+
+	ret.m31 = sin(-fRad);
+	ret.m32 = 0.0f;
+	ret.m33 = cos(-fRad);
+	ret.m34 = 0.0f;
+
+	ret.m41 = 0.0f;
+	ret.m42 = 0.0f;
+	ret.m43 = 0.0f;
+	ret.m44 = 1.0f;
+
+	return ret;
+}
+
+Matrix4 Mat4_CreateRotateZ(float fRad)
+{
+	Matrix4 ret;
+
+	ret.m11 = cos(-fRad);
+	ret.m12 = sin(-fRad);
+	ret.m13 = 0.0f;
+	ret.m14 = 0.0f;
+
+	ret.m21 = -sin(-fRad);
+	ret.m22 = cos(-fRad);
+	ret.m23 = 0.0f;
+	ret.m24 = 0.0f;
+
+	ret.m31 = 0.0f;
+	ret.m32 = 0.0f;
+	ret.m33 = 1.0f;
+	ret.m34 = 0.0f;
+
+	ret.m41 = 0.0f;
+	ret.m42 = 0.0f;
+	ret.m43 = 0.0f;
+	ret.m44 = 1.0f;
+
+	return ret;
+}
+
+Matrix4 Mat4_CreateEulerRotate(Vector3 v3Rotate)
+{
+	Matrix4 mat4RotateX = Mat4_CreateRotateX(v3Rotate.x);
+	Matrix4 mat4RotateY = Mat4_CreateRotateY(v3Rotate.y);
+	Matrix4 mat4RotateZ = Mat4_CreateRotateZ(v3Rotate.z);
+
+	Matrix4 ret;
+	ret = Mult_Matrix4Matrix4(Mult_Matrix4Matrix4(mat4RotateX, mat4RotateY), mat4RotateZ);
+	return ret;
+}
+
+Matrix4 Mat4_CreateTranslate(Vector3 v3Translate)
+{
+	Matrix4 ret;
+
+	ret.m11 = 1.0f;
+	ret.m12 = 0.0f;
+	ret.m13 = 0.0f;
+	ret.m14 = v3Translate.x;
+
+	ret.m21 = 0.0f;
+	ret.m22 = 1.0f;
+	ret.m23 = 0.0f;
+	ret.m24 = v3Translate.y;
+
+	ret.m31 = 0.0f;
+	ret.m32 = 0.0f;
+	ret.m33 = 1.0f;
+	ret.m34 = v3Translate.z;
+
+	ret.m41 = 0.0f;
+	ret.m42 = 0.0f;
+	ret.m43 = 0.0f;
+	ret.m44 = 1.0f;
+
+	return ret;
 }
 
 Matrix4 Mat4_CreateTransform(Vector3 v3Translate, Vector3 v3Rotate)
 {
-    float c1 = cos(-v3Rotate.x);
-    float c2 = cos(-v3Rotate.y);
-    float c3 = cos(-v3Rotate.z);
-    float s1 = sin(-v3Rotate.x);
-    float s2 = sin(-v3Rotate.y);
-    float s3 = sin(-v3Rotate.z);
-
-    Matrix4 ret;
-    ret.m11 = c2 * c3;
-    ret.m12 =-c1 * s3 + s1 * s2 * c3;
-    ret.m13 = s1 * s3 + c1 * s2 * c3;
-    ret.m14 = v3Translate.x;
-    ret.m21 = c2 * s3;
-    ret.m22 = c1 * c3 + s1 * s2 * s3;
-    ret.m23 =-s1 * c3 + c1 * s2 * s3;
-    ret.m24 = v3Translate.y;
-    ret.m31 =-s2;
-    ret.m32 = s1 * c2;
-    ret.m33 = c1 * c2;
-    ret.m34 = v3Translate.z;
-    ret.m41 = 0.0f;
-    ret.m42 = 0.0f;
-    ret.m43 = 0.0f;
-    ret.m44 = 1.0f;
-
-    return ret;
+	Matrix4 mat4Rotate = Mat4_CreateEulerRotate(v3Rotate);
+	Matrix4 mat4Translate = Mat4_CreateTranslate(v3Translate);
+	
+	Matrix4 ret;
+	ret = Mult_Matrix4Matrix4(mat4Translate, mat4Rotate);
+	return ret;
 }
 
 Vector3 Mult_Mat4Vector3(Matrix4 T, Vector3 v3In, float w) 
