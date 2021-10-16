@@ -42,7 +42,7 @@ namespace OpenCLPhysics
 		int32_t m_nRigidBodyId = -1;
 		int32_t m_nTriMeshId = -1;
 		int32_t m_nIsEnabled = 1;
-		int32_t m_nIsIntegrateEnabled = 1;
+		int32_t m_nIsConvex = 0;
 
 		structBBox m_inBBox;
 		structBBox m_BBox;
@@ -62,9 +62,6 @@ namespace OpenCLPhysics
 		structVector3 m_v3AngularAcceleration;
 		structVector3 m_v3AngularVelocity;
 		structVector3 m_v3Rotate;
-
-		structVector3 m_v3ElapsedPosition;
-		structVector3 m_v3ElapsedRotate;
 	}
 	structRigidBody;
 
@@ -172,6 +169,8 @@ namespace OpenCLPhysics
 		int32_t m_nCount;
 	};
 
+	enum TriMeshType { Convex = 1, Concave = 0 };
+
 	class Physics
 	{
 		int32_t TRIMESH_COUNT = 0;
@@ -184,7 +183,7 @@ namespace OpenCLPhysics
 		bool CreateDevice(std::string strDeviceName, int32_t nTriMeshsCount = 1000000);
 		void CloseDevice();
 
-		int32_t CreateTriMesh(std::vector<glm::vec3>* pListVertices, bool bIsCommit = true);
+		int32_t CreateTriMesh(std::vector<glm::vec3>* pListVertices, TriMeshType type, bool bIsCommit = true);
 		int32_t CreateFromId(int32_t nFromId, bool bIsCommit = true);
 		bool DeleteTriMesh(int32_t nId);
 

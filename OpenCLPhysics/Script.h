@@ -6,7 +6,7 @@
 #include <vector>
 
 #define MAX_HITS 50
-#define MAX_HITS_OBJECT_OBJECT 30
+#define MAX_HITS_OBJECT_OBJECT 50
 
 class Script
 {
