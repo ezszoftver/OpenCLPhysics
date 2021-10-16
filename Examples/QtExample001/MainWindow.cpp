@@ -105,7 +105,7 @@ bool MainWindow::Init()
     // 2/2 - physics
     Model physicsmodel;
     physicsmodel.Load("Scene", "Physics.obj", glm::mat4(1.0f), false);
-    static_id = m_physics.CreateTriMesh(physicsmodel.GetAllVertices(), false);
+    static_id = m_physics.CreateTriMesh(physicsmodel.GetAllVertices());
     m_physics.SetMass(static_id, 0.0f); // static
 
     // dynamic
@@ -127,18 +127,18 @@ bool MainWindow::Init()
     {
         for (int z = -5; z < 5; z++)
         {
-            for (int y = 0; y < (1/*100db*/ * 1/*100db*/); y++)
+            for (int y = 0; y < (1/*100db*/ * 10/*1000db*/); y++)
             //for (int y = 0; y < 1; y++)
             {
                 int dynamic_id = -1;
                 if (-1 == from_dynamic_id)
                 {
-                    from_dynamic_id = m_physics.CreateTriMesh(m_dynamicmodel.GetAllVertices(), false);
+                    from_dynamic_id = m_physics.CreateTriMesh(m_dynamicmodel.GetAllVertices());
                     dynamic_id = from_dynamic_id;
                 }
                 else 
                 {
-                    dynamic_id = m_physics.CreateFromId(from_dynamic_id, false);
+                    dynamic_id = m_physics.CreateFromId(from_dynamic_id);
                 }
 
                 float fScale = 1.0f;
@@ -157,8 +157,6 @@ bool MainWindow::Init()
             }
         }
     }
-
-    m_physics.Commit();
 
     // gravity
     m_physics.SetGravity(glm::vec3(0, -0.1f, 0));
