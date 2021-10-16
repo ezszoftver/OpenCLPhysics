@@ -413,15 +413,15 @@ namespace OpenCLPhysics
 					if (!m_kernelCollisionDetection || status != CL_SUCCESS) { return false; }
 
 					// locals
-					//status = clGetKernelWorkGroupInfo(m_kernelUpdateBVHObjects, m_device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), &m_nUpdateBVHObjects_Local, NULL);
-					//if (status != CL_SUCCESS) { return false; }
-					//status = clGetKernelWorkGroupInfo(m_kernelIntegrate, m_device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), &m_nIntegrate_Local, NULL);
-					//if (status != CL_SUCCESS) { return false; }
-					//status = clGetKernelWorkGroupInfo(m_kernelCollisionDetection, m_device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), &m_nCollisionDetection_Local, NULL);
-					//if (status != CL_SUCCESS) { return false; }
+					status = clGetKernelWorkGroupInfo(m_kernelUpdateBVHObjects, m_device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), &m_nUpdateBVHObjects_Local, NULL);
+					if (status != CL_SUCCESS) { return false; }
+					status = clGetKernelWorkGroupInfo(m_kernelIntegrate, m_device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), &m_nIntegrate_Local, NULL);
+					if (status != CL_SUCCESS) { return false; }
+					status = clGetKernelWorkGroupInfo(m_kernelCollisionDetection, m_device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), &m_nCollisionDetection_Local, NULL);
+					if (status != CL_SUCCESS) { return false; }
 
-					m_nUpdateBVHObjects_Local = 8;
-					m_nIntegrate_Local = 8;
+					m_nUpdateBVHObjects_Local = (m_nUpdateBVHObjects_Local >= 8) ? 8 : m_nUpdateBVHObjects_Local;
+					m_nIntegrate_Local = (m_nIntegrate_Local >= 8) ? 8 : m_nIntegrate_Local;
 					m_nCollisionDetection_Local = 1;
 
 					// max trimeshs
