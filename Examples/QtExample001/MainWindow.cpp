@@ -159,7 +159,7 @@ bool MainWindow::Init()
     }
 
     // gravity
-    m_physics.SetGravity(glm::vec3(0, -0.1f, 0));
+    m_physics.SetGravity(glm::vec3(0, -10.0f, 0));
 
     // Avatar
     m_Camera.Init(glm::vec3(15, 3, 15), glm::vec3(0, 0, 0));
@@ -295,7 +295,7 @@ void MainWindow::TimerTick()
     }
     m_physics.SetEulerRotate(nId, v3Rotate);
 
-    m_physics.Update(dt, 1);
+    m_physics.Update(dt, 5);
 
     int nWidth = ui.glWidget->width();
     int nHeight = ui.glWidget->height();

@@ -2045,10 +2045,40 @@ namespace OpenCLPhysics
 				v3AngularVelocity += glm::cross(rA, J * ToVector3(hit.m_v3Normal)) / rigidBodyA.m_fMass;
 			}
 
+			// separate
+			glm::vec3 v3Position = ToVector3(rigidBodyA.m_v3Position);
+			for (int i = 0; i < hits.m_nNumHits; i++)
+			{
+				structHit hit = hits.m_hits[i];
+
+				// calc contact velocity
+				glm::vec3 rA = ToVector3(hit.m_v3HitPointInWorld) - ToVector3(m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position);
+				glm::vec3 v3RelVelocity = GetPointVelocity(rigidBodyA, rA);
+				float fProjVelocity = glm::dot(v3RelVelocity, ToVector3(hit.m_v3Normal));
+
+				fProjVelocity = -fProjVelocity;
+				if (fProjVelocity <= 0.0f)
+				{
+					continue;
+				}
+
+				structRigidBody rigidBodyB = m_listRigidBodies[hit.m_nRigidBodyBId];
+				float fVelocity = 0.4f; // dynamic
+				if (rigidBodyB.m_fMass <= 0.0f) // static
+				{
+					fVelocity *= 2.0f;
+				}
+				fVelocity /= (float)hits.m_nNumHits;
+				v3Position += fProjVelocity * fVelocity * ToVector3(hit.m_v3Normal) * dt;
+			}
+
 			m_listRigidBodies[id].m_v3LinearVelocity = ToVector3(v3LinearVelocity);
 			m_listRigidBodies[id].m_v3AngularVelocity = ToVector3(v3AngularVelocity);
+			m_listRigidBodies[id].m_v3Position = ToVector3(v3Position);
 		}
 		
+		
+
 		// DEBUG EZ MAJD NEM KELL
 		cl_int err = 0;
 		err |= clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), m_listRigidBodies.data(), 0, NULL, NULL);
