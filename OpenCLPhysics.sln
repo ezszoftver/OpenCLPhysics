@@ -10,11 +10,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "QtExample001", "Examples\Qt
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenCLPhysics", "OpenCLPhysics\OpenCLPhysics.vcxproj", "{69E7090B-8493-40F4-AF26-697967520206}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GLFWExample001", "Examples\GLFWExample001\GLFWExample001.vcxproj", "{93FA47AD-7E23-4DAF-84BB-6461C4E6811A}"
-	ProjectSection(ProjectDependencies) = postProject
-		{69E7090B-8493-40F4-AF26-697967520206} = {69E7090B-8493-40F4-AF26-697967520206}
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -29,10 +24,6 @@ Global
 		{69E7090B-8493-40F4-AF26-697967520206}.Debug|x64.Build.0 = Debug|x64
 		{69E7090B-8493-40F4-AF26-697967520206}.Release|x64.ActiveCfg = Release|x64
 		{69E7090B-8493-40F4-AF26-697967520206}.Release|x64.Build.0 = Release|x64
-		{93FA47AD-7E23-4DAF-84BB-6461C4E6811A}.Debug|x64.ActiveCfg = Debug|x64
-		{93FA47AD-7E23-4DAF-84BB-6461C4E6811A}.Debug|x64.Build.0 = Debug|x64
-		{93FA47AD-7E23-4DAF-84BB-6461C4E6811A}.Release|x64.ActiveCfg = Release|x64
-		{93FA47AD-7E23-4DAF-84BB-6461C4E6811A}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
