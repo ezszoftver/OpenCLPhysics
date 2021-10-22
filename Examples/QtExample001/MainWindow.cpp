@@ -105,7 +105,7 @@ bool MainWindow::Init()
     // 2/2 - physics
     Model physicsmodel;
     physicsmodel.Load("Scene", "Physics.obj", glm::mat4(1.0f), false);
-    static_id = m_physics.CreateTriMesh(physicsmodel.GetAllVertices(), TriMeshType::Concave);
+    static_id = m_physics.CreateTriMesh(physicsmodel.GetAllVertices(), TriMeshType::Convex);
     m_physics.SetMass(static_id, 0.0f); // static
 
     // dynamic
@@ -123,7 +123,7 @@ bool MainWindow::Init()
 
     // 2/2 - physics
     int from_dynamic_id = -1;
-    for (int x = -5; x < 5; x++)
+    for (int x = 0; x < 1; x++)
     {
         //for (int z = -5; z < 5; z++)
         {
@@ -133,7 +133,7 @@ bool MainWindow::Init()
                 int dynamic_id = -1;
                 if (-1 == from_dynamic_id)
                 {
-                    from_dynamic_id = m_physics.CreateTriMesh(m_dynamicmodel.GetAllVertices(), TriMeshType::Concave);
+                    from_dynamic_id = m_physics.CreateTriMesh(m_dynamicmodel.GetAllVertices(), TriMeshType::Convex);
                     dynamic_id = from_dynamic_id;
                 }
                 else 
@@ -143,7 +143,7 @@ bool MainWindow::Init()
 
                 float fScale = 1.0f;
                 //m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 10 + (y * fScale), z * fScale));
-                m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 1.0f + (y * fScale), 12));
+                m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 1.0f + (y * fScale), 0));
                 m_physics.SetEulerRotate(dynamic_id, glm::vec3(0.0f, 0.0f, 0.0f));
                 m_physics.SetMass(dynamic_id, 85.0f); // dynamic
                 m_physics.SetLinearVelocity(dynamic_id, glm::vec3(0.0f, 0.0f, 0.0f));
@@ -159,10 +159,10 @@ bool MainWindow::Init()
     }
 
     // gravity
-    m_physics.SetGravity(glm::vec3(0, -10.0f, 0));
+    m_physics.SetGravity(glm::vec3(0, -0.1f, 0));
 
     // Avatar
-    m_Camera.Init(glm::vec3(15, 3, 15), glm::vec3(0, 0, 0));
+    m_Camera.Init(glm::vec3(0, 2, 7.5f), glm::vec3(0, 0, 0));
 
     showMaximized();
     QApplication::setOverrideCursor(Qt::BlankCursor);

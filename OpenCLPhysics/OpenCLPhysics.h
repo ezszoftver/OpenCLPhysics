@@ -169,6 +169,19 @@ namespace OpenCLPhysics
 		int32_t m_nCount;
 	};
 
+	class Plane 
+	{
+	public: 
+		Plane();
+		Plane(glm::vec3 v3Pos, glm::vec3 v3Normal);
+		~Plane();
+
+		float GetDistance(glm::vec3 v3Point);
+
+		glm::vec3 m_v3Pos;
+		glm::vec3 m_v3Normal;
+	};
+
 	enum TriMeshType { Convex = 1, Concave = 0 };
 
 	class Physics
@@ -263,7 +276,7 @@ namespace OpenCLPhysics
 		cl_mem m_clmem_inBVHNodeTriangles = 0;
 		cl_mem m_clmem_inBVHNodeTrianglesOffsets = 0;
 		cl_mem m_clmem_inoutHits = 0;
-		cl_mem m_clmem_inoutIsCollisionResponse = 0;
+		cl_mem m_clmem_inoutIsSeparate = 0;
 
 		structVector3 m_v3Gravity;
 		std::vector< int32_t > m_listFreeIds;
@@ -280,7 +293,7 @@ namespace OpenCLPhysics
 
 		// hits
 		std::vector < structHits > m_listHits;
-		std::vector < int32_t > m_listIsCollisionResponse;
+		std::vector < int32_t > m_listIsSeparate;
 	};
 
 }

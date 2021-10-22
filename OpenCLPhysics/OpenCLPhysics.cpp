@@ -228,6 +228,28 @@ namespace OpenCLPhysics
 	{
 	}
 
+	Plane::Plane() 
+	{
+		m_v3Pos = glm::vec3(0, 0, 0);
+		m_v3Normal = glm::vec3(1, 0, 0);
+	}
+
+	Plane::Plane(glm::vec3 v3Pos, glm::vec3 v3Normal) 
+	{
+		m_v3Pos = v3Pos;
+		m_v3Normal = v3Normal;
+	}
+
+	Plane::~Plane() 
+	{
+	}
+
+	float Plane::GetDistance(glm::vec3 v3Point) 
+	{
+		float t = glm::dot((v3Point - m_v3Pos), m_v3Normal);
+		return t;
+	}
+
 	Physics::Physics()
 	{
 		m_context = nullptr;
@@ -459,9 +481,9 @@ namespace OpenCLPhysics
 			err = clEnqueueReadBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHits) * m_listHits.size(), &(m_listHits[0]), 0, NULL, NULL);
 			if (err != CL_SUCCESS) { return -1; }
 		}
-		if (0 != m_clmem_inoutIsCollisionResponse)
+		if (0 != m_clmem_inoutIsSeparate)
 		{
-			err = clEnqueueReadBuffer(m_command_queue, m_clmem_inoutIsCollisionResponse, CL_TRUE, 0, sizeof(int32_t) * m_listIsCollisionResponse.size(), &(m_listIsCollisionResponse[0]), 0, NULL, NULL);
+			err = clEnqueueReadBuffer(m_command_queue, m_clmem_inoutIsSeparate, CL_TRUE, 0, sizeof(int32_t) * m_listIsSeparate.size(), &(m_listIsSeparate[0]), 0, NULL, NULL);
 			if (err != CL_SUCCESS) { return -1; }
 		}
 
@@ -480,7 +502,7 @@ namespace OpenCLPhysics
 
 			structHits hits;
 			m_listHits.push_back(hits);
-			m_listIsCollisionResponse.push_back(0);
+			m_listIsSeparate.push_back(0);
 		}
 
 		// new trimesh
@@ -529,9 +551,9 @@ namespace OpenCLPhysics
 			err = clEnqueueReadBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHits) * m_listHits.size(), &(m_listHits[0]), 0, NULL, NULL);
 			if (err != CL_SUCCESS) { return -1; }
 		}
-		if (0 != m_clmem_inoutIsCollisionResponse)
+		if (0 != m_clmem_inoutIsSeparate)
 		{
-			err = clEnqueueReadBuffer(m_command_queue, m_clmem_inoutIsCollisionResponse, CL_TRUE, 0, sizeof(int32_t) * m_listIsCollisionResponse.size(), &(m_listIsCollisionResponse[0]), 0, NULL, NULL);
+			err = clEnqueueReadBuffer(m_command_queue, m_clmem_inoutIsSeparate, CL_TRUE, 0, sizeof(int32_t) * m_listIsSeparate.size(), &(m_listIsSeparate[0]), 0, NULL, NULL);
 			if (err != CL_SUCCESS) { return -1; }
 		}
 
@@ -550,7 +572,7 @@ namespace OpenCLPhysics
 
 			structHits hits;
 			m_listHits.push_back(hits);
-			m_listIsCollisionResponse.push_back(0);
+			m_listIsSeparate.push_back(0);
 		}
 		
 		// new trimesh
@@ -1007,10 +1029,10 @@ namespace OpenCLPhysics
 			clReleaseMemObject(m_clmem_inoutHits);
 			m_clmem_inoutHits = 0;
 		}
-		if (0 != m_clmem_inoutIsCollisionResponse)
+		if (0 != m_clmem_inoutIsSeparate)
 		{
-			clReleaseMemObject(m_clmem_inoutIsCollisionResponse);
-			m_clmem_inoutIsCollisionResponse = 0;
+			clReleaseMemObject(m_clmem_inoutIsSeparate);
+			m_clmem_inoutIsSeparate = 0;
 		}
 
 		// create rigidBodies buffer
@@ -1061,10 +1083,10 @@ namespace OpenCLPhysics
 		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHits) * m_listHits.size(), m_listHits.data(), 0, NULL, NULL);
 		if (err != CL_SUCCESS) { return false; }
 
-		m_clmem_inoutIsCollisionResponse = clCreateBuffer(m_context, CL_MEM_READ_WRITE, sizeof(int32_t) * m_listIsCollisionResponse.size(), NULL, NULL);
-		if (!m_clmem_inoutIsCollisionResponse) { return false; }
+		m_clmem_inoutIsSeparate = clCreateBuffer(m_context, CL_MEM_READ_WRITE, sizeof(int32_t) * m_listIsSeparate.size(), NULL, NULL);
+		if (!m_clmem_inoutIsSeparate) { return false; }
 		// -> copy
-		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutIsCollisionResponse, CL_TRUE, 0, sizeof(int32_t) * m_listIsCollisionResponse.size(), m_listIsCollisionResponse.data(), 0, NULL, NULL);
+		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutIsSeparate, CL_TRUE, 0, sizeof(int32_t) * m_listIsSeparate.size(), m_listIsSeparate.data(), 0, NULL, NULL);
 		if (err != CL_SUCCESS) { return false; }
 
 		return true;
@@ -1415,6 +1437,7 @@ namespace OpenCLPhysics
 		err |= clSetKernelArg(m_kernelIntegrate, 1, sizeof(int32_t), &nCount);
 		err |= clSetKernelArg(m_kernelIntegrate, 2, sizeof(float), &dt);
 		err |= clSetKernelArg(m_kernelIntegrate, 3, sizeof(structVector3), &m_v3Gravity);
+		err |= clSetKernelArg(m_kernelIntegrate, 4, sizeof(cl_mem), &m_clmem_inoutIsSeparate);
 		err |= clEnqueueNDRangeKernel(m_command_queue, m_kernelIntegrate, 1, NULL, &nGlobal, &nLocal, 0, NULL, NULL);
 		clFinish(m_command_queue);
 		
@@ -1703,7 +1726,54 @@ namespace OpenCLPhysics
 		}
 	
 	}
-	
+
+	float GetDistance(Plane* pPlane, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles) 
+	{
+		return 0.0f;
+	}
+
+	bool FindSeparatingAxis(float *pMinDist, Plane *pMinPlane, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles)
+	{
+		*pMinDist = FLT_MAX;
+
+		glm::mat4 T = glm::inverse(T2) * T1;
+		structBVHNodeTriangle structNodeOrTriangle;
+		for (int32_t nId1 = offset1.m_nOffset; nId1 < (offset1.m_nOffset + offset1.m_nCount); nId1++) // minden egyes plane-ra
+		{
+			structNodeOrTriangle = pListBVHNodeTriangles[nId1];
+			if (true == IsLeaf(structNodeOrTriangle))
+			{
+				glm::vec3 v3InA = ToVector3(structNodeOrTriangle.m_Triangle.m_v3PosA);
+				glm::vec3 v3InN = ToVector3(structNodeOrTriangle.m_Triangle.m_v3Normal);
+
+				glm::vec3 v3PlanePos = glm::vec3(T * glm::vec4(v3InA, 1));
+				glm::vec3 v3PlaneNormal = glm::vec3(T * glm::vec4(v3InN, 0));
+
+				Plane plane(v3PlanePos, v3PlaneNormal);
+
+				float fDist = GetDistance(&plane, structRigidBody1/*only dynamic*/, structRigidBody2/*static or dynamic*/, T1, T2, offset1, offset2, pListBVHNodeTriangles);
+				if (fDist < *pMinDist) 
+				{
+					*pMinDist = fDist;
+
+					pMinPlane->m_v3Pos = plane.m_v3Pos;
+					pMinPlane->m_v3Normal = plane.m_v3Normal;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	void SearchHits_ConvexConvex(structHits* pHits, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles)
+	{
+		float fMinDist; 
+		Plane plane;
+		bool bIsFound = FindSeparatingAxis(&fMinDist, &plane, structRigidBody1, structRigidBody2, T1, T2, offset1, offset2, pListBVHNodeTriangles);
+
+		
+	}
+
 	// hordó - pálya
 	void SearchHits_ConcaveConcave(structHits* pHits, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles)
 	{
@@ -1807,7 +1877,7 @@ namespace OpenCLPhysics
 		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutBVHObjects, CL_TRUE, 0, sizeof(structBVHObject) * m_listBVHObjects.size(), &(inoutBVHObjects[0]), 0, NULL, NULL);
 		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), &(m_listRigidBodies[0]), 0, NULL, NULL);
 		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHits) * m_listHits.size(), &(m_listHits[0]), 0, NULL, NULL);
-		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutIsCollisionResponse, CL_TRUE, 0, sizeof(int32_t) * m_listIsCollisionResponse.size(), &(m_listIsCollisionResponse[0]), 0, NULL, NULL);
+		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutIsSeparate, CL_TRUE, 0, sizeof(int32_t) * m_listIsSeparate.size(), &(m_listIsSeparate[0]), 0, NULL, NULL);
 		
 		if (err != CL_SUCCESS)
 		{
@@ -1822,7 +1892,7 @@ namespace OpenCLPhysics
 			hits.m_nNumHits = 0;
 			m_listHits[i] = hits;
 		
-			m_listIsCollisionResponse[i] = 0;
+			//m_listIsSeparate[i] = 0;
 		}
 		
 		// ütközés keresés
@@ -1900,7 +1970,7 @@ namespace OpenCLPhysics
 							}
 							else if (structRigidBody1.m_nIsConvex == 1 && structRigidBody2.m_nIsConvex == 1) // convex vs. convex
 							{
-								;
+								SearchHits_ConvexConvex(&hits, structRigidBody1, structRigidBody2, T1, T2, m_listBVHNodeTrianglesOffsets[structRigidBody1.m_nTriMeshId], m_listBVHNodeTrianglesOffsets[structRigidBody2.m_nTriMeshId], &m_listBVHNodeTriangles[0]);
 							}
 							else if (structRigidBody1.m_nIsConvex == 0 && structRigidBody2.m_nIsConvex == 1) // concave vs. convex
 							{
@@ -1950,14 +2020,15 @@ namespace OpenCLPhysics
 			}
 		
 			m_listHits[id1] = allHits;
-		
+
 			if (allHits.m_nNumHits == 0) // nincs utkozes
 			{
-				m_listIsCollisionResponse[id1] = 0;
+				m_listIsSeparate[id1] = 0;
 			}
 			else // van utkozes => szettolas
 			{
-				m_listIsCollisionResponse[id1] = 1;
+				m_listIsSeparate[id1] = 1;
+				//m_listHits[id1] = allHits;
 			}
 		}
 		
@@ -2004,10 +2075,10 @@ namespace OpenCLPhysics
 			// EZ MEGY AZ OPENCL FUGGVENYBE
 			structHits hits = m_listHits[id];
 			
-			if (0 == hits.m_nNumHits) 
-			{
-				continue;
-			}
+			//if (0 == hits.m_nNumHits) 
+			//{
+			//	continue;
+			//}
 
 			structRigidBody rigidBodyA = m_listRigidBodies[id];
 
@@ -2016,73 +2087,82 @@ namespace OpenCLPhysics
 				continue;
 			}
 
-			glm::vec3 v3LinearVelocity = ToVector3(rigidBodyA.m_v3LinearVelocity);
-			glm::vec3 v3AngularVelocity = ToVector3(rigidBodyA.m_v3AngularVelocity);
+			//if (m_listIsSeparate[id] == 0)
+			//{
+				glm::vec3 v3LinearVelocity = ToVector3(rigidBodyA.m_v3LinearVelocity);
+				glm::vec3 v3AngularVelocity = ToVector3(rigidBodyA.m_v3AngularVelocity);
 
-			for (int i = 0; i < hits.m_nNumHits; i++)
-			{
-				structHit hit = hits.m_hits[i];
-
-				// calc contact velocity
-				glm::vec3 rA = ToVector3(hit.m_v3HitPointInWorld) - ToVector3(m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position);
-				glm::vec3 v3RelVelocity = GetPointVelocity(rigidBodyA, rA);
-				float fProjVelocity = glm::dot(v3RelVelocity, ToVector3(hit.m_v3Normal));
-
-				if (fProjVelocity >= 0.0f)
+				for (int i = 0; i < hits.m_nNumHits; i++)
 				{
-					continue;
+					structHit hit = hits.m_hits[i];
+
+					// calc contact velocity
+					glm::vec3 rA = ToVector3(hit.m_v3HitPointInWorld) - ToVector3(m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position);
+					glm::vec3 v3RelVelocity = GetPointVelocity(rigidBodyA, rA);
+					float fProjVelocity = glm::dot(v3RelVelocity, ToVector3(hit.m_v3Normal));
+
+					if (fProjVelocity >= 0.0f)
+					{
+						continue;
+					}
+
+					// calc inertia
+					float fNominator = -(1.0f + rigidBodyA.m_fRestitution) * fProjVelocity;
+					float fDenominator = glm::dot((ToVector3(hit.m_v3Normal) / rigidBodyA.m_fMass) + glm::cross(glm::cross(rA, ToVector3(hit.m_v3Normal)), rA) / rigidBodyA.m_fMass, ToVector3(hit.m_v3Normal));
+
+					float J = fNominator / fDenominator;
+					J /= (float)hits.m_nNumHits;
+
+					// apply velocity
+					v3LinearVelocity += (J * ToVector3(hit.m_v3Normal)) / rigidBodyA.m_fMass;
+					v3AngularVelocity += glm::cross(rA, J * ToVector3(hit.m_v3Normal)) / rigidBodyA.m_fMass;
 				}
 
-				// calc inertia
-				float fNominator = -(1.0f + rigidBodyA.m_fRestitution) * fProjVelocity;
-				float fDenominator = glm::dot((ToVector3(hit.m_v3Normal) / rigidBodyA.m_fMass) + glm::cross(glm::cross(rA, ToVector3(hit.m_v3Normal)), rA) / rigidBodyA.m_fMass, ToVector3(hit.m_v3Normal));
 				
-				float J = fNominator / fDenominator;
-				J /= (float)hits.m_nNumHits;
 
-				// apply velocity
-				v3LinearVelocity += (J * ToVector3(hit.m_v3Normal)) / rigidBodyA.m_fMass;
-				v3AngularVelocity += glm::cross(rA, J * ToVector3(hit.m_v3Normal)) / rigidBodyA.m_fMass;
-			}
+				//hits.m_nNumHits = 0;
+				//m_listHits[id] = hits;
+			//}
+			//else
+			//{
+				//// separate
+				//glm::vec3 v3Position = ToVector3(rigidBodyA.m_v3Position);
+				//for (int i = 0; i < hits.m_nNumHits; i++)
+				//{
+				//	structHit hit = hits.m_hits[i];
+				//
+				//	// calc contact velocity
+				//	glm::vec3 rA = ToVector3(hit.m_v3HitPointInWorld) - ToVector3(m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position);
+				//	glm::vec3 v3RelVelocity = GetPointVelocity(rigidBodyA, rA);
+				//	float fProjVelocity = glm::dot(glm::normalize(v3RelVelocity), ToVector3(hit.m_v3Normal));
+				//
+				//	fProjVelocity = -fProjVelocity;
+				//	if (fProjVelocity <= 0.0f)
+				//	{
+				//		continue;
+				//	}
+				//
+				//	structRigidBody rigidBodyB = m_listRigidBodies[hit.m_nRigidBodyBId];
+				//	float fVelocity = 0.1f; // dynamic
+				//	if (rigidBodyB.m_fMass <= 0.0f) // static
+				//	{
+				//		fVelocity = 0.2f;
+				//	}
+				//	//fVelocity /= (float)hits.m_nNumHits;
+				//	v3Position += fProjVelocity * fVelocity * ToVector3(hit.m_v3Normal) * dt;
+				//}
 
-			// separate
-			glm::vec3 v3Position = ToVector3(rigidBodyA.m_v3Position);
-			for (int i = 0; i < hits.m_nNumHits; i++)
-			{
-				structHit hit = hits.m_hits[i];
-
-				// calc contact velocity
-				glm::vec3 rA = ToVector3(hit.m_v3HitPointInWorld) - ToVector3(m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position);
-				glm::vec3 v3RelVelocity = GetPointVelocity(rigidBodyA, rA);
-				float fProjVelocity = glm::dot(v3RelVelocity, ToVector3(hit.m_v3Normal));
-
-				fProjVelocity = -fProjVelocity;
-				if (fProjVelocity <= 0.0f)
-				{
-					continue;
-				}
-
-				structRigidBody rigidBodyB = m_listRigidBodies[hit.m_nRigidBodyBId];
-				float fVelocity = 0.4f; // dynamic
-				if (rigidBodyB.m_fMass <= 0.0f) // static
-				{
-					fVelocity *= 2.0f;
-				}
-				fVelocity /= (float)hits.m_nNumHits;
-				v3Position += fProjVelocity * fVelocity * ToVector3(hit.m_v3Normal) * dt;
-			}
-
-			m_listRigidBodies[id].m_v3LinearVelocity = ToVector3(v3LinearVelocity);
-			m_listRigidBodies[id].m_v3AngularVelocity = ToVector3(v3AngularVelocity);
-			m_listRigidBodies[id].m_v3Position = ToVector3(v3Position);
+				m_listRigidBodies[id].m_v3LinearVelocity = ToVector3(v3LinearVelocity);
+				m_listRigidBodies[id].m_v3AngularVelocity = ToVector3(v3AngularVelocity);
+				//m_listRigidBodies[id].m_v3Position = ToVector3(v3Position);
+			//}
 		}
 		
-		
-
 		// DEBUG EZ MAJD NEM KELL
 		cl_int err = 0;
 		err |= clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), m_listRigidBodies.data(), 0, NULL, NULL);
 		err |= clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHits) * m_listHits.size(), m_listHits.data(), 0, NULL, NULL);
+		err |= clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutIsSeparate, CL_TRUE, 0, sizeof(int32_t) * m_listIsSeparate.size(), m_listIsSeparate.data(), 0, NULL, NULL);
 		if (err != CL_SUCCESS) 
 		{ 
 			return; 

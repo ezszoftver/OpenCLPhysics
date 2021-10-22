@@ -576,7 +576,7 @@ bool IsCollide(BBox bbox1, BBox bbox2)
 	return true;
 }
 
-__kernel void Integrate(__global RigidBody* inoutRigidBodies, int nCount, float dt, Vector3 v3Gravity)
+__kernel void Integrate(__global RigidBody* inoutRigidBodies, int nCount, float dt, Vector3 v3Gravity, __global int* inoutIsSeparate)
 {
 	int id = get_global_id(0);
 
@@ -592,6 +592,13 @@ __kernel void Integrate(__global RigidBody* inoutRigidBodies, int nCount, float 
 		return;
 	}
 
+	float3 f3Gravity = Vector3ToFloat3(v3Gravity);
+
+	if (inoutIsSeparate[id] == 1)
+	{
+		//f3Gravity /= 10.0f;
+	}
+
 	// init
 	float fMass = rigidBody.fMass;
 
@@ -602,7 +609,7 @@ __kernel void Integrate(__global RigidBody* inoutRigidBodies, int nCount, float 
 	}
 
 	// get
-	float3 f3Gravity = Vector3ToFloat3(v3Gravity);
+	
 
 	float3 f3Force          = Vector3ToFloat3(rigidBody.v3Force);
 	float3 f3LinearVelocity = Vector3ToFloat3(rigidBody.v3LinearVelocity);
@@ -952,7 +959,7 @@ void SearchHits(Hits *pHits, RigidBody structRigidBody1/*only dynamic*/, RigidBo
 	}
 }
 
-__kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCount, __global BVHObject* inoutBVHObjects, __global BVHNodeTriangle* inBVHNodeTriangles, __global BVHNodeTriangleOffset *inBVHNodeTrianglesOffsets, __global Hits* inoutHits, __global int* inoutIsCollisionResponse)
+__kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCount, __global BVHObject* inoutBVHObjects, __global BVHNodeTriangle* inBVHNodeTriangles, __global BVHNodeTriangleOffset *inBVHNodeTrianglesOffsets, __global Hits* inoutHits, __global int* inoutIsSeparate)
 {
 	int id1 = get_global_id(0);
 
@@ -967,7 +974,6 @@ __kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCoun
 	// init hits
 	Hits allHits;
 	allHits.nNumHits = 0;
-	inoutHits[id1] = allHits;
 
 	// if disabled, then return
 	if (0 == structRigidBody1.nIsEnabled)
@@ -1060,14 +1066,13 @@ __kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCoun
 		}
 	}
 
-	inoutHits[id1] = allHits;
-
 	if (allHits.nNumHits == 0) // nincs utkozes
 	{
-		inoutIsCollisionResponse[id1] = 0;
+		inoutIsSeparate[id1] = 0;
 	}
 	else // van utkozes => szettolas
 	{
-		inoutIsCollisionResponse[id1] = 1;
+		inoutIsSeparate[id1] = 1;
+		inoutHits[id1] = allHits;
 	}
 }
