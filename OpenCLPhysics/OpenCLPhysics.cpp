@@ -1727,15 +1727,77 @@ namespace OpenCLPhysics
 	
 	}
 
-	float GetDistance(Plane* pPlane, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles) 
+	bool GetDistance(float *fRet, Plane* pPlane, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles) 
 	{
-		return 0.0f;
+		float fRigidBody1_Min = +FLT_MAX;
+		float fRigidBody1_Max = -FLT_MAX;
+
+		float fRigidBody2_Min = +FLT_MAX;
+		float fRigidBody2_Max = -FLT_MAX;
+
+		structBVHNodeTriangle structNodeOrTriangle;
+		float fDist;
+		for (int32_t nId1 = offset1.m_nOffset; nId1 < (offset1.m_nOffset + offset1.m_nCount); nId1++) // minden egyes plane-ra
+		{
+			structNodeOrTriangle = pListBVHNodeTriangles[nId1];
+			if (true == IsLeaf(structNodeOrTriangle)) 
+			{
+				// A
+				fDist = pPlane->GetDistance(ToVector3(structNodeOrTriangle.m_Triangle.m_v3PosA));
+				fRigidBody1_Min = std::fmin(fDist, fRigidBody1_Min);
+				fRigidBody1_Max = std::fmax(fDist, fRigidBody1_Max);
+				// B
+				fDist = pPlane->GetDistance(ToVector3(structNodeOrTriangle.m_Triangle.m_v3PosB));
+				fRigidBody1_Min = std::fmin(fDist, fRigidBody1_Min);
+				fRigidBody1_Max = std::fmax(fDist, fRigidBody1_Max);
+				// C
+				fDist = pPlane->GetDistance(ToVector3(structNodeOrTriangle.m_Triangle.m_v3PosC));
+				fRigidBody1_Min = std::fmin(fDist, fRigidBody1_Min);
+				fRigidBody1_Max = std::fmax(fDist, fRigidBody1_Max);
+			}
+		}
+
+		for (int32_t nId2 = offset2.m_nOffset; nId2 < (offset2.m_nOffset + offset2.m_nCount); nId2++) // minden egyes plane-ra
+		{
+			structNodeOrTriangle = pListBVHNodeTriangles[nId2];
+			if (true == IsLeaf(structNodeOrTriangle))
+			{
+				// A
+				fDist = pPlane->GetDistance(ToVector3(structNodeOrTriangle.m_Triangle.m_v3PosA));
+				fRigidBody2_Min = std::fmin(fDist, fRigidBody2_Min);
+				fRigidBody2_Max = std::fmax(fDist, fRigidBody2_Max);
+				// B
+				fDist = pPlane->GetDistance(ToVector3(structNodeOrTriangle.m_Triangle.m_v3PosB));
+				fRigidBody2_Min = std::fmin(fDist, fRigidBody2_Min);
+				fRigidBody2_Max = std::fmax(fDist, fRigidBody2_Max);
+				// C
+				fDist = pPlane->GetDistance(ToVector3(structNodeOrTriangle.m_Triangle.m_v3PosC));
+				fRigidBody2_Min = std::fmin(fDist, fRigidBody2_Min);
+				fRigidBody2_Max = std::fmax(fDist, fRigidBody2_Max);
+			}
+		}
+
+		if (fRigidBody1_Max < fRigidBody2_Min || fRigidBody2_Max < fRigidBody1_Min)
+		{
+			return false;
+		}
+		
+		float d0 = fRigidBody1_Max - fRigidBody2_Min;
+		float d1 = fRigidBody2_Max - fRigidBody1_Min;
+		*fRet = (d0 < d1) ? d0 : d1;
+
+		return true;
 	}
 
 	bool FindSeparatingAxis(float *pMinDist, Plane *pMinPlane, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles)
 	{
 		*pMinDist = FLT_MAX;
 
+		glm::vec3 c1 = glm::vec3(T1 * glm::vec4(ToVector3(structRigidBody1.m_v3Position), 1));
+		glm::vec3 c2 = glm::vec3(T2 * glm::vec4(ToVector3(structRigidBody2.m_v3Position), 1));
+		glm::vec3 v3Delta = c1 - c2;
+
+		// RigidBody 1
 		glm::mat4 T = glm::inverse(T2) * T1;
 		structBVHNodeTriangle structNodeOrTriangle;
 		for (int32_t nId1 = offset1.m_nOffset; nId1 < (offset1.m_nOffset + offset1.m_nCount); nId1++) // minden egyes plane-ra
@@ -1749,29 +1811,143 @@ namespace OpenCLPhysics
 				glm::vec3 v3PlanePos = glm::vec3(T * glm::vec4(v3InA, 1));
 				glm::vec3 v3PlaneNormal = glm::vec3(T * glm::vec4(v3InN, 0));
 
+				v3PlaneNormal = -1.0f * v3PlaneNormal;
+
 				Plane plane(v3PlanePos, v3PlaneNormal);
 
-				float fDist = GetDistance(&plane, structRigidBody1/*only dynamic*/, structRigidBody2/*static or dynamic*/, T1, T2, offset1, offset2, pListBVHNodeTriangles);
+				float fDist = FLT_MAX;
+				bool bIsCollide = GetDistance(&fDist, &plane, structRigidBody1/*only dynamic*/, structRigidBody2/*static or dynamic*/, T1, T2, offset1, offset2, pListBVHNodeTriangles);
+
+				if (false == bIsCollide)
+				{
+					return false;
+				}
+
 				if (fDist < *pMinDist) 
 				{
 					*pMinDist = fDist;
 
-					pMinPlane->m_v3Pos = plane.m_v3Pos;
-					pMinPlane->m_v3Normal = plane.m_v3Normal;
+					pMinPlane->m_v3Pos = glm::vec3(T2 * glm::vec4(plane.m_v3Pos, 1));
+					pMinPlane->m_v3Normal = glm::vec3(T2 * glm::vec4(plane.m_v3Normal, 0));
 				}
 			}
 		}
 
-		return false;
+		// RigidBody 2
+		T = glm::inverse(T1) * T2;
+		for (int32_t nId2 = offset2.m_nOffset; nId2 < (offset2.m_nOffset + offset2.m_nCount); nId2++) // minden egyes plane-ra
+		{
+			structNodeOrTriangle = pListBVHNodeTriangles[nId2];
+			if (true == IsLeaf(structNodeOrTriangle))
+			{
+				glm::vec3 v3InA = ToVector3(structNodeOrTriangle.m_Triangle.m_v3PosA);
+				glm::vec3 v3InN = ToVector3(structNodeOrTriangle.m_Triangle.m_v3Normal);
+
+				glm::vec3 v3PlanePos = glm::vec3(T * glm::vec4(v3InA, 1));
+				glm::vec3 v3PlaneNormal = glm::vec3(T * glm::vec4(v3InN, 0));
+
+				Plane plane(v3PlanePos, v3PlaneNormal);
+
+				float fDist = FLT_MAX;
+				bool bIsCollide = GetDistance(&fDist, &plane, structRigidBody1/*only dynamic*/, structRigidBody2/*static or dynamic*/, T1, T2, offset1, offset2, pListBVHNodeTriangles);
+
+				if (false == bIsCollide)
+				{
+					return false;
+				}
+
+				if (fDist < *pMinDist)
+				{
+					*pMinDist = fDist;
+
+					pMinPlane->m_v3Pos = glm::vec3(T1 * glm::vec4(plane.m_v3Pos, 1));
+					pMinPlane->m_v3Normal = glm::vec3(T1 * glm::vec4(plane.m_v3Normal, 0));
+				}
+			}
+		}
+
+		// edges - edges
+		T = glm::inverse(T2) * T1;
+		structBVHNodeTriangle structNodeOrTriangle1;
+		structBVHNodeTriangle structNodeOrTriangle2;
+		for (int32_t nId1 = offset1.m_nOffset; nId1 < (offset1.m_nOffset + offset1.m_nCount); nId1++) // minden egyes plane-ra
+		{
+			structNodeOrTriangle1 = pListBVHNodeTriangles[nId1];
+			if (true == IsLeaf(structNodeOrTriangle1))
+			{
+				for (int32_t nId2 = offset2.m_nOffset; nId2 < (offset2.m_nOffset + offset2.m_nCount); nId2++) // minden egyes plane-ra
+				{
+					structNodeOrTriangle2 = pListBVHNodeTriangles[nId2];
+					if (true == IsLeaf(structNodeOrTriangle2))
+					{
+						glm::vec3 rb1_line1 = ToVector3(structNodeOrTriangle1.m_Triangle.m_v3PosB) - ToVector3(structNodeOrTriangle1.m_Triangle.m_v3PosA);
+						glm::vec3 rb1_line2 = ToVector3(structNodeOrTriangle1.m_Triangle.m_v3PosC) - ToVector3(structNodeOrTriangle1.m_Triangle.m_v3PosB);
+						glm::vec3 rb1_line3 = ToVector3(structNodeOrTriangle1.m_Triangle.m_v3PosA) - ToVector3(structNodeOrTriangle1.m_Triangle.m_v3PosC);
+						rb1_line1 = glm::vec3(T * glm::vec4(rb1_line1, 0));
+						rb1_line2 = glm::vec3(T * glm::vec4(rb1_line2, 0));
+						rb1_line3 = glm::vec3(T * glm::vec4(rb1_line3, 0));
+
+						glm::vec3 rb2_line1 = ToVector3(structNodeOrTriangle2.m_Triangle.m_v3PosB) - ToVector3(structNodeOrTriangle2.m_Triangle.m_v3PosA);
+						glm::vec3 rb2_line2 = ToVector3(structNodeOrTriangle2.m_Triangle.m_v3PosC) - ToVector3(structNodeOrTriangle2.m_Triangle.m_v3PosB);
+						glm::vec3 rb2_line3 = ToVector3(structNodeOrTriangle2.m_Triangle.m_v3PosA) - ToVector3(structNodeOrTriangle2.m_Triangle.m_v3PosC);
+
+						glm::vec3 rb1_lines[3] = { rb1_line1, rb1_line2, rb1_line3 };
+						glm::vec3 rb2_lines[3] = { rb2_line2, rb2_line2, rb2_line2 };
+
+						for (int i = 0; i < 3; i++)
+						{
+							for (int j = 0; j < 3; j++) 
+							{
+								glm::vec3 v3Normal = glm::cross(rb1_lines[i], rb2_lines[j]);
+								v3Normal = glm::normalize(v3Normal);
+
+								if (std::isnan(v3Normal.x) || std::isnan(v3Normal.y) || std::isnan(v3Normal.z))
+								{
+									continue;
+								}
+
+								if (dot(v3Delta, v3Normal) < 0.0f) 
+								{
+									v3Normal = -1.0f * v3Normal; 
+								}
+
+								Plane plane(glm::vec3(0, 0, 0), v3Normal);
+
+								float fDist = FLT_MAX;
+								bool bIsCollide = GetDistance(&fDist, &plane, structRigidBody1/*only dynamic*/, structRigidBody2/*static or dynamic*/, T1, T2, offset1, offset2, pListBVHNodeTriangles);
+
+								if (false == bIsCollide)
+								{
+									return false;
+								}
+
+								if (fDist < *pMinDist)
+								{
+									*pMinDist = fDist;
+
+									pMinPlane->m_v3Pos = glm::vec3(T2 * glm::vec4(plane.m_v3Pos, 1));
+									pMinPlane->m_v3Normal = glm::vec3(T2 * glm::vec4(plane.m_v3Normal, 0));
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return true;
 	}
 
 	void SearchHits_ConvexConvex(structHits* pHits, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles)
 	{
 		float fMinDist; 
 		Plane plane;
-		bool bIsFound = FindSeparatingAxis(&fMinDist, &plane, structRigidBody1, structRigidBody2, T1, T2, offset1, offset2, pListBVHNodeTriangles);
+		bool bIsCollide = FindSeparatingAxis(&fMinDist, &plane, structRigidBody1, structRigidBody2, T1, T2, offset1, offset2, pListBVHNodeTriangles);
 
-		
+		if (true == bIsCollide) 
+		{
+			std::cout << "alma";
+		}
 	}
 
 	// hordó - pálya
