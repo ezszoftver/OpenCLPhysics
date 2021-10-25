@@ -40,9 +40,6 @@ namespace OpenCLPhysics
 	typedef struct _structRigidBody
 	{
 		int32_t m_nRigidBodyId = -1;
-		int32_t m_nTriMeshId = -1;
-		int32_t m_nIsEnabled = 1;
-		int32_t m_nIsConvex = 0;
 
 		structBBox m_inBBox;
 		structBBox m_BBox;
@@ -64,6 +61,14 @@ namespace OpenCLPhysics
 		structVector3 m_v3Rotate;
 	}
 	structRigidBody;
+
+	typedef struct _structRigidBodyConfig 
+	{
+		int32_t m_nIsConvex = 0;
+		int32_t m_nMeshId = -1;
+		int32_t m_nIsEnabled = 1;
+	}
+	structRigidBodyConfig;
 
 	typedef struct _structTriangle 
 	{
@@ -169,17 +174,45 @@ namespace OpenCLPhysics
 		int32_t m_nCount;
 	};
 
-	class Plane 
+	typedef struct _structPlane 
 	{
-	public: 
+		structVector3 m_v3Dir;
+		float m_fW;
+	}
+	structPlane;
+
+	typedef struct _structPlaneOffset
+	{
+		int32_t m_nOffset;
+		int32_t m_nCount;
+	}
+	structPlaneOffset;
+
+	class Plane
+	{
+	public:
 		Plane();
 		Plane(glm::vec3 v3Pos, glm::vec3 v3Normal);
 		~Plane();
 
+		structPlane GetStructPlane();
 		float GetDistance(glm::vec3 v3Point);
 
 		glm::vec3 m_v3Pos;
 		glm::vec3 m_v3Normal;
+	};
+
+	class ConvexMesh 
+	{
+	public:
+		ConvexMesh();
+		~ConvexMesh();
+
+		bool IsContains(Plane* pPlane);
+
+		std::vector< Plane* > *m_pListPlanes;
+		int32_t m_nOffset;
+		int32_t m_nCount;
 	};
 
 	enum TriMeshType { Convex = 1, Concave = 0 };
@@ -196,7 +229,8 @@ namespace OpenCLPhysics
 		bool CreateDevice(std::string strDeviceName, int32_t nTriMeshsCount = 1000000);
 		void CloseDevice();
 
-		int32_t CreateTriMesh(std::vector<glm::vec3>* pListVertices, TriMeshType type, bool bIsCommit = true);
+		int32_t CreateStaticConcaveMesh(std::vector<glm::vec3>* pListVertices, bool bIsCommit = true);
+		int32_t CreateConvexMesh(std::vector<glm::vec3>* pListVertices, bool bIsCommit = true);
 		int32_t CreateFromId(int32_t nFromId, bool bIsCommit = true);
 		bool DeleteTriMesh(int32_t nId);
 
@@ -249,6 +283,7 @@ namespace OpenCLPhysics
 		std::vector < structHits >* GetHits();
 
 	private:
+		void SetConvexMesh(int32_t nId, std::vector<glm::vec3>* pListVertices);
 		void SetTriMesh(int32_t nId, std::vector<glm::vec3>* pListVertices);
 		bool StepUpdate(float dt);
 		void CreateBVHObjects();
@@ -281,7 +316,9 @@ namespace OpenCLPhysics
 		structVector3 m_v3Gravity;
 		std::vector< int32_t > m_listFreeIds;
 		std::vector< structRigidBody > m_listRigidBodies;
+		std::vector < structRigidBodyConfig > m_listRigidBodyConfigs;
 		std::vector< TriMesh* > m_listTriMeshs;
+		std::vector< ConvexMesh* > m_listConvexMeshs;
 
 		// objects
 		std::vector< std::vector< structBVHObject >* > m_BVHObjectsLevels; // ebbõl kiszámítható a "count", és az "offset"
@@ -290,6 +327,10 @@ namespace OpenCLPhysics
 		// triangles
 		std::vector< structBVHNodeTriangle > m_listBVHNodeTriangles;
 		std::vector< structBVHNodeTriangleOffset > m_listBVHNodeTrianglesOffsets;
+
+		// convex-es
+		std::vector< structPlane > m_listPlanes;
+		std::vector< structPlaneOffset > m_listPlanesOffsets;
 
 		// hits
 		std::vector < structHits > m_listHits;
