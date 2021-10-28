@@ -1,6 +1,6 @@
 # OpenCL Physics Engine v0.0 
 !!! THIS IS UNDER DEVELOPING. NOT STABLE. !!!
-!!! VERSION: 0.0 !!!
+!!! VERSION: 0.2 !!!
 
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/hKhqSlktIxI/0.jpg)](https://www.youtube.com/watch?v=hKhqSlktIxI)
 
