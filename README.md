@@ -1,8 +1,8 @@
-# OpenCL Physics Engine v0.0 
+# OpenCL Physics Engine v0.2
 !!! THIS IS UNDER DEVELOPING. NOT STABLE. !!!
 !!! VERSION: 0.2 !!!
 
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/hKhqSlktIxI/0.jpg)](https://www.youtube.com/watch?v=hKhqSlktIxI)
+![v0 2](https://user-images.githubusercontent.com/9680136/139330874-ec598b67-d9a9-4eda-bf95-443cc3b8538c.jpg)
 
 Website: https://ezszoftver.hu/eng.html (You click to "Progs & learn" -> "Physics Engine, with VGA" submenu)
 
