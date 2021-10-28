@@ -228,74 +228,6 @@ namespace OpenCLPhysics
 	{
 	}
 
-	Plane::Plane() 
-	{
-		m_v3Pos = glm::vec3(0, 0, 0);
-		m_v3Normal = glm::vec3(1, 0, 0);
-	}
-
-	Plane::Plane(glm::vec3 v3Pos, glm::vec3 v3Normal) 
-	{
-		m_v3Pos = v3Pos;
-		m_v3Normal = v3Normal;
-	}
-
-	Plane::~Plane() 
-	{
-	}
-
-	structPlane Plane::GetStructPlane() 
-	{
-		structPlane ret;
-		ret.m_v3Dir = ToVector3(m_v3Normal);
-		ret.m_fW = GetDistance(glm::vec3(0, 0, 0));
-	}
-
-	
-
-	float Plane::GetDistance(glm::vec3 v3Point) 
-	{
-		float t = glm::dot((v3Point - m_v3Pos), m_v3Normal);
-		return t;
-	}
-
-	ConvexMesh::ConvexMesh() 
-	{
-		m_pListPlanes = nullptr;
-		m_nOffset = -1;
-		m_nCount = 0;
-	}
-	
-	ConvexMesh::~ConvexMesh() 
-	{
-	}
-
-	bool ConvexMesh::IsContains(Plane* pPlane)
-	{
-		float fEpsilon = 0.001f;
-
-		float fW1 = pPlane->GetDistance(glm::vec3(0, 0, 0));
-		glm::vec3 fDir1 = pPlane->m_v3Normal;
-
-		for (int32_t i = 0; i < m_pListPlanes->size(); i++)
-		{
-			float fW2 = m_pListPlanes->at(i)->GetDistance(glm::vec3(0, 0, 0));
-			glm::vec3 fDir2 = m_pListPlanes->at(i)->m_v3Normal;
-
-			float fDeltaX = std::fabs(fDir1.x - fDir2.x);
-			float fDeltaY = std::fabs(fDir1.y - fDir2.y);
-			float fDeltaZ = std::fabs(fDir1.z - fDir2.z);
-			float fDeltaW = std::fabs(fW1 - fW2);
-
-			if (fDeltaX < fEpsilon && fDeltaY < fEpsilon && fDeltaZ < fEpsilon && fDeltaW < fEpsilon)
-			{
-				return true;
-			}
-		}
-
-		return false;
-	}
-
 	Physics::Physics()
 	{
 		m_context = nullptr;
@@ -497,7 +429,6 @@ namespace OpenCLPhysics
 					m_listFreeIds.clear();
 					m_listTriMeshs.clear();
 					m_listRigidBodies.clear();
-					m_listRigidBodyConfigs.clear();
 					for (int i = 0; i < TRIMESH_COUNT; i++)
 					{
 						m_listFreeIds.push_back(i);
@@ -515,7 +446,7 @@ namespace OpenCLPhysics
 	{
 	}
 
-	int32_t Physics::CreateStaticConcaveMesh(std::vector<glm::vec3>* pListVertices, bool bIsCommit)
+	int32_t Physics::CreateTriMesh(std::vector<glm::vec3>* pListVertices, bool bIsCommit)
 	{
 		if (0 == m_listFreeIds.size()) 
 		{
@@ -528,9 +459,9 @@ namespace OpenCLPhysics
 			err = clEnqueueReadBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHits) * m_listHits.size(), &(m_listHits[0]), 0, NULL, NULL);
 			if (err != CL_SUCCESS) { return -1; }
 		}
-		if (0 != m_clmem_inoutIsSeparate)
+		if (0 != m_clmem_inoutIsCollisionResponse)
 		{
-			err = clEnqueueReadBuffer(m_command_queue, m_clmem_inoutIsSeparate, CL_TRUE, 0, sizeof(int32_t) * m_listIsSeparate.size(), &(m_listIsSeparate[0]), 0, NULL, NULL);
+			err = clEnqueueReadBuffer(m_command_queue, m_clmem_inoutIsCollisionResponse, CL_TRUE, 0, sizeof(int32_t) * m_listIsCollisionResponse.size(), &(m_listIsCollisionResponse[0]), 0, NULL, NULL);
 			if (err != CL_SUCCESS) { return -1; }
 		}
 
@@ -542,25 +473,18 @@ namespace OpenCLPhysics
 		while(nId >= m_listTriMeshs.size())
 		{
 			m_listTriMeshs.push_back(new TriMesh());
-			m_listConvexMeshs.push_back(new ConvexMesh());
 
 			structRigidBody newRigidBody;
 			newRigidBody.m_nRigidBodyId = (int32_t)m_listRigidBodies.size();
 			m_listRigidBodies.push_back(newRigidBody);
 
-			structRigidBodyConfig newRigidBodyConfig;
-			m_listRigidBodyConfigs.push_back(newRigidBodyConfig);
-
 			structHits hits;
 			m_listHits.push_back(hits);
-			m_listIsSeparate.push_back(0);
+			m_listIsCollisionResponse.push_back(0);
 		}
 
 		// new trimesh
 		int32_t nTriMeshId = nId;
-
-		// convex mesh
-		int32_t nConvexMeshId = nId;
 
 		// new rigidbody
 		int32_t nRigidBodyId = nId;
@@ -573,93 +497,14 @@ namespace OpenCLPhysics
 		delete m_listTriMeshs.at(nTriMeshId);
 		m_listTriMeshs.at(nTriMeshId) = new TriMesh();
 
-		delete m_listConvexMeshs.at(nConvexMeshId);
-		m_listConvexMeshs.at(nConvexMeshId) = new ConvexMesh();
-
-		m_listRigidBodyConfigs.at(nRigidBodyId).m_nMeshId = nTriMeshId;
-		m_listRigidBodyConfigs.at(nRigidBodyId).m_nIsConvex = TriMeshType::Convex;
+		//m_listTriMeshs.at(nTriMeshId)->m_nRigidBodyId = nRigidBodyId;
+		m_listRigidBodies.at(nRigidBodyId).m_nTriMeshId = nTriMeshId;
 
 		int32_t nRet = nTriMeshId;
 		SetTriMesh(nRet, pListVertices);
 		SetEnabled(nId, true);
 
 		if (true == bIsCommit) 
-		{
-			if (false == Commit())
-			{
-				return -1;
-			}
-		}
-
-		return nRet;
-	}
-
-	int32_t Physics::CreateConvexMesh(std::vector<glm::vec3>* pListVertices, bool bIsCommit)
-	{
-		if (0 == m_listFreeIds.size())
-		{
-			return -1;
-		}
-
-		cl_int err = 0;
-		if (0 != m_clmem_inoutHits)
-		{
-			err = clEnqueueReadBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHits) * m_listHits.size(), &(m_listHits[0]), 0, NULL, NULL);
-			if (err != CL_SUCCESS) { return -1; }
-		}
-		if (0 != m_clmem_inoutIsSeparate)
-		{
-			err = clEnqueueReadBuffer(m_command_queue, m_clmem_inoutIsSeparate, CL_TRUE, 0, sizeof(int32_t) * m_listIsSeparate.size(), &(m_listIsSeparate[0]), 0, NULL, NULL);
-			if (err != CL_SUCCESS) { return -1; }
-		}
-
-		// get free id
-		int32_t nId = m_listFreeIds.at(0);
-		m_listFreeIds.erase(m_listFreeIds.begin() + 0);
-
-		// resize
-		while (nId >= m_listTriMeshs.size())
-		{
-			m_listTriMeshs.push_back(new TriMesh());
-			m_listConvexMeshs.push_back(new ConvexMesh());
-
-			structRigidBody newRigidBody;
-			newRigidBody.m_nRigidBodyId = (int32_t)m_listRigidBodies.size();
-			m_listRigidBodies.push_back(newRigidBody);
-
-			structHits hits;
-			m_listHits.push_back(hits);
-			m_listIsSeparate.push_back(0);
-		}
-
-		// new trimesh
-		int32_t nTriMeshId = nId;
-
-		// new convexmesh
-		int32_t nConvexMeshId = nId;
-
-		// new rigidbody
-		int32_t nRigidBodyId = nId;
-
-		// update
-		structRigidBody newRigidBody;
-		newRigidBody.m_nRigidBodyId = nRigidBodyId;
-		m_listRigidBodies.at(nRigidBodyId) = newRigidBody;
-
-		delete m_listTriMeshs.at(nTriMeshId);
-		m_listTriMeshs.at(nTriMeshId) = new TriMesh();
-
-		delete m_listConvexMeshs.at(nConvexMeshId);
-		m_listConvexMeshs.at(nConvexMeshId) = new ConvexMesh();
-
-		m_listRigidBodyConfigs.at(nRigidBodyId).m_nMeshId = nTriMeshId;
-		m_listRigidBodyConfigs.at(nRigidBodyId).m_nIsConvex = TriMeshType::Convex;
-
-		int32_t nRet = nTriMeshId;
-		SetConvexMesh(nRet, pListVertices);
-		SetEnabled(nId, true);
-
-		if (true == bIsCommit)
 		{
 			if (false == Commit())
 			{
@@ -683,9 +528,9 @@ namespace OpenCLPhysics
 			err = clEnqueueReadBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHits) * m_listHits.size(), &(m_listHits[0]), 0, NULL, NULL);
 			if (err != CL_SUCCESS) { return -1; }
 		}
-		if (0 != m_clmem_inoutIsSeparate)
+		if (0 != m_clmem_inoutIsCollisionResponse)
 		{
-			err = clEnqueueReadBuffer(m_command_queue, m_clmem_inoutIsSeparate, CL_TRUE, 0, sizeof(int32_t) * m_listIsSeparate.size(), &(m_listIsSeparate[0]), 0, NULL, NULL);
+			err = clEnqueueReadBuffer(m_command_queue, m_clmem_inoutIsCollisionResponse, CL_TRUE, 0, sizeof(int32_t) * m_listIsCollisionResponse.size(), &(m_listIsCollisionResponse[0]), 0, NULL, NULL);
 			if (err != CL_SUCCESS) { return -1; }
 		}
 
@@ -697,7 +542,6 @@ namespace OpenCLPhysics
 		while (nId >= m_listTriMeshs.size())
 		{
 			m_listTriMeshs.push_back(new TriMesh());
-			m_listConvexMeshs.push_back(new ConvexMesh());
 
 			structRigidBody newRigidBody;
 			newRigidBody.m_nRigidBodyId = (int32_t)m_listRigidBodies.size();
@@ -705,14 +549,11 @@ namespace OpenCLPhysics
 
 			structHits hits;
 			m_listHits.push_back(hits);
-			m_listIsSeparate.push_back(0);
+			m_listIsCollisionResponse.push_back(0);
 		}
 		
 		// new trimesh
 		int32_t nTriMeshId = nId;
-
-		// new convexmesh
-		int32_t nConvexMeshId = nId;
 
 		// new rigidbody
 		int32_t nRigidBodyId = nId;
@@ -727,16 +568,14 @@ namespace OpenCLPhysics
 		m_listTriMeshs.at(nTriMeshId) = new TriMesh();
 
 		//m_listTriMeshs.at(nTriMeshId)->m_nRigidBodyId = nRigidBodyId;
-		m_listRigidBodyConfigs.at(nRigidBodyId).m_nMeshId = nTriMeshId;
+		m_listRigidBodies.at(nRigidBodyId).m_nTriMeshId = nTriMeshId;
 		SetEnabled(nId, true);
-		m_listRigidBodyConfigs.at(nRigidBodyId).m_nIsConvex = m_listRigidBodyConfigs.at(nFromId).m_nIsConvex;
 
 		int32_t nNewId = nTriMeshId;
 
 		// copy fromId to newId
 		m_listTriMeshs.at(nTriMeshId)->m_pListBVHNodeTriangles = m_listTriMeshs.at(nFromId)->m_pListBVHNodeTriangles;
-		m_listConvexMeshs.at(nConvexMeshId)->m_pListPlanes = m_listConvexMeshs.at(nFromId)->m_pListPlanes;
-		m_listRigidBodyConfigs.at(nRigidBodyId).m_nMeshId = nFromId;
+		m_listRigidBodies.at(nRigidBodyId).m_nTriMeshId = nFromId;
 		
 		if (true == bIsCommit) 
 		{
@@ -764,12 +603,12 @@ namespace OpenCLPhysics
 
 	void Physics::SetEnabled(int32_t nId, bool bValue) 
 	{
-		m_listRigidBodyConfigs[nId].m_nIsEnabled = (true == bValue) ? 1 : 0;
+		m_listRigidBodies[nId].m_nIsEnabled = (true == bValue) ? 1 : 0;
 	}
 
 	bool Physics::IsEnabled(int32_t nId) 
 	{
-		bool ret = (m_listRigidBodyConfigs[nId].m_nIsEnabled == 0) ? false : true;
+		bool ret = (m_listRigidBodies[nId].m_nIsEnabled == 0) ? false : true;
 		return ret;
 	}
 
@@ -816,48 +655,11 @@ namespace OpenCLPhysics
 		return min_id;
 	}
 
-	void Physics::SetConvexMesh(int32_t nId, std::vector<glm::vec3>* pListVertices) 
-	{
-		ConvexMesh* pTheConvexMesh = m_listConvexMeshs.at(nId);
-		pTheConvexMesh->m_pListPlanes = new std::vector< Plane* >();
-		structRigidBody theRigidBody = m_listRigidBodies.at(nId);
-
-		// calc bbox (local min/max)
-		BBox* pBBox = new BBox();
-		for (uint64_t i = 0; i < pListVertices->size(); i++)
-		{
-			glm::vec3 v = pListVertices->at(i);
-			pBBox->Add(v);
-		}
-		theRigidBody.m_inBBox = pBBox->GetStructBBox();
-		delete pBBox;
-
-		m_listRigidBodies[nId] = theRigidBody;
-
-		// vertices to triangles
-		for (uint64_t i = 0; i < pListVertices->size(); i += 3)
-		{
-			glm::vec3 vA = pListVertices->at(i + 0);
-			glm::vec3 vB = pListVertices->at(i + 1);
-			glm::vec3 vC = pListVertices->at(i + 2);
-
-			glm::vec3 vN = glm::normalize(glm::cross(vB - vA, vC - vA));
-
-			Plane *pPlane = new Plane(vA, vN);
-			if (false == pTheConvexMesh->IsContains(pPlane))
-			{
-				pTheConvexMesh->m_pListPlanes->push_back(pPlane);
-				continue;
-			}
-			delete pPlane;
-		}
-	}
-
 	void Physics::SetTriMesh(int32_t nId, std::vector<glm::vec3>* pListVertices)
 	{
 		TriMesh *pTheTriMesh = m_listTriMeshs.at(nId);
 		pTheTriMesh->m_pListBVHNodeTriangles = new std::vector< BVHNodeTriangle* >();
-		structRigidBody theRigidBody = m_listRigidBodies.at(nId);
+		structRigidBody theRigidBody = m_listRigidBodies.at( nId/*pTheTriMesh->m_nRigidBodyId*/);
 
 		// calc bbox (local min/max)
 		BBox* pBBox = new BBox();
@@ -1204,10 +1006,10 @@ namespace OpenCLPhysics
 			clReleaseMemObject(m_clmem_inoutHits);
 			m_clmem_inoutHits = 0;
 		}
-		if (0 != m_clmem_inoutIsSeparate)
+		if (0 != m_clmem_inoutIsCollisionResponse)
 		{
-			clReleaseMemObject(m_clmem_inoutIsSeparate);
-			m_clmem_inoutIsSeparate = 0;
+			clReleaseMemObject(m_clmem_inoutIsCollisionResponse);
+			m_clmem_inoutIsCollisionResponse = 0;
 		}
 
 		// create rigidBodies buffer
@@ -1236,7 +1038,7 @@ namespace OpenCLPhysics
 		m_listBVHNodeTrianglesOffsets.clear();
 		for (int32_t i = 0; i < m_listRigidBodies.size(); i++) 
 		{
-			int32_t nTriMeshId = m_listRigidBodies.at(i).m_nMeshId;
+			int32_t nTriMeshId = m_listRigidBodies.at(i).m_nTriMeshId;
 			TriMesh* pMesh = m_listTriMeshs.at(nTriMeshId);
 
 			structBVHNodeTriangleOffset offset;
@@ -1258,10 +1060,10 @@ namespace OpenCLPhysics
 		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHits) * m_listHits.size(), m_listHits.data(), 0, NULL, NULL);
 		if (err != CL_SUCCESS) { return false; }
 
-		m_clmem_inoutIsSeparate = clCreateBuffer(m_context, CL_MEM_READ_WRITE, sizeof(int32_t) * m_listIsSeparate.size(), NULL, NULL);
-		if (!m_clmem_inoutIsSeparate) { return false; }
+		m_clmem_inoutIsCollisionResponse = clCreateBuffer(m_context, CL_MEM_READ_WRITE, sizeof(int32_t) * m_listIsCollisionResponse.size(), NULL, NULL);
+		if (!m_clmem_inoutIsCollisionResponse) { return false; }
 		// -> copy
-		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutIsSeparate, CL_TRUE, 0, sizeof(int32_t) * m_listIsSeparate.size(), m_listIsSeparate.data(), 0, NULL, NULL);
+		err = clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutIsCollisionResponse, CL_TRUE, 0, sizeof(int32_t) * m_listIsCollisionResponse.size(), m_listIsCollisionResponse.data(), 0, NULL, NULL);
 		if (err != CL_SUCCESS) { return false; }
 
 		return true;
@@ -1612,7 +1414,6 @@ namespace OpenCLPhysics
 		err |= clSetKernelArg(m_kernelIntegrate, 1, sizeof(int32_t), &nCount);
 		err |= clSetKernelArg(m_kernelIntegrate, 2, sizeof(float), &dt);
 		err |= clSetKernelArg(m_kernelIntegrate, 3, sizeof(structVector3), &m_v3Gravity);
-		err |= clSetKernelArg(m_kernelIntegrate, 4, sizeof(cl_mem), &m_clmem_inoutIsSeparate);
 		err |= clEnqueueNDRangeKernel(m_command_queue, m_kernelIntegrate, 1, NULL, &nGlobal, &nLocal, 0, NULL, NULL);
 		clFinish(m_command_queue);
 		
@@ -1627,584 +1428,383 @@ namespace OpenCLPhysics
 		return true;
 	}
 
-	// DEBUG - EZ MAJD NEM KELL
-	bool IsCollide(structBBox bbox1, structBBox bbox2)
+	//// DEBUG - EZ MAJD NEM KELL
+	//bool IsCollide(structBBox bbox1, structBBox bbox2)
+	//{
+	//	if (bbox1.v3Max.x < bbox2.v3Min.x || bbox1.v3Min.x > bbox2.v3Max.x) return false;
+	//	if (bbox1.v3Max.y < bbox2.v3Min.y || bbox1.v3Min.y > bbox2.v3Max.y) return false;
+	//	if (bbox1.v3Max.z < bbox2.v3Min.z || bbox1.v3Min.z > bbox2.v3Max.z) return false;
+	//	
+	//	return true;
+	//}
+	//
+	//bool IsLeaf(structBVHNodeTriangle node)
+	//{
+	//	if (-1 == node.m_nLeft && -1 == node.m_nRight) 
+	//	{
+	//		return true;
+	//	}
+	//	return false;
+	//}
+	//
+	//structBBox TransformBBox(glm::mat4 T, structBBox bbox)
+	//{
+	//	structBBox ret;
+	//
+	//	glm::vec3 v3Min = ToVector3(bbox.v3Min);
+	//	glm::vec3 v3Max = ToVector3(bbox.v3Max);
+	//
+	//	glm::vec3 v3In1 = glm::vec3(v3Min.x, v3Min.y, v3Min.z);
+	//	glm::vec3 v3In2 = glm::vec3(v3Max.x, v3Min.y, v3Min.z);
+	//	glm::vec3 v3In3 = glm::vec3(v3Max.x, v3Min.y, v3Max.z);
+	//	glm::vec3 v3In4 = glm::vec3(v3Min.x, v3Min.y, v3Max.z);
+	//	glm::vec3 v3In5 = glm::vec3(v3Min.x, v3Max.y, v3Min.z);
+	//	glm::vec3 v3In6 = glm::vec3(v3Max.x, v3Max.y, v3Min.z);
+	//	glm::vec3 v3In7 = glm::vec3(v3Max.x, v3Max.y, v3Max.z);
+	//	glm::vec3 v3In8 = glm::vec3(v3Min.x, v3Max.y, v3Max.z);
+	//
+	//	glm::vec3 v3Out1 = glm::vec3(T * glm::vec4(v3In1, 1.0f));
+	//	glm::vec3 v3Out2 = glm::vec3(T * glm::vec4(v3In2, 1.0f));
+	//	glm::vec3 v3Out3 = glm::vec3(T * glm::vec4(v3In3, 1.0f));
+	//	glm::vec3 v3Out4 = glm::vec3(T * glm::vec4(v3In4, 1.0f));
+	//	glm::vec3 v3Out5 = glm::vec3(T * glm::vec4(v3In5, 1.0f));
+	//	glm::vec3 v3Out6 = glm::vec3(T * glm::vec4(v3In6, 1.0f));
+	//	glm::vec3 v3Out7 = glm::vec3(T * glm::vec4(v3In7, 1.0f));
+	//	glm::vec3 v3Out8 = glm::vec3(T * glm::vec4(v3In8, 1.0f));
+	//
+	//	// 1
+	//	v3Min = v3Out1;
+	//	v3Max = v3Out1;
+	//
+	//	// 2
+	//	v3Min.x = std::fmin(v3Min.x, v3Out2.x);
+	//	v3Min.y = std::fmin(v3Min.y, v3Out2.y);
+	//	v3Min.z = std::fmin(v3Min.z, v3Out2.z);
+	//	v3Max.x = std::fmax(v3Max.x, v3Out2.x);
+	//	v3Max.y = std::fmax(v3Max.y, v3Out2.y);
+	//	v3Max.z = std::fmax(v3Max.z, v3Out2.z);
+	//
+	//	// 3
+	//	v3Min.x = std::fmin(v3Min.x, v3Out3.x);
+	//	v3Min.y = std::fmin(v3Min.y, v3Out3.y);
+	//	v3Min.z = std::fmin(v3Min.z, v3Out3.z);
+	//	v3Max.x = std::fmax(v3Max.x, v3Out3.x);
+	//	v3Max.y = std::fmax(v3Max.y, v3Out3.y);
+	//	v3Max.z = std::fmax(v3Max.z, v3Out3.z);
+	//
+	//	// 4
+	//	v3Min.x = std::fmin(v3Min.x, v3Out4.x);
+	//	v3Min.y = std::fmin(v3Min.y, v3Out4.y);
+	//	v3Min.z = std::fmin(v3Min.z, v3Out4.z);
+	//	v3Max.x = std::fmax(v3Max.x, v3Out4.x);
+	//	v3Max.y = std::fmax(v3Max.y, v3Out4.y);
+	//	v3Max.z = std::fmax(v3Max.z, v3Out4.z);
+	//
+	//	// 5
+	//	v3Min.x = std::fmin(v3Min.x, v3Out5.x);
+	//	v3Min.y = std::fmin(v3Min.y, v3Out5.y);
+	//	v3Min.z = std::fmin(v3Min.z, v3Out5.z);
+	//	v3Max.x = std::fmax(v3Max.x, v3Out5.x);
+	//	v3Max.y = std::fmax(v3Max.y, v3Out5.y);
+	//	v3Max.z = std::fmax(v3Max.z, v3Out5.z);
+	//
+	//	// 6
+	//	v3Min.x = std::fmin(v3Min.x, v3Out6.x);
+	//	v3Min.y = std::fmin(v3Min.y, v3Out6.y);
+	//	v3Min.z = std::fmin(v3Min.z, v3Out6.z);
+	//	v3Max.x = std::fmax(v3Max.x, v3Out6.x);
+	//	v3Max.y = std::fmax(v3Max.y, v3Out6.y);
+	//	v3Max.z = std::fmax(v3Max.z, v3Out6.z);
+	//
+	//	// 7
+	//	v3Min.x = std::fmin(v3Min.x, v3Out7.x);
+	//	v3Min.y = std::fmin(v3Min.y, v3Out7.y);
+	//	v3Min.z = std::fmin(v3Min.z, v3Out7.z);
+	//	v3Max.x = std::fmax(v3Max.x, v3Out7.x);
+	//	v3Max.y = std::fmax(v3Max.y, v3Out7.y);
+	//	v3Max.z = std::fmax(v3Max.z, v3Out7.z);
+	//
+	//	// 8
+	//	v3Min.x = std::fmin(v3Min.x, v3Out8.x);
+	//	v3Min.y = std::fmin(v3Min.y, v3Out8.y);
+	//	v3Min.z = std::fmin(v3Min.z, v3Out8.z);
+	//	v3Max.x = std::fmax(v3Max.x, v3Out8.x);
+	//	v3Max.y = std::fmax(v3Max.y, v3Out8.y);
+	//	v3Max.z = std::fmax(v3Max.z, v3Out8.z);
+	//
+	//	ret.v3Min = ToVector3(v3Min);
+	//	ret.v3Max = ToVector3(v3Max);
+	//
+	//	return ret;
+	//}
+	//
+	//
+	//float angle(structVector3 v3A, structVector3 v3B)
+	//{
+	//	float fAngle = std::acosf(glm::dot(ToVector3(v3A), ToVector3(v3B)));
+	//
+	//	return fAngle;
+	//}
+	//
+	//bool IsEqual(structHit hit1, structHit hit2)
+	//{
+	//	if (glm::distance(ToVector3(hit1.m_v3HitPointInWorld), ToVector3(hit2.m_v3HitPointInWorld)) < 0.001f)
+	//	{
+	//		if (angle(hit1.m_v3Normal, hit2.m_v3Normal) < (3.141592f / 180.0f)) // 1 degree 
+	//		{
+	//			return true;
+	//		}
+	//	}
+	//
+	//	return false;
+	//}
+	//
+	//bool IsContains(structHits* pHits, structHit hit)
+	//{
+	//	for (int i = 0; i < pHits->m_nNumHits; i++)
+	//	{
+	//		if (true == IsEqual(pHits->m_hits[i], hit))
+	//		{
+	//			return true;
+	//		}
+	//	}
+	//
+	//	return false;
+	//}
+	//
+	//void Intersect_LineTriangle(structHits* pHits, bool isInvertNormal, glm::vec3 v3LineA, glm::vec3 v3LineB, glm::vec3 v3TriA, glm::vec3 v3TriB, glm::vec3 v3TriC, glm::vec3 v3TriN)
+	//{
+	//	if (pHits->m_nNumHits >= MAX_HITS_OBJECT_OBJECT)
+	//	{
+	//		return;
+	//	}
+	//
+	//	glm::vec3 v3Dir = glm::normalize(v3LineB - v3LineA);
+	//
+	//	float cost = glm::dot(v3Dir, v3TriN);
+	//	if (std::fabs(cost) < 0.001f)
+	//	{
+	//		return;
+	//	}
+	//		
+	//	float t = glm::dot(v3TriA - v3LineA, v3TriN) / cost;
+	//	float fMaxLenght = glm::distance(v3LineA, v3LineB);
+	//	if (t < 0.0f || t > fMaxLenght)
+	//	{
+	//		return;
+	//	}
+	//		
+	//	glm::vec3 v3P = v3LineA + (v3Dir * t);
+	//
+	//	glm::vec3 v3N2;
+	//	v3N2 = glm::cross(v3TriB - v3TriA, v3P - v3TriA);
+	//	float c1 = glm::dot(v3TriN, v3N2);
+	//
+	//	v3N2 = glm::cross(v3TriC - v3TriB, v3P - v3TriB);
+	//	float c2 = glm::dot(v3TriN, v3N2);
+	//
+	//	v3N2 = glm::cross(v3TriA - v3TriC, v3P - v3TriC);
+	//	float c3 = glm::dot(v3TriN, v3N2);
+	//
+	//	if ((c1 > 0.0f && c2 > 0.0f && c3 > 0.0f) || (c1 < 0.0f && c2 < 0.0f && c3 < 0.0f))
+	//	{
+	//		structHit hit;
+	//		hit.m_v3HitPointInWorld = ToVector3(v3P);
+	//		if (false == isInvertNormal) { hit.m_v3Normal = ToVector3(v3TriN); }
+	//		else { hit.m_v3Normal = ToVector3(-1.0f * v3TriN); }
+	//
+	//		if (false == IsContains(pHits, hit))
+	//		{
+	//			pHits->m_hits[pHits->m_nNumHits] = hit;
+	//			pHits->m_nNumHits++;
+	//		}
+	//	}
+	//}
+	//
+	//void Intersect_TriangleTriangle(structHits* pHits, glm::vec3 tri1_a, glm::vec3 tri1_b, glm::vec3 tri1_c, glm::vec3 tri1_n, glm::vec3 tri2_a, glm::vec3 tri2_b, glm::vec3 tri2_c, glm::vec3 tri2_n)
+	//{
+	//	Intersect_LineTriangle(pHits, false, tri1_a, tri1_b, tri2_a, tri2_b, tri2_c, tri2_n);
+	//	Intersect_LineTriangle(pHits, false, tri1_b, tri1_c, tri2_a, tri2_b, tri2_c, tri2_n);
+	//	Intersect_LineTriangle(pHits, false, tri1_c, tri1_a, tri2_a, tri2_b, tri2_c, tri2_n);
+	//
+	//	Intersect_LineTriangle(pHits, true, tri2_a, tri2_b, tri1_a, tri1_b, tri1_c, tri1_n);
+	//	Intersect_LineTriangle(pHits, true, tri2_b, tri2_c, tri1_a, tri1_b, tri1_c, tri1_n);
+	//	Intersect_LineTriangle(pHits, true, tri2_c, tri2_a, tri1_a, tri1_b, tri1_c, tri1_n);
+	//}									  
+	//
+	//// hordó - pálya egy háromszöge
+	//void SearchHits2(structHits* pHits, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, int32_t nId2, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles)
+	//{
+	//	structBVHNodeTriangle structNodeOrTriangle2 = pListBVHNodeTriangles[nId2];
+	//	structTriangle triangle2 = structNodeOrTriangle2.m_Triangle;
+	//	glm::vec3 tri2_a = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3PosA), 1.0f));
+	//	glm::vec3 tri2_b = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3PosB), 1.0f));
+	//	glm::vec3 tri2_c = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3PosC), 1.0f));
+	//	glm::vec3 tri2_n = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3Normal), 0.0f));
+	//
+	//	structNodeOrTriangle2.m_BBox = TransformBBox(T2, structNodeOrTriangle2.m_BBox);
+	//
+	//	int nTop = -1;
+	//	int arrStack[64];
+	//
+	//	nTop++;
+	//	arrStack[nTop] = offset1.m_nOffset;
+	//
+	//	int nId1;
+	//	structBVHNodeTriangle structNodeOrTriangle;
+	//
+	//	while (nTop > -1)
+	//	{
+	//		nId1 = arrStack[nTop];
+	//		nTop--;
+	//
+	//		structNodeOrTriangle = pListBVHNodeTriangles[nId1];
+	//		structNodeOrTriangle.m_BBox = TransformBBox(T1, structNodeOrTriangle.m_BBox);
+	//
+	//		if (true == IsLeaf(structNodeOrTriangle)) 
+	//		{
+	//			if (true == IsCollide(structNodeOrTriangle2.m_BBox, structNodeOrTriangle.m_BBox))
+	//			{
+	//				// TRANSFORM TRIANGLE 1
+	//				structTriangle triangle1 = structNodeOrTriangle.m_Triangle;
+	//				glm::vec3 tri1_a = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3PosA), 1.0f));
+	//				glm::vec3 tri1_b = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3PosB), 1.0f));
+	//				glm::vec3 tri1_c = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3PosC), 1.0f));
+	//				glm::vec3 tri1_n = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3Normal), 0.0f));
+	//
+	//				// CollisionDetection tri1, tri2
+	//				Intersect_TriangleTriangle(pHits, tri1_a, tri1_b, tri1_c, tri1_n, tri2_a, tri2_b, tri2_c, tri2_n);
+	//
+	//				if (pHits->m_nNumHits >= MAX_HITS_OBJECT_OBJECT)
+	//				{
+	//					return;
+	//				}
+	//
+	//			}
+	//		}
+	//		else 
+	//		{
+	//			if (true == IsCollide(structNodeOrTriangle2.m_BBox, structNodeOrTriangle.m_BBox))
+	//			{
+	//				if (structNodeOrTriangle.m_nLeft != -1)
+	//				{
+	//					nTop++;
+	//					arrStack[nTop] = structNodeOrTriangle.m_nLeft;
+	//				}
+	//
+	//				if (structNodeOrTriangle.m_nRight != -1)
+	//				{
+	//					nTop++;
+	//					arrStack[nTop] = structNodeOrTriangle.m_nRight;
+	//				}
+	//			}
+	//		}
+	//	}
+	//
+	//}
+	//
+	//// hordó - pálya
+	//void SearchHits(structHits* pHits, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles)
+	//{
+	//	int nTop = -1;
+	//	int arrStack[64];
+	//	
+	//	nTop++;
+	//	arrStack[nTop] = offset2.m_nOffset;
+	//
+	//	int nId2;
+	//	structBVHNodeTriangle structNodeOrTriangle;
+	//
+	//	while (nTop > -1)
+	//	{
+	//		nId2 = arrStack[nTop];
+	//		nTop--;
+	//
+	//		structNodeOrTriangle = pListBVHNodeTriangles[nId2];
+	//		structNodeOrTriangle.m_BBox = TransformBBox(T2, structNodeOrTriangle.m_BBox);
+	//
+	//		if (true == IsLeaf(structNodeOrTriangle)) 
+	//		{
+	//			if (true == IsCollide(structRigidBody1.m_BBox, structNodeOrTriangle.m_BBox))
+	//			{
+	//				SearchHits2(pHits, structRigidBody1, structRigidBody2, nId2, T1, T2, offset1, offset2, pListBVHNodeTriangles);
+	//
+	//				if (pHits->m_nNumHits >= MAX_HITS_OBJECT_OBJECT)
+	//				{
+	//					continue;
+	//				}
+	//			}
+	//		}
+	//		else 
+	//		{
+	//			if (true == IsCollide(structRigidBody1.m_BBox, structNodeOrTriangle.m_BBox))
+	//			{
+	//				if (structNodeOrTriangle.m_nLeft != -1)
+	//				{
+	//					nTop++;
+	//					arrStack[nTop] = structNodeOrTriangle.m_nLeft;
+	//				}
+	//			
+	//				if (structNodeOrTriangle.m_nRight != -1)
+	//				{
+	//					nTop++;
+	//					arrStack[nTop] = structNodeOrTriangle.m_nRight;
+	//				}
+	//			}
+	//		}
+	//	}
+	//}
+
+	bool Physics::CollisionDetection() 
 	{
-		if (bbox1.v3Max.x < bbox2.v3Min.x || bbox1.v3Min.x > bbox2.v3Max.x) return false;
-		if (bbox1.v3Max.y < bbox2.v3Min.y || bbox1.v3Min.y > bbox2.v3Max.y) return false;
-		if (bbox1.v3Max.z < bbox2.v3Min.z || bbox1.v3Min.z > bbox2.v3Max.z) return false;
+		cl_int err = 0;
 		
-		return true;
-	}
-	
-	bool IsLeaf(structBVHNodeTriangle node)
-	{
-		if (-1 == node.m_nLeft && -1 == node.m_nRight) 
-		{
-			return true;
-		}
-		return false;
-	}
-	
-	structBBox TransformBBox(glm::mat4 T, structBBox bbox)
-	{
-		structBBox ret;
-	
-		glm::vec3 v3Min = ToVector3(bbox.v3Min);
-		glm::vec3 v3Max = ToVector3(bbox.v3Max);
-	
-		glm::vec3 v3In1 = glm::vec3(v3Min.x, v3Min.y, v3Min.z);
-		glm::vec3 v3In2 = glm::vec3(v3Max.x, v3Min.y, v3Min.z);
-		glm::vec3 v3In3 = glm::vec3(v3Max.x, v3Min.y, v3Max.z);
-		glm::vec3 v3In4 = glm::vec3(v3Min.x, v3Min.y, v3Max.z);
-		glm::vec3 v3In5 = glm::vec3(v3Min.x, v3Max.y, v3Min.z);
-		glm::vec3 v3In6 = glm::vec3(v3Max.x, v3Max.y, v3Min.z);
-		glm::vec3 v3In7 = glm::vec3(v3Max.x, v3Max.y, v3Max.z);
-		glm::vec3 v3In8 = glm::vec3(v3Min.x, v3Max.y, v3Max.z);
-	
-		glm::vec3 v3Out1 = glm::vec3(T * glm::vec4(v3In1, 1.0f));
-		glm::vec3 v3Out2 = glm::vec3(T * glm::vec4(v3In2, 1.0f));
-		glm::vec3 v3Out3 = glm::vec3(T * glm::vec4(v3In3, 1.0f));
-		glm::vec3 v3Out4 = glm::vec3(T * glm::vec4(v3In4, 1.0f));
-		glm::vec3 v3Out5 = glm::vec3(T * glm::vec4(v3In5, 1.0f));
-		glm::vec3 v3Out6 = glm::vec3(T * glm::vec4(v3In6, 1.0f));
-		glm::vec3 v3Out7 = glm::vec3(T * glm::vec4(v3In7, 1.0f));
-		glm::vec3 v3Out8 = glm::vec3(T * glm::vec4(v3In8, 1.0f));
-	
-		// 1
-		v3Min = v3Out1;
-		v3Max = v3Out1;
-	
-		// 2
-		v3Min.x = std::fmin(v3Min.x, v3Out2.x);
-		v3Min.y = std::fmin(v3Min.y, v3Out2.y);
-		v3Min.z = std::fmin(v3Min.z, v3Out2.z);
-		v3Max.x = std::fmax(v3Max.x, v3Out2.x);
-		v3Max.y = std::fmax(v3Max.y, v3Out2.y);
-		v3Max.z = std::fmax(v3Max.z, v3Out2.z);
-	
-		// 3
-		v3Min.x = std::fmin(v3Min.x, v3Out3.x);
-		v3Min.y = std::fmin(v3Min.y, v3Out3.y);
-		v3Min.z = std::fmin(v3Min.z, v3Out3.z);
-		v3Max.x = std::fmax(v3Max.x, v3Out3.x);
-		v3Max.y = std::fmax(v3Max.y, v3Out3.y);
-		v3Max.z = std::fmax(v3Max.z, v3Out3.z);
-	
-		// 4
-		v3Min.x = std::fmin(v3Min.x, v3Out4.x);
-		v3Min.y = std::fmin(v3Min.y, v3Out4.y);
-		v3Min.z = std::fmin(v3Min.z, v3Out4.z);
-		v3Max.x = std::fmax(v3Max.x, v3Out4.x);
-		v3Max.y = std::fmax(v3Max.y, v3Out4.y);
-		v3Max.z = std::fmax(v3Max.z, v3Out4.z);
-	
-		// 5
-		v3Min.x = std::fmin(v3Min.x, v3Out5.x);
-		v3Min.y = std::fmin(v3Min.y, v3Out5.y);
-		v3Min.z = std::fmin(v3Min.z, v3Out5.z);
-		v3Max.x = std::fmax(v3Max.x, v3Out5.x);
-		v3Max.y = std::fmax(v3Max.y, v3Out5.y);
-		v3Max.z = std::fmax(v3Max.z, v3Out5.z);
-	
-		// 6
-		v3Min.x = std::fmin(v3Min.x, v3Out6.x);
-		v3Min.y = std::fmin(v3Min.y, v3Out6.y);
-		v3Min.z = std::fmin(v3Min.z, v3Out6.z);
-		v3Max.x = std::fmax(v3Max.x, v3Out6.x);
-		v3Max.y = std::fmax(v3Max.y, v3Out6.y);
-		v3Max.z = std::fmax(v3Max.z, v3Out6.z);
-	
-		// 7
-		v3Min.x = std::fmin(v3Min.x, v3Out7.x);
-		v3Min.y = std::fmin(v3Min.y, v3Out7.y);
-		v3Min.z = std::fmin(v3Min.z, v3Out7.z);
-		v3Max.x = std::fmax(v3Max.x, v3Out7.x);
-		v3Max.y = std::fmax(v3Max.y, v3Out7.y);
-		v3Max.z = std::fmax(v3Max.z, v3Out7.z);
-	
-		// 8
-		v3Min.x = std::fmin(v3Min.x, v3Out8.x);
-		v3Min.y = std::fmin(v3Min.y, v3Out8.y);
-		v3Min.z = std::fmin(v3Min.z, v3Out8.z);
-		v3Max.x = std::fmax(v3Max.x, v3Out8.x);
-		v3Max.y = std::fmax(v3Max.y, v3Out8.y);
-		v3Max.z = std::fmax(v3Max.z, v3Out8.z);
-	
-		ret.v3Min = ToVector3(v3Min);
-		ret.v3Max = ToVector3(v3Max);
-	
-		return ret;
-	}
-	
-	
-	float angle(structVector3 v3A, structVector3 v3B)
-	{
-		float fAngle = std::acosf(glm::dot(ToVector3(v3A), ToVector3(v3B)));
-	
-		return fAngle;
-	}
-	
-	bool IsEqual(structHit hit1, structHit hit2)
-	{
-		if (glm::distance(ToVector3(hit1.m_v3HitPointInWorld), ToVector3(hit2.m_v3HitPointInWorld)) < 0.1f)
-		{
-			if (angle(hit1.m_v3Normal, hit2.m_v3Normal) < (3.141592f / 180.0f) * 10.0f) // 10 degree 
-			{
-				return true;
-			}
-		}
-	
-		return false;
-	}
-	
-	bool IsContains(structHits* pHits, structHit hit)
-	{
-		for (int i = 0; i < pHits->m_nNumHits; i++)
-		{
-			if (true == IsEqual(pHits->m_hits[i], hit))
-			{
-				return true;
-			}
-		}
-	
-		return false;
-	}
-	
-	void Intersect_LineTriangle(structHits* pHits, bool isInvertNormal, glm::vec3 v3LineA, glm::vec3 v3LineB, glm::vec3 v3TriA, glm::vec3 v3TriB, glm::vec3 v3TriC, glm::vec3 v3TriN)
-	{
-		if (pHits->m_nNumHits >= MAX_HITS_OBJECT_OBJECT)
-		{
-			return;
-		}
-	
-		glm::vec3 v3Dir = glm::normalize(v3LineB - v3LineA);
-	
-		float cost = glm::dot(v3Dir, v3TriN);
-		if (std::fabs(cost) < 0.001f)
-		{
-			return;
-		}
-			
-		float t = glm::dot(v3TriA - v3LineA, v3TriN) / cost;
-		float fMaxLenght = glm::distance(v3LineA, v3LineB);
-		if (t < 0.0f || t > fMaxLenght)
-		{
-			return;
-		}
-			
-		glm::vec3 v3P = v3LineA + (v3Dir * t);
-	
-		glm::vec3 v3N2;
-		v3N2 = glm::cross(v3TriB - v3TriA, v3P - v3TriA);
-		float c1 = glm::dot(v3TriN, v3N2);
-	
-		v3N2 = glm::cross(v3TriC - v3TriB, v3P - v3TriB);
-		float c2 = glm::dot(v3TriN, v3N2);
-	
-		v3N2 = glm::cross(v3TriA - v3TriC, v3P - v3TriC);
-		float c3 = glm::dot(v3TriN, v3N2);
-	
-		if ((c1 > 0.0f && c2 > 0.0f && c3 > 0.0f) || (c1 < 0.0f && c2 < 0.0f && c3 < 0.0f))
-		{
-			structHit hit;
-			hit.m_v3HitPointInWorld = ToVector3(v3P);
-			if (false == isInvertNormal) { hit.m_v3Normal = ToVector3(v3TriN); }
-			else { hit.m_v3Normal = ToVector3(-1.0f * v3TriN); }
-	
-			if (false == IsContains(pHits, hit))
-			{
-				pHits->m_hits[pHits->m_nNumHits] = hit;
-				pHits->m_nNumHits++;
-			}
-		}
-	}
-	
-	void Intersect_TriangleTriangle(structHits* pHits, glm::vec3 tri1_a, glm::vec3 tri1_b, glm::vec3 tri1_c, glm::vec3 tri1_n, glm::vec3 tri2_a, glm::vec3 tri2_b, glm::vec3 tri2_c, glm::vec3 tri2_n)
-	{
-		Intersect_LineTriangle(pHits, false, tri1_a, tri1_b, tri2_a, tri2_b, tri2_c, tri2_n);
-		Intersect_LineTriangle(pHits, false, tri1_b, tri1_c, tri2_a, tri2_b, tri2_c, tri2_n);
-		Intersect_LineTriangle(pHits, false, tri1_c, tri1_a, tri2_a, tri2_b, tri2_c, tri2_n);
-	
-		Intersect_LineTriangle(pHits, true, tri2_a, tri2_b, tri1_a, tri1_b, tri1_c, tri1_n);
-		Intersect_LineTriangle(pHits, true, tri2_b, tri2_c, tri1_a, tri1_b, tri1_c, tri1_n);
-		Intersect_LineTriangle(pHits, true, tri2_c, tri2_a, tri1_a, tri1_b, tri1_c, tri1_n);
-	}									  
-	
-	// hordó - pálya egy háromszöge
-	void SearchHits2_ConcaveConcave(structHits* pHits, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, int32_t nId2, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles)
-	{
-		structBVHNodeTriangle structNodeOrTriangle2 = pListBVHNodeTriangles[nId2];
-		structTriangle triangle2 = structNodeOrTriangle2.m_Triangle;
-		glm::vec3 tri2_a = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3PosA), 1.0f));
-		glm::vec3 tri2_b = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3PosB), 1.0f));
-		glm::vec3 tri2_c = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3PosC), 1.0f));
-		glm::vec3 tri2_n = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3Normal), 0.0f));
-	
-		structNodeOrTriangle2.m_BBox = TransformBBox(T2, structNodeOrTriangle2.m_BBox);
-	
-		int nTop = -1;
-		int arrStack[64];
-	
-		nTop++;
-		arrStack[nTop] = offset1.m_nOffset;
-	
-		int nId1;
-		structBVHNodeTriangle structNodeOrTriangle;
-	
-		while (nTop > -1)
-		{
-			nId1 = arrStack[nTop];
-			nTop--;
-	
-			structNodeOrTriangle = pListBVHNodeTriangles[nId1];
-			structNodeOrTriangle.m_BBox = TransformBBox(T1, structNodeOrTriangle.m_BBox);
-	
-			if (true == IsLeaf(structNodeOrTriangle)) 
-			{
-				if (true == IsCollide(structNodeOrTriangle2.m_BBox, structNodeOrTriangle.m_BBox))
-				{
-					// TRANSFORM TRIANGLE 1
-					structTriangle triangle1 = structNodeOrTriangle.m_Triangle;
-					glm::vec3 tri1_a = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3PosA), 1.0f));
-					glm::vec3 tri1_b = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3PosB), 1.0f));
-					glm::vec3 tri1_c = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3PosC), 1.0f));
-					glm::vec3 tri1_n = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3Normal), 0.0f));
-	
-					// CollisionDetection tri1, tri2
-					Intersect_TriangleTriangle(pHits, tri1_a, tri1_b, tri1_c, tri1_n, tri2_a, tri2_b, tri2_c, tri2_n);
-	
-					if (pHits->m_nNumHits >= MAX_HITS_OBJECT_OBJECT)
-					{
-						return;
-					}
-	
-				}
-			}
-			else 
-			{
-				if (true == IsCollide(structNodeOrTriangle2.m_BBox, structNodeOrTriangle.m_BBox))
-				{
-					if (structNodeOrTriangle.m_nLeft != -1)
-					{
-						nTop++;
-						arrStack[nTop] = structNodeOrTriangle.m_nLeft;
-					}
-	
-					if (structNodeOrTriangle.m_nRight != -1)
-					{
-						nTop++;
-						arrStack[nTop] = structNodeOrTriangle.m_nRight;
-					}
-				}
-			}
-		}
-	
-	}
-
-	bool GetDistance(float *fRet, Plane* pPlane, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles) 
-	{
-		float fRigidBody1_Min = +FLT_MAX;
-		float fRigidBody1_Max = -FLT_MAX;
-
-		float fRigidBody2_Min = +FLT_MAX;
-		float fRigidBody2_Max = -FLT_MAX;
-
-		structBVHNodeTriangle structNodeOrTriangle;
-		float fDist;
-		for (int32_t nId1 = offset1.m_nOffset; nId1 < (offset1.m_nOffset + offset1.m_nCount); nId1++) // minden egyes plane-ra
-		{
-			structNodeOrTriangle = pListBVHNodeTriangles[nId1];
-			if (true == IsLeaf(structNodeOrTriangle)) 
-			{
-				// A
-				fDist = pPlane->GetDistance(ToVector3(structNodeOrTriangle.m_Triangle.m_v3PosA));
-				fRigidBody1_Min = std::fmin(fDist, fRigidBody1_Min);
-				fRigidBody1_Max = std::fmax(fDist, fRigidBody1_Max);
-				// B
-				fDist = pPlane->GetDistance(ToVector3(structNodeOrTriangle.m_Triangle.m_v3PosB));
-				fRigidBody1_Min = std::fmin(fDist, fRigidBody1_Min);
-				fRigidBody1_Max = std::fmax(fDist, fRigidBody1_Max);
-				// C
-				fDist = pPlane->GetDistance(ToVector3(structNodeOrTriangle.m_Triangle.m_v3PosC));
-				fRigidBody1_Min = std::fmin(fDist, fRigidBody1_Min);
-				fRigidBody1_Max = std::fmax(fDist, fRigidBody1_Max);
-			}
-		}
-
-		for (int32_t nId2 = offset2.m_nOffset; nId2 < (offset2.m_nOffset + offset2.m_nCount); nId2++) // minden egyes plane-ra
-		{
-			structNodeOrTriangle = pListBVHNodeTriangles[nId2];
-			if (true == IsLeaf(structNodeOrTriangle))
-			{
-				// A
-				fDist = pPlane->GetDistance(ToVector3(structNodeOrTriangle.m_Triangle.m_v3PosA));
-				fRigidBody2_Min = std::fmin(fDist, fRigidBody2_Min);
-				fRigidBody2_Max = std::fmax(fDist, fRigidBody2_Max);
-				// B
-				fDist = pPlane->GetDistance(ToVector3(structNodeOrTriangle.m_Triangle.m_v3PosB));
-				fRigidBody2_Min = std::fmin(fDist, fRigidBody2_Min);
-				fRigidBody2_Max = std::fmax(fDist, fRigidBody2_Max);
-				// C
-				fDist = pPlane->GetDistance(ToVector3(structNodeOrTriangle.m_Triangle.m_v3PosC));
-				fRigidBody2_Min = std::fmin(fDist, fRigidBody2_Min);
-				fRigidBody2_Max = std::fmax(fDist, fRigidBody2_Max);
-			}
-		}
-
-		if (fRigidBody1_Max < fRigidBody2_Min || fRigidBody2_Max < fRigidBody1_Min)
+		int32_t nCount = (int32_t)m_listRigidBodies.size();
+		size_t nLocal = m_nCollisionDetection_Local;
+		size_t nGlobal = ((nCount + nLocal - 1) / nLocal) * nLocal;
+		
+		// calc
+		err |= clSetKernelArg(m_kernelCollisionDetection, 0, sizeof(cl_mem), &m_clmem_inoutRigidBodies);
+		err |= clSetKernelArg(m_kernelCollisionDetection, 1, sizeof(int32_t), &nCount);
+		err |= clSetKernelArg(m_kernelCollisionDetection, 2, sizeof(cl_mem), &m_clmem_inoutBVHObjects);
+		err |= clSetKernelArg(m_kernelCollisionDetection, 3, sizeof(cl_mem), &m_clmem_inBVHNodeTriangles);
+		err |= clSetKernelArg(m_kernelCollisionDetection, 4, sizeof(cl_mem), &m_clmem_inBVHNodeTrianglesOffsets);
+		err |= clSetKernelArg(m_kernelCollisionDetection, 5, sizeof(cl_mem), &m_clmem_inoutHits);
+		err |= clSetKernelArg(m_kernelCollisionDetection, 6, sizeof(cl_mem), &m_clmem_inoutIsCollisionResponse);
+		
+		err |= clEnqueueNDRangeKernel(m_command_queue, m_kernelCollisionDetection, 1, NULL, &nGlobal, &nLocal, 0, NULL, NULL);
+		clFinish(m_command_queue);
+		
+		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHits) * m_listHits.size(), &(m_listHits[0]), 0, NULL, NULL);
+		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutIsCollisionResponse, CL_TRUE, 0, sizeof(int32_t) * m_listIsCollisionResponse.size(), &(m_listIsCollisionResponse[0]), 0, NULL, NULL);
+		
+		if (err != CL_SUCCESS)
 		{
 			return false;
 		}
 		
-		float d0 = fRigidBody1_Max - fRigidBody2_Min;
-		float d1 = fRigidBody2_Max - fRigidBody1_Min;
-		*fRet = (d0 < d1) ? d0 : d1;
-
 		return true;
-	}
 
-	bool FindSeparatingAxis(float *pMinDist, Plane *pMinPlane, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles)
-	{
-		*pMinDist = FLT_MAX;
 
-		glm::vec3 c1 = glm::vec3(T1 * glm::vec4(ToVector3(structRigidBody1.m_v3Position), 1));
-		glm::vec3 c2 = glm::vec3(T2 * glm::vec4(ToVector3(structRigidBody2.m_v3Position), 1));
-		glm::vec3 v3Delta = c1 - c2;
 
-		// RigidBody 1
-		glm::mat4 T = glm::inverse(T2) * T1;
-		structBVHNodeTriangle structNodeOrTriangle;
-		for (int32_t nId1 = offset1.m_nOffset; nId1 < (offset1.m_nOffset + offset1.m_nCount); nId1++) // minden egyes plane-ra
-		{
-			structNodeOrTriangle = pListBVHNodeTriangles[nId1];
-			if (true == IsLeaf(structNodeOrTriangle))
-			{
-				glm::vec3 v3InA = ToVector3(structNodeOrTriangle.m_Triangle.m_v3PosA);
-				glm::vec3 v3InN = ToVector3(structNodeOrTriangle.m_Triangle.m_v3Normal);
 
-				glm::vec3 v3PlanePos = glm::vec3(T * glm::vec4(v3InA, 1));
-				glm::vec3 v3PlaneNormal = glm::vec3(T * glm::vec4(v3InN, 0));
 
-				if (dot(v3Delta, v3PlaneNormal) < 0.0f)
-				{
-					v3PlaneNormal = -1.0f * v3PlaneNormal;
-				}
 
-				Plane plane(v3PlanePos, v3PlaneNormal);
 
-				float fDist = FLT_MAX;
-				bool bIsCollide = GetDistance(&fDist, &plane, structRigidBody1/*only dynamic*/, structRigidBody2/*static or dynamic*/, T1, T2, offset1, offset2, pListBVHNodeTriangles);
 
-				if (false == bIsCollide)
-				{
-					return false;
-				}
 
-				if (fDist < *pMinDist) 
-				{
-					*pMinDist = fDist;
 
-					pMinPlane->m_v3Pos = glm::vec3(T2 * glm::vec4(plane.m_v3Pos, 1));
-					pMinPlane->m_v3Normal = glm::vec3(T2 * glm::vec4(plane.m_v3Normal, 0));
-				}
-			}
-		}
 
-		// RigidBody 2
-		T = glm::inverse(T1) * T2;
-		for (int32_t nId2 = offset2.m_nOffset; nId2 < (offset2.m_nOffset + offset2.m_nCount); nId2++) // minden egyes plane-ra
-		{
-			structNodeOrTriangle = pListBVHNodeTriangles[nId2];
-			if (true == IsLeaf(structNodeOrTriangle))
-			{
-				glm::vec3 v3InA = ToVector3(structNodeOrTriangle.m_Triangle.m_v3PosA);
-				glm::vec3 v3InN = ToVector3(structNodeOrTriangle.m_Triangle.m_v3Normal);
 
-				glm::vec3 v3PlanePos = glm::vec3(T * glm::vec4(v3InA, 1));
-				glm::vec3 v3PlaneNormal = glm::vec3(T * glm::vec4(v3InN, 0));
 
-				if (dot(v3Delta, v3PlaneNormal) < 0.0f)
-				{
-					v3PlaneNormal = -1.0f * v3PlaneNormal;
-				}
 
-				Plane plane(v3PlanePos, v3PlaneNormal);
 
-				float fDist = FLT_MAX;
-				bool bIsCollide = GetDistance(&fDist, &plane, structRigidBody1/*only dynamic*/, structRigidBody2/*static or dynamic*/, T1, T2, offset1, offset2, pListBVHNodeTriangles);
-
-				if (false == bIsCollide)
-				{
-					return false;
-				}
-
-				if (fDist < *pMinDist)
-				{
-					*pMinDist = fDist;
-
-					pMinPlane->m_v3Pos = glm::vec3(T1 * glm::vec4(plane.m_v3Pos, 1));
-					pMinPlane->m_v3Normal = glm::vec3(T1 * glm::vec4(plane.m_v3Normal, 0));
-				}
-			}
-		}
-
-		//// edges - edges
-		//T = glm::inverse(T2) * T1;
-		//structBVHNodeTriangle structNodeOrTriangle1;
-		//structBVHNodeTriangle structNodeOrTriangle2;
-		//for (int32_t nId1 = offset1.m_nOffset; nId1 < (offset1.m_nOffset + offset1.m_nCount); nId1++) // minden egyes plane-ra
-		//{
-		//	structNodeOrTriangle1 = pListBVHNodeTriangles[nId1];
-		//	if (true == IsLeaf(structNodeOrTriangle1))
-		//	{
-		//		for (int32_t nId2 = offset2.m_nOffset; nId2 < (offset2.m_nOffset + offset2.m_nCount); nId2++) // minden egyes plane-ra
-		//		{
-		//			structNodeOrTriangle2 = pListBVHNodeTriangles[nId2];
-		//			if (true == IsLeaf(structNodeOrTriangle2))
-		//			{
-		//				glm::vec3 rb1_line1 = ToVector3(structNodeOrTriangle1.m_Triangle.m_v3PosB) - ToVector3(structNodeOrTriangle1.m_Triangle.m_v3PosA);
-		//				glm::vec3 rb1_line2 = ToVector3(structNodeOrTriangle1.m_Triangle.m_v3PosC) - ToVector3(structNodeOrTriangle1.m_Triangle.m_v3PosB);
-		//				glm::vec3 rb1_line3 = ToVector3(structNodeOrTriangle1.m_Triangle.m_v3PosA) - ToVector3(structNodeOrTriangle1.m_Triangle.m_v3PosC);
-		//				rb1_line1 = glm::vec3(T * glm::vec4(rb1_line1, 0));
-		//				rb1_line2 = glm::vec3(T * glm::vec4(rb1_line2, 0));
-		//				rb1_line3 = glm::vec3(T * glm::vec4(rb1_line3, 0));
-		//
-		//				glm::vec3 rb2_line1 = ToVector3(structNodeOrTriangle2.m_Triangle.m_v3PosB) - ToVector3(structNodeOrTriangle2.m_Triangle.m_v3PosA);
-		//				glm::vec3 rb2_line2 = ToVector3(structNodeOrTriangle2.m_Triangle.m_v3PosC) - ToVector3(structNodeOrTriangle2.m_Triangle.m_v3PosB);
-		//				glm::vec3 rb2_line3 = ToVector3(structNodeOrTriangle2.m_Triangle.m_v3PosA) - ToVector3(structNodeOrTriangle2.m_Triangle.m_v3PosC);
-		//
-		//				glm::vec3 rb1_lines[3] = { rb1_line1, rb1_line2, rb1_line3 };
-		//				glm::vec3 rb2_lines[3] = { rb2_line2, rb2_line2, rb2_line2 };
-		//
-		//				for (int i = 0; i < 3; i++)
-		//				{
-		//					for (int j = 0; j < 3; j++) 
-		//					{
-		//						glm::vec3 v3Normal = glm::cross(rb1_lines[i], rb2_lines[j]);
-		//						v3Normal = glm::normalize(v3Normal);
-		//
-		//						if (std::isnan(v3Normal.x) || std::isnan(v3Normal.y) || std::isnan(v3Normal.z))
-		//						{
-		//							continue;
-		//						}
-		//
-		//						if (dot(v3Delta, v3Normal) < 0.0f) 
-		//						{
-		//							v3Normal = -1.0f * v3Normal; 
-		//						}
-		//
-		//						Plane plane(glm::vec3(0, 0, 0), v3Normal);
-		//
-		//						float fDist = FLT_MAX;
-		//						bool bIsCollide = GetDistance(&fDist, &plane, structRigidBody1/*only dynamic*/, structRigidBody2/*static or dynamic*/, T1, T2, offset1, offset2, pListBVHNodeTriangles);
-		//
-		//						if (false == bIsCollide)
-		//						{
-		//							return false;
-		//						}
-		//
-		//						if (fDist < *pMinDist)
-		//						{
-		//							*pMinDist = fDist;
-		//
-		//							pMinPlane->m_v3Pos = glm::vec3(T2 * glm::vec4(plane.m_v3Pos, 1));
-		//							pMinPlane->m_v3Normal = glm::vec3(T2 * glm::vec4(plane.m_v3Normal, 0));
-		//						}
-		//					}
-		//				}
-		//			}
-		//		}
-		//	}
-		//}
-
-		return true;
-	}
-
-	void SearchHits_ConvexConvex(structHits* pHits, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles)
-	{
-		float fMinDist; 
-		Plane plane;
-		bool bIsCollide = FindSeparatingAxis(&fMinDist, &plane, structRigidBody1, structRigidBody2, T1, T2, offset1, offset2, pListBVHNodeTriangles);
-
-		if (true == bIsCollide) 
-		{
-			//std::cout << "alma";
-		}
-	}
-
-	// hordó - pálya
-	void SearchHits_ConcaveConcave(structHits* pHits, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles)
-	{
-		int nTop = -1;
-		int arrStack[64];
-		
-		nTop++;
-		arrStack[nTop] = offset2.m_nOffset;
-	
-		int nId2;
-		structBVHNodeTriangle structNodeOrTriangle;
-	
-		while (nTop > -1)
-		{
-			nId2 = arrStack[nTop];
-			nTop--;
-	
-			structNodeOrTriangle = pListBVHNodeTriangles[nId2];
-			structNodeOrTriangle.m_BBox = TransformBBox(T2, structNodeOrTriangle.m_BBox);
-	
-			if (true == IsLeaf(structNodeOrTriangle)) 
-			{
-				if (true == IsCollide(structRigidBody1.m_BBox, structNodeOrTriangle.m_BBox))
-				{
-					SearchHits2_ConcaveConcave(pHits, structRigidBody1, structRigidBody2, nId2, T1, T2, offset1, offset2, pListBVHNodeTriangles);
-	
-					if (pHits->m_nNumHits >= MAX_HITS_OBJECT_OBJECT)
-					{
-						continue;
-					}
-				}
-			}
-			else 
-			{
-				if (true == IsCollide(structRigidBody1.m_BBox, structNodeOrTriangle.m_BBox))
-				{
-					if (structNodeOrTriangle.m_nLeft != -1)
-					{
-						nTop++;
-						arrStack[nTop] = structNodeOrTriangle.m_nLeft;
-					}
-				
-					if (structNodeOrTriangle.m_nRight != -1)
-					{
-						nTop++;
-						arrStack[nTop] = structNodeOrTriangle.m_nRight;
-					}
-				}
-			}
-		}
-	}
-
-	bool Physics::CollisionDetection() 
-	{
-		//cl_int err = 0;
-		//
-		//int32_t nCount = (int32_t)m_listRigidBodies.size();
-		//size_t nLocal = m_nCollisionDetection_Local;
-		//size_t nGlobal = ((nCount + nLocal - 1) / nLocal) * nLocal;
-		//
-		//// calc
-		//err |= clSetKernelArg(m_kernelCollisionDetection, 0, sizeof(cl_mem), &m_clmem_inoutRigidBodies);
-		//err |= clSetKernelArg(m_kernelCollisionDetection, 1, sizeof(int32_t), &nCount);
-		//err |= clSetKernelArg(m_kernelCollisionDetection, 2, sizeof(cl_mem), &m_clmem_inoutBVHObjects);
-		//err |= clSetKernelArg(m_kernelCollisionDetection, 3, sizeof(cl_mem), &m_clmem_inBVHNodeTriangles);
-		//err |= clSetKernelArg(m_kernelCollisionDetection, 4, sizeof(cl_mem), &m_clmem_inBVHNodeTrianglesOffsets);
-		//err |= clSetKernelArg(m_kernelCollisionDetection, 5, sizeof(cl_mem), &m_clmem_inoutHits);
-		//err |= clSetKernelArg(m_kernelCollisionDetection, 6, sizeof(cl_mem), &m_clmem_inoutIsCollisionResponse);
-		//
-		//err |= clEnqueueNDRangeKernel(m_command_queue, m_kernelCollisionDetection, 1, NULL, &nGlobal, &nLocal, 0, NULL, NULL);
-		//clFinish(m_command_queue);
-		//
+		//// DEBUG: EZEK MAJD NEM KELLENEK, CSAK MOST A CPU-NAK
+		////cl_int err = 0;
+		//std::vector<structBVHObject> inoutBVHObjects;
+		//inoutBVHObjects.resize(m_listBVHObjects.size());
+		//err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutBVHObjects, CL_TRUE, 0, sizeof(structBVHObject) * m_listBVHObjects.size(), &(inoutBVHObjects[0]), 0, NULL, NULL);
+		//err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), &(m_listRigidBodies[0]), 0, NULL, NULL);
 		//err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHits) * m_listHits.size(), &(m_listHits[0]), 0, NULL, NULL);
 		//err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutIsCollisionResponse, CL_TRUE, 0, sizeof(int32_t) * m_listIsCollisionResponse.size(), &(m_listIsCollisionResponse[0]), 0, NULL, NULL);
 		//
@@ -2213,184 +1813,138 @@ namespace OpenCLPhysics
 		//	return false;
 		//}
 		//
+		//// hits-ek törlése
+		//for (int32_t i = 0; i < m_listHits.size(); i++)
+		//{
+		//	// 1 - EZ MEGY MAJD AZ OPENCL FUGGVENYBE
+		//	structHits hits = m_listHits[i];
+		//	hits.m_nNumHits = 0;
+		//	m_listHits[i] = hits;
+		//
+		//	m_listIsCollisionResponse[i] = 0;
+		//}
+		//
+		//// ütközés keresés
+		//for (int32_t id1 = 0; id1 < m_listRigidBodies.size(); id1++)
+		//{
+		//	// 2 - EZ MEGY MAJD AZ OPENCL FUGGVENYBE
+		//	structRigidBody structRigidBody1 = m_listRigidBodies.at(id1);
+		//
+		//	// isEnabled == false, akkor nem kell
+		//	if (0 == structRigidBody1.m_nIsEnabled) 
+		//	{
+		//		continue;
+		//	}
+		//
+		//	// ha static, akkor nem kell
+		//	if (structRigidBody1.m_fMass <= 0.0f)
+		//	{
+		//		continue;
+		//	}
+		//
+		//	structHits allHits;
+		//	allHits.m_nNumHits = 0;
+		//	m_listHits[id1] = allHits;
+		//
+		//	// TRANSFORM 1
+		//	glm::vec3 v3Rotate1 = ToVector3(structRigidBody1.m_v3Rotate);
+		//	glm::vec3 v3Position1 = ToVector3(structRigidBody1.m_v3Position);
+		//	glm::mat4 T1 = glm::translate(glm::mat4(1.0f), v3Position1) * glm::eulerAngleXYZ(v3Rotate1.x, v3Rotate1.y, v3Rotate1.z);
+		//
+		//	int nTop = -1;
+		//	int arrStack[64];
+		//
+		//	nTop++;
+		//	arrStack[nTop] = 0;
+		//
+		//	int nOtherId;
+		//	structBVHObject structBVHObject;
+		//
+		//	while (nTop > -1)
+		//	{
+		//		nOtherId = arrStack[nTop];
+		//		nTop--;
+		//
+		//		if (allHits.m_nNumHits >= MAX_HITS)
+		//		{
+		//			continue;
+		//		}
+		//
+		//		structBVHObject = inoutBVHObjects[nOtherId];
+		//
+		//		if (structBVHObject.m_nLeft == -1 && structBVHObject.m_nRight == -1)
+		//		{
+		//			// saját magával nem kell ütközésvizsgálatot csinálni
+		//			int id2 = structBVHObject.m_nRigidBodyId;
+		//
+		//			if (id1 != id2)
+		//			{
+		//				structRigidBody structRigidBody2 = m_listRigidBodies.at(id2);
+		//
+		//				structBBox bboxRigidBody2 = structRigidBody2.m_BBox;
+		//
+		//				if (true == IsCollide(structRigidBody1.m_BBox, bboxRigidBody2))
+		//				{
+		//					// TRANSFORM 2
+		//					glm::vec3 v3Rotate2 = ToVector3(structRigidBody2.m_v3Rotate);
+		//					glm::vec3 v3Position2 = ToVector3(structRigidBody2.m_v3Position);
+		//					glm::mat4 T2 = glm::translate(glm::mat4(1.0f), v3Position2) * glm::eulerAngleXYZ(v3Rotate2.x, v3Rotate2.y, v3Rotate2.z);
+		//
+		//					structHits hits;
+		//					hits.m_nNumHits = 0;
+		//					SearchHits(&hits, structRigidBody1, structRigidBody2, T1, T2, m_listBVHNodeTrianglesOffsets[structRigidBody1.m_nTriMeshId], m_listBVHNodeTrianglesOffsets[structRigidBody2.m_nTriMeshId], &m_listBVHNodeTriangles[0]);
+		//
+		//					for (int i = 0; i < hits.m_nNumHits; i++)
+		//					{
+		//						if (allHits.m_nNumHits >= MAX_HITS)
+		//						{
+		//							continue;
+		//						}
+		//
+		//						allHits.m_hits[allHits.m_nNumHits] = hits.m_hits[i];
+		//
+		//						allHits.m_hits[allHits.m_nNumHits].m_nRigidBodyAId = id1;
+		//						allHits.m_hits[allHits.m_nNumHits].m_nRigidBodyBId = id2;
+		//
+		//						allHits.m_nNumHits++;
+		//					}
+		//
+		//				}
+		//			}
+		//		}
+		//		else
+		//		{
+		//			if (true == IsCollide(structRigidBody1.m_BBox, structBVHObject.m_BBox))
+		//			{
+		//				if (structBVHObject.m_nLeft != -1)
+		//				{
+		//					nTop++;
+		//					arrStack[nTop] = structBVHObject.m_nLeft;
+		//				}
+		//
+		//				if (structBVHObject.m_nRight != -1)
+		//				{
+		//					nTop++;
+		//					arrStack[nTop] = structBVHObject.m_nRight;
+		//				}
+		//			}
+		//		}
+		//
+		//	}
+		//
+		//	m_listHits[id1] = allHits;
+		//
+		//	if (allHits.m_nNumHits == 0) // nincs utkozes
+		//	{
+		//		m_listIsCollisionResponse[id1] = 0;
+		//	}
+		//	else // van utkozes => szettolas
+		//	{
+		//		m_listIsCollisionResponse[id1] = 1;
+		//	}
+		//}
+		//
 		//return true;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-		// DEBUG: EZEK MAJD NEM KELLENEK, CSAK MOST A CPU-NAK
-		cl_int err = 0;
-		std::vector<structBVHObject> inoutBVHObjects;
-		inoutBVHObjects.resize(m_listBVHObjects.size());
-		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutBVHObjects, CL_TRUE, 0, sizeof(structBVHObject) * m_listBVHObjects.size(), &(inoutBVHObjects[0]), 0, NULL, NULL);
-		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), &(m_listRigidBodies[0]), 0, NULL, NULL);
-		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHits) * m_listHits.size(), &(m_listHits[0]), 0, NULL, NULL);
-		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutIsSeparate, CL_TRUE, 0, sizeof(int32_t) * m_listIsSeparate.size(), &(m_listIsSeparate[0]), 0, NULL, NULL);
-		
-		if (err != CL_SUCCESS)
-		{
-			return false;
-		}
-		
-		// hits-ek törlése
-		for (int32_t i = 0; i < m_listHits.size(); i++)
-		{
-			// 1 - EZ MEGY MAJD AZ OPENCL FUGGVENYBE
-			structHits hits = m_listHits[i];
-			hits.m_nNumHits = 0;
-			m_listHits[i] = hits;
-		
-			//m_listIsSeparate[i] = 0;
-		}
-		
-		// ütközés keresés
-		for (int32_t id1 = 0; id1 < m_listRigidBodies.size(); id1++)
-		{
-			// 2 - EZ MEGY MAJD AZ OPENCL FUGGVENYBE
-			structRigidBody structRigidBody1 = m_listRigidBodies.at(id1);
-			structRigidBodyConfig structConfig1 = m_listRigidBodyConfigs.at(id1);
-
-			// isEnabled == false, akkor nem kell
-			if (0 == structConfig1.m_nIsEnabled)
-			{
-				continue;
-			}
-		
-			// ha static, akkor nem kell
-			if (structRigidBody1.m_fMass <= 0.0f)
-			{
-				continue;
-			}
-		
-			structHits allHits;
-			allHits.m_nNumHits = 0;
-			m_listHits[id1] = allHits;
-		
-			// TRANSFORM 1
-			glm::vec3 v3Rotate1 = ToVector3(structRigidBody1.m_v3Rotate);
-			glm::vec3 v3Position1 = ToVector3(structRigidBody1.m_v3Position);
-			glm::mat4 T1 = glm::translate(glm::mat4(1.0f), v3Position1) * glm::eulerAngleXYZ(v3Rotate1.x, v3Rotate1.y, v3Rotate1.z);
-		
-			int nTop = -1;
-			int arrStack[64];
-		
-			nTop++;
-			arrStack[nTop] = 0;
-		
-			int nOtherId;
-			structBVHObject structBVHObject;
-		
-			while (nTop > -1)
-			{
-				nOtherId = arrStack[nTop];
-				nTop--;
-		
-				if (allHits.m_nNumHits >= MAX_HITS)
-				{
-					continue;
-				}
-		
-				structBVHObject = inoutBVHObjects[nOtherId];
-		
-				if (structBVHObject.m_nLeft == -1 && structBVHObject.m_nRight == -1)
-				{
-					// saját magával nem kell ütközésvizsgálatot csinálni
-					int id2 = structBVHObject.m_nRigidBodyId;
-		
-					if (id1 != id2)
-					{
-						structRigidBody structRigidBody2 = m_listRigidBodies.at(id2);
-						structRigidBodyConfig structConfig2 = m_listRigidBodyConfigs.at(id2);
-		
-						structBBox bboxRigidBody2 = structRigidBody2.m_BBox;
-		
-						if (true == IsCollide(structRigidBody1.m_BBox, bboxRigidBody2))
-						{
-							// TRANSFORM 2
-							glm::vec3 v3Rotate2 = ToVector3(structRigidBody2.m_v3Rotate);
-							glm::vec3 v3Position2 = ToVector3(structRigidBody2.m_v3Position);
-							glm::mat4 T2 = glm::translate(glm::mat4(1.0f), v3Position2) * glm::eulerAngleXYZ(v3Rotate2.x, v3Rotate2.y, v3Rotate2.z);
-		
-							structHits hits;
-							hits.m_nNumHits = 0;
-
-							/*if (structConfig1.m_nIsConvex == 0 && structConfig2.m_nIsConvex == 0) // concave vs. concave
-							{
-								SearchHits_ConcaveConcave(&hits, structRigidBody1, structRigidBody2, T1, T2, m_listBVHNodeTrianglesOffsets[structRigidBody1.m_nTriMeshId], m_listBVHNodeTrianglesOffsets[structRigidBody2.m_nTriMeshId], &m_listBVHNodeTriangles[0]);
-							}
-							else*/
-							if (structConfig1.m_nIsConvex == 1 && structConfig2.m_nIsConvex == 1) // convex vs. convex
-							{
-								SearchHits_ConvexConvex(&hits, structRigidBody1, structRigidBody2, T1, T2, m_listBVHNodeTrianglesOffsets[structRigidBody1.m_nTriMeshId], m_listBVHNodeTrianglesOffsets[structRigidBody2.m_nTriMeshId], &m_listBVHNodeTriangles[0]);
-							}
-							else if (structConfig1.m_nIsConvex == 1 && structConfig2.m_nIsConvex == 0) // convex vs. concave
-							{
-								;
-							}
-		
-							for (int i = 0; i < hits.m_nNumHits; i++)
-							{
-								if (allHits.m_nNumHits >= MAX_HITS)
-								{
-									continue;
-								}
-		
-								allHits.m_hits[allHits.m_nNumHits] = hits.m_hits[i];
-		
-								allHits.m_hits[allHits.m_nNumHits].m_nRigidBodyAId = id1;
-								allHits.m_hits[allHits.m_nNumHits].m_nRigidBodyBId = id2;
-		
-								allHits.m_nNumHits++;
-							}
-		
-						}
-					}
-				}
-				else
-				{
-					if (true == IsCollide(structRigidBody1.m_BBox, structBVHObject.m_BBox))
-					{
-						if (structBVHObject.m_nLeft != -1)
-						{
-							nTop++;
-							arrStack[nTop] = structBVHObject.m_nLeft;
-						}
-		
-						if (structBVHObject.m_nRight != -1)
-						{
-							nTop++;
-							arrStack[nTop] = structBVHObject.m_nRight;
-						}
-					}
-				}
-		
-			}
-		
-			m_listHits[id1] = allHits;
-
-			if (allHits.m_nNumHits == 0) // nincs utkozes
-			{
-				m_listIsSeparate[id1] = 0;
-			}
-			else // van utkozes => szettolas
-			{
-				m_listIsSeparate[id1] = 1;
-				//m_listHits[id1] = allHits;
-			}
-		}
-		
-		return true;
 	}
 
 	std::vector < structHits >* Physics::GetHits() 
@@ -2433,10 +1987,10 @@ namespace OpenCLPhysics
 			// EZ MEGY AZ OPENCL FUGGVENYBE
 			structHits hits = m_listHits[id];
 			
-			//if (0 == hits.m_nNumHits) 
-			//{
-			//	continue;
-			//}
+			if (0 == hits.m_nNumHits) 
+			{
+				continue;
+			}
 
 			structRigidBody rigidBodyA = m_listRigidBodies[id];
 
@@ -2445,82 +1999,43 @@ namespace OpenCLPhysics
 				continue;
 			}
 
-			//if (m_listIsSeparate[id] == 0)
-			//{
-				glm::vec3 v3LinearVelocity = ToVector3(rigidBodyA.m_v3LinearVelocity);
-				glm::vec3 v3AngularVelocity = ToVector3(rigidBodyA.m_v3AngularVelocity);
+			glm::vec3 v3LinearVelocity = ToVector3(rigidBodyA.m_v3LinearVelocity);
+			glm::vec3 v3AngularVelocity = ToVector3(rigidBodyA.m_v3AngularVelocity);
 
-				for (int i = 0; i < hits.m_nNumHits; i++)
+			for (int i = 0; i < hits.m_nNumHits; i++)
+			{
+				structHit hit = hits.m_hits[i];
+
+				// calc contact velocity
+				glm::vec3 rA = ToVector3(hit.m_v3HitPointInWorld) - ToVector3(m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position);
+				glm::vec3 v3RelVelocity = GetPointVelocity(rigidBodyA, rA);
+				float fProjVelocity = glm::dot(v3RelVelocity, ToVector3(hit.m_v3Normal));
+
+				if (fProjVelocity >= 0.0f)
 				{
-					structHit hit = hits.m_hits[i];
-
-					// calc contact velocity
-					glm::vec3 rA = ToVector3(hit.m_v3HitPointInWorld) - ToVector3(m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position);
-					glm::vec3 v3RelVelocity = GetPointVelocity(rigidBodyA, rA);
-					float fProjVelocity = glm::dot(v3RelVelocity, ToVector3(hit.m_v3Normal));
-
-					if (fProjVelocity >= 0.0f)
-					{
-						continue;
-					}
-
-					// calc inertia
-					float fNominator = -(1.0f + rigidBodyA.m_fRestitution) * fProjVelocity;
-					float fDenominator = glm::dot((ToVector3(hit.m_v3Normal) / rigidBodyA.m_fMass) + glm::cross(glm::cross(rA, ToVector3(hit.m_v3Normal)), rA) / rigidBodyA.m_fMass, ToVector3(hit.m_v3Normal));
-
-					float J = fNominator / fDenominator;
-					J /= (float)hits.m_nNumHits;
-
-					// apply velocity
-					v3LinearVelocity += (J * ToVector3(hit.m_v3Normal)) / rigidBodyA.m_fMass;
-					v3AngularVelocity += glm::cross(rA, J * ToVector3(hit.m_v3Normal)) / rigidBodyA.m_fMass;
+					continue;
 				}
 
+				// calc inertia
+				float fNominator = -(1.0f + rigidBodyA.m_fRestitution) * fProjVelocity;
+				float fDenominator = glm::dot((ToVector3(hit.m_v3Normal) / rigidBodyA.m_fMass) + glm::cross(glm::cross(rA, ToVector3(hit.m_v3Normal)), rA) / rigidBodyA.m_fMass, ToVector3(hit.m_v3Normal));
 				
+				float J = fNominator / fDenominator;
+				J /= (float)hits.m_nNumHits;
 
-				//hits.m_nNumHits = 0;
-				//m_listHits[id] = hits;
-			//}
-			//else
-			//{
-				//// separate
-				//glm::vec3 v3Position = ToVector3(rigidBodyA.m_v3Position);
-				//for (int i = 0; i < hits.m_nNumHits; i++)
-				//{
-				//	structHit hit = hits.m_hits[i];
-				//
-				//	// calc contact velocity
-				//	glm::vec3 rA = ToVector3(hit.m_v3HitPointInWorld) - ToVector3(m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position);
-				//	glm::vec3 v3RelVelocity = GetPointVelocity(rigidBodyA, rA);
-				//	float fProjVelocity = glm::dot(glm::normalize(v3RelVelocity), ToVector3(hit.m_v3Normal));
-				//
-				//	fProjVelocity = -fProjVelocity;
-				//	if (fProjVelocity <= 0.0f)
-				//	{
-				//		continue;
-				//	}
-				//
-				//	structRigidBody rigidBodyB = m_listRigidBodies[hit.m_nRigidBodyBId];
-				//	float fVelocity = 0.1f; // dynamic
-				//	if (rigidBodyB.m_fMass <= 0.0f) // static
-				//	{
-				//		fVelocity = 0.2f;
-				//	}
-				//	//fVelocity /= (float)hits.m_nNumHits;
-				//	v3Position += fProjVelocity * fVelocity * ToVector3(hit.m_v3Normal) * dt;
-				//}
+				// apply velocity
+				v3LinearVelocity += (J * ToVector3(hit.m_v3Normal)) / rigidBodyA.m_fMass;
+				v3AngularVelocity += glm::cross(rA, J * ToVector3(hit.m_v3Normal)) / rigidBodyA.m_fMass;
+			}
 
-				m_listRigidBodies[id].m_v3LinearVelocity = ToVector3(v3LinearVelocity);
-				m_listRigidBodies[id].m_v3AngularVelocity = ToVector3(v3AngularVelocity);
-				//m_listRigidBodies[id].m_v3Position = ToVector3(v3Position);
-			//}
+			m_listRigidBodies[id].m_v3LinearVelocity = ToVector3(v3LinearVelocity);
+			m_listRigidBodies[id].m_v3AngularVelocity = ToVector3(v3AngularVelocity);
 		}
 		
 		// DEBUG EZ MAJD NEM KELL
 		cl_int err = 0;
 		err |= clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), m_listRigidBodies.data(), 0, NULL, NULL);
 		err |= clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHits) * m_listHits.size(), m_listHits.data(), 0, NULL, NULL);
-		err |= clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutIsSeparate, CL_TRUE, 0, sizeof(int32_t) * m_listIsSeparate.size(), m_listIsSeparate.data(), 0, NULL, NULL);
 		if (err != CL_SUCCESS) 
 		{ 
 			return; 

@@ -105,7 +105,7 @@ bool MainWindow::Init()
     // 2/2 - physics
     Model physicsmodel;
     physicsmodel.Load("Scene", "Physics.obj", glm::mat4(1.0f), false);
-    static_id = m_physics.CreateTriMesh(physicsmodel.GetAllVertices(), TriMeshType::Convex);
+    static_id = m_physics.CreateTriMesh(physicsmodel.GetAllVertices());
     m_physics.SetMass(static_id, 0.0f); // static
 
     // dynamic
@@ -123,17 +123,17 @@ bool MainWindow::Init()
 
     // 2/2 - physics
     int from_dynamic_id = -1;
-    for (int x = 0; x < 1; x++)
+    for (int x = -5; x < 5; x++)
     {
-        //for (int z = -5; z < 5; z++)
+        for (int z = -5; z < 5; z++)
         {
-            //for (int y = 0; y < (1/*100db*/ * 10/*1000db*/); y++)
-            for (int y = 0; y < 1; y++)
+            for (int y = 0; y < (1/*100db*/ * 10/*1000db*/); y++)
+            //for (int y = 0; y < 1; y++)
             {
                 int dynamic_id = -1;
                 if (-1 == from_dynamic_id)
                 {
-                    from_dynamic_id = m_physics.CreateTriMesh(m_dynamicmodel.GetAllVertices(), TriMeshType::Convex);
+                    from_dynamic_id = m_physics.CreateTriMesh(m_dynamicmodel.GetAllVertices());
                     dynamic_id = from_dynamic_id;
                 }
                 else 
@@ -142,8 +142,8 @@ bool MainWindow::Init()
                 }
 
                 float fScale = 1.0f;
-                //m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 10 + (y * fScale), z * fScale));
-                m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 2.0f + (y * fScale), 0));
+                m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 10 + (y * fScale), z * fScale));
+                //m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 1.0f + (y * fScale), 12));
                 m_physics.SetEulerRotate(dynamic_id, glm::vec3(0.0f, 0.0f, 0.0f));
                 m_physics.SetMass(dynamic_id, 85.0f); // dynamic
                 m_physics.SetLinearVelocity(dynamic_id, glm::vec3(0.0f, 0.0f, 0.0f));
@@ -162,7 +162,7 @@ bool MainWindow::Init()
     m_physics.SetGravity(glm::vec3(0, -0.1f, 0));
 
     // Avatar
-    m_Camera.Init(glm::vec3(0, 2, 7.5f), glm::vec3(0, 0, 0));
+    m_Camera.Init(glm::vec3(15, 3, 15), glm::vec3(0, 0, 0));
 
     showMaximized();
     QApplication::setOverrideCursor(Qt::BlankCursor);
@@ -295,7 +295,7 @@ void MainWindow::TimerTick()
     }
     m_physics.SetEulerRotate(nId, v3Rotate);
 
-    m_physics.Update(dt, 5);
+    m_physics.Update(dt, 1);
 
     int nWidth = ui.glWidget->width();
     int nHeight = ui.glWidget->height();
@@ -457,73 +457,73 @@ void MainWindow::TimerTick()
     mWorld = glm::mat4(1.0f);
     glLoadMatrixf(glm::value_ptr(mCameraView * mWorld));
     
-    // Draw BBOXs
-    {
-        glm::vec3 v3Min = m_physics.GetBBoxMin(static_id);
-        glm::vec3 v3Max = m_physics.GetBBoxMax(static_id);
-    
-        glPointSize(20.0f);
-    
-        glBegin(GL_POINTS);
-        {
-            glColor3f(1.0f, 0.0f, 0.0f);
-            glVertex3f(v3Min.x, v3Min.y, v3Min.z);
-            glVertex3f(v3Max.x, v3Max.y, v3Max.z);
-            glColor3f(1.0f, 1.0f, 1.0f);
-        }
-        glEnd();
-    }
-    
-    for (int i = 0; i < m_listDynamicIds.size(); i++)
-    {
-        int dynamic_id = m_listDynamicIds.at(i);
-    
-        glm::vec3 v3Min = m_physics.GetBBoxMin(dynamic_id);
-        glm::vec3 v3Max = m_physics.GetBBoxMax(dynamic_id);
-    
-        glPointSize(20.0f);
-    
-        glBegin(GL_POINTS);
-        {
-            glColor3f(1.0f, 1.0f, 0.0f);
-            glVertex3f(v3Min.x, v3Min.y, v3Min.z);
-            glVertex3f(v3Max.x, v3Max.y, v3Max.z);
-            glColor3f(1.0f, 1.0f, 1.0f);
-        }
-        glEnd();
-    }
-    
-    // Draw hits
-    std::vector < structHits > *pListHits = m_physics.GetHits();
-    for (int32_t i = 0; i < pListHits->size(); i++)
-    {
-        structHits hits = pListHits->at(i);
-    
-        for (int32_t j = 0; j < hits.m_nNumHits; j++) 
-        {
-            structVector3 p1 = hits.m_hits[j].m_v3HitPointInWorld;
-            structVector3 p2 = hits.m_hits[j].m_v3Normal;
-    
-            glPointSize(20.0f);
-    
-            glBegin(GL_POINTS);
-            {
-                glColor3f(1.0f, 0.0f, 0.0f);
-                glVertex3f(p1.x, p1.y, p1.z);
-                glColor3f(1.0f, 1.0f, 1.0f);
-            }
-            glEnd();
-    
-            glBegin(GL_LINES);
-            {
-                glColor3f(0.0f, 1.0f, 0.0f);
-                glVertex3f(p1.x, p1.y, p1.z);
-                glVertex3f(p1.x + p2.x, p1.y + p2.y, p1.z + p2.z);
-                glColor3f(1.0f, 1.0f, 1.0f);
-            }
-            glEnd();
-        }
-    }
+    //// Draw BBOXs
+    //{
+    //    glm::vec3 v3Min = m_physics.GetBBoxMin(static_id);
+    //    glm::vec3 v3Max = m_physics.GetBBoxMax(static_id);
+    //
+    //    glPointSize(20.0f);
+    //
+    //    glBegin(GL_POINTS);
+    //    {
+    //        glColor3f(1.0f, 0.0f, 0.0f);
+    //        glVertex3f(v3Min.x, v3Min.y, v3Min.z);
+    //        glVertex3f(v3Max.x, v3Max.y, v3Max.z);
+    //        glColor3f(1.0f, 1.0f, 1.0f);
+    //    }
+    //    glEnd();
+    //}
+    //
+    //for (int i = 0; i < m_listDynamicIds.size(); i++)
+    //{
+    //    int dynamic_id = m_listDynamicIds.at(i);
+    //
+    //    glm::vec3 v3Min = m_physics.GetBBoxMin(dynamic_id);
+    //    glm::vec3 v3Max = m_physics.GetBBoxMax(dynamic_id);
+    //
+    //    glPointSize(20.0f);
+    //
+    //    glBegin(GL_POINTS);
+    //    {
+    //        glColor3f(1.0f, 1.0f, 0.0f);
+    //        glVertex3f(v3Min.x, v3Min.y, v3Min.z);
+    //        glVertex3f(v3Max.x, v3Max.y, v3Max.z);
+    //        glColor3f(1.0f, 1.0f, 1.0f);
+    //    }
+    //    glEnd();
+    //}
+    //
+    //// Draw hits
+    //std::vector < structHits > *pListHits = m_physics.GetHits();
+    //for (int32_t i = 0; i < pListHits->size(); i++)
+    //{
+    //    structHits hits = pListHits->at(i);
+    //
+    //    for (int32_t j = 0; j < hits.m_nNumHits; j++) 
+    //    {
+    //        structVector3 p1 = hits.m_hits[j].m_v3HitPointInWorld;
+    //        structVector3 p2 = hits.m_hits[j].m_v3Normal;
+    //
+    //        glPointSize(20.0f);
+    //
+    //        glBegin(GL_POINTS);
+    //        {
+    //            glColor3f(1.0f, 0.0f, 0.0f);
+    //            glVertex3f(p1.x, p1.y, p1.z);
+    //            glColor3f(1.0f, 1.0f, 1.0f);
+    //        }
+    //        glEnd();
+    //
+    //        glBegin(GL_LINES);
+    //        {
+    //            glColor3f(0.0f, 1.0f, 0.0f);
+    //            glVertex3f(p1.x, p1.y, p1.z);
+    //            glVertex3f(p1.x + p2.x, p1.y + p2.y, p1.z + p2.z);
+    //            glColor3f(1.0f, 1.0f, 1.0f);
+    //        }
+    //        glEnd();
+    //    }
+    //}
     
     m_SkyBox.Draw(v3CameraPos, 5000.0f);
     
