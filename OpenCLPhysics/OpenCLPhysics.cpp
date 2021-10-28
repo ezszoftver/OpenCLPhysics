@@ -697,6 +697,8 @@ namespace OpenCLPhysics
 		BVHNodeTriangle* pRoot = new BVHNodeTriangle(0);
 		pTheTriMesh->m_pListBVHNodeTriangles->push_back(pRoot);
 
+		const int nMaxLevel = 20;
+		int nLevel = 1;
 		// triangles to bboxs
 		while (listTriangles.size() > 0)
 		{
@@ -759,15 +761,39 @@ namespace OpenCLPhysics
 			// reset
 			pIN = pOUT;
 			pOUT = new std::vector< BVHNodeTriangle* >();
+
+			nLevel++;
 		}
 		while (pIN->size() > 1);
 
-		// root
-		pRoot->m_pLeft = pIN->at(0);
-		pRoot->m_pBBox = BBox::Create(pRoot->m_pLeft->m_pBBox);
-		pIN->erase(pIN->begin() + 0);
+		// resize Tree to MAX_LEVEL
+		bool bFirst = true;
+		for (int32_t i = nLevel; i < nMaxLevel; i++)
+		{
+			BVHNodeTriangle* pNode;
+			int32_t nId = (int32_t)pTheTriMesh->m_pListBVHNodeTriangles->size();
+			pNode = new BVHNodeTriangle(nId);
 
-		// add
+			if (true == bFirst) 
+			{
+				pNode->m_pLeft = pIN->at(0);
+				pNode->m_pBBox = BBox::Create(pNode->m_pLeft->m_pBBox);
+				pIN->erase(pIN->begin() + 0);
+
+				bFirst = false;
+			}
+			else 
+			{
+				pNode->m_pLeft = pTheTriMesh->m_pListBVHNodeTriangles->back();
+				pNode->m_pBBox = BBox::Create(pNode->m_pLeft->m_pBBox);
+			}
+
+			pTheTriMesh->m_pListBVHNodeTriangles->push_back(pNode);
+		}
+
+		// add root
+		pRoot->m_pLeft = pTheTriMesh->m_pListBVHNodeTriangles->back();
+		pRoot->m_pBBox = BBox::Create(pRoot->m_pLeft->m_pBBox);
 		pTheTriMesh->m_pListBVHNodeTriangles->at(0) = pRoot;
 
 		// create structBVHTriangle array
