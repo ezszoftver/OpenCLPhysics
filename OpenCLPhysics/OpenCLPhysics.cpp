@@ -1992,44 +1992,90 @@ namespace OpenCLPhysics
 				continue;
 			}
 
-			structRigidBody rigidBodyA = m_listRigidBodies[id];
-
-			if (rigidBodyA.m_fMass <= 0.0f) 
-			{
-				continue;
-			}
-
-			glm::vec3 v3LinearVelocity = ToVector3(rigidBodyA.m_v3LinearVelocity);
-			glm::vec3 v3AngularVelocity = ToVector3(rigidBodyA.m_v3AngularVelocity);
-
 			for (int i = 0; i < hits.m_nNumHits; i++)
 			{
 				structHit hit = hits.m_hits[i];
 
-				// calc contact velocity
-				glm::vec3 rA = ToVector3(hit.m_v3HitPointInWorld) - ToVector3(m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position);
-				glm::vec3 v3RelVelocity = GetPointVelocity(rigidBodyA, rA);
-				float fProjVelocity = glm::dot(v3RelVelocity, ToVector3(hit.m_v3Normal));
+				structRigidBody rigidBodyA = m_listRigidBodies[id];
+				glm::vec3 v3LinearVelocityA = ToVector3(rigidBodyA.m_v3LinearVelocity);
+				glm::vec3 v3AngularVelocityA = ToVector3(rigidBodyA.m_v3AngularVelocity);
 
-				if (fProjVelocity >= 0.0f)
+				structRigidBody rigidBodyB = m_listRigidBodies[hit.m_nRigidBodyBId];
+				glm::vec3 v3LinearVelocityB = ToVector3(rigidBodyB.m_v3LinearVelocity);
+				glm::vec3 v3AngularVelocityB = ToVector3(rigidBodyB.m_v3AngularVelocity);
+
+				if (rigidBodyB.m_fMass <= 0.0f)
 				{
-					continue;
+					// calc contact velocity
+					glm::vec3 rA = ToVector3(hit.m_v3HitPointInWorld) - ToVector3(m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position);
+					glm::vec3 v3RelVelocity = GetPointVelocity(rigidBodyA, rA);
+					float fProjVelocity = glm::dot(v3RelVelocity, ToVector3(hit.m_v3Normal));
+
+					if (fProjVelocity >= 0.0f)
+					{
+						continue;
+					}
+
+					// calc inertia
+					float fNominator = -(1.0f + rigidBodyA.m_fRestitution) * fProjVelocity;
+					glm::vec3 v3Denom = (ToVector3(hit.m_v3Normal) / rigidBodyA.m_fMass) + glm::cross(glm::cross(rA, ToVector3(hit.m_v3Normal)), rA) / rigidBodyA.m_fMass;
+					float fDenominator = glm::dot(v3Denom, ToVector3(hit.m_v3Normal));
+
+					float J = fNominator / fDenominator;
+					J /= (float)hits.m_nNumHits;
+
+					// apply velocity
+					v3LinearVelocityA += (J * ToVector3(hit.m_v3Normal)) / rigidBodyA.m_fMass;
+					v3AngularVelocityA += glm::cross(rA, J * ToVector3(hit.m_v3Normal)) / rigidBodyA.m_fMass;
+
+					m_listRigidBodies[id].m_v3LinearVelocity = ToVector3(v3LinearVelocityA);
+					m_listRigidBodies[id].m_v3AngularVelocity = ToVector3(v3AngularVelocityA);
+				}
+				else 
+				{
+					// calc contact velocity
+					glm::vec3 rA = ToVector3(hit.m_v3HitPointInWorld) - ToVector3(m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position);
+					glm::vec3 rB = ToVector3(hit.m_v3HitPointInWorld) - ToVector3(m_listRigidBodies[hit.m_nRigidBodyBId].m_v3Position);
+					glm::vec3 v3ARelVelocity = GetPointVelocity(rigidBodyA, rA);
+					glm::vec3 v3BRelVelocity = GetPointVelocity(rigidBodyB, rB);
+					glm::vec3 v3RelVelocity = v3ARelVelocity - v3BRelVelocity;
+					float fProjVelocity = glm::dot(v3RelVelocity, ToVector3(hit.m_v3Normal));
+
+					if (fProjVelocity >= 0.0f)
+					{
+						continue;
+					}
+
+					// calc inertia
+					float fNominator = -(1.0f + rigidBodyA.m_fRestitution) * fProjVelocity;
+
+					glm::vec3 v3Denom1 = (ToVector3(hit.m_v3Normal) / rigidBodyA.m_fMass) + glm::cross(glm::cross(rA, ToVector3(hit.m_v3Normal)), rA) / rigidBodyA.m_fMass;
+					glm::vec3 v3Denom2 = (ToVector3(hit.m_v3Normal) / rigidBodyB.m_fMass) + glm::cross(glm::cross(rB, ToVector3(hit.m_v3Normal)), rB) / rigidBodyB.m_fMass;
+					float fDenominator = glm::dot(v3Denom1 + v3Denom2, ToVector3(hit.m_v3Normal));
+
+					float J = fNominator / fDenominator;
+					J /= (float)hits.m_nNumHits;
+
+					// apply velocity
+					v3LinearVelocityA += (J * ToVector3(hit.m_v3Normal)) / rigidBodyA.m_fMass;
+					v3AngularVelocityA += glm::cross(rA, J * ToVector3(hit.m_v3Normal)) / rigidBodyA.m_fMass;
+
+					v3LinearVelocityB -= (J * ToVector3(hit.m_v3Normal)) / rigidBodyB.m_fMass;
+					v3AngularVelocityB -= glm::cross(rB, J * ToVector3(hit.m_v3Normal)) / rigidBodyB.m_fMass;
+
+
+
+					m_listRigidBodies[id].m_v3LinearVelocity = ToVector3(v3LinearVelocityA);
+					m_listRigidBodies[id].m_v3AngularVelocity = ToVector3(v3AngularVelocityA);
+
+					m_listRigidBodies[hit.m_nRigidBodyBId].m_v3LinearVelocity = ToVector3(v3LinearVelocityB);
+					m_listRigidBodies[hit.m_nRigidBodyBId].m_v3AngularVelocity = ToVector3(v3AngularVelocityB);
 				}
 
-				// calc inertia
-				float fNominator = -(1.0f + rigidBodyA.m_fRestitution) * fProjVelocity;
-				float fDenominator = glm::dot((ToVector3(hit.m_v3Normal) / rigidBodyA.m_fMass) + glm::cross(glm::cross(rA, ToVector3(hit.m_v3Normal)), rA) / rigidBodyA.m_fMass, ToVector3(hit.m_v3Normal));
 				
-				float J = fNominator / fDenominator;
-				J /= (float)hits.m_nNumHits;
-
-				// apply velocity
-				v3LinearVelocity += (J * ToVector3(hit.m_v3Normal)) / rigidBodyA.m_fMass;
-				v3AngularVelocity += glm::cross(rA, J * ToVector3(hit.m_v3Normal)) / rigidBodyA.m_fMass;
 			}
 
-			m_listRigidBodies[id].m_v3LinearVelocity = ToVector3(v3LinearVelocity);
-			m_listRigidBodies[id].m_v3AngularVelocity = ToVector3(v3AngularVelocity);
+			
 		}
 		
 		// DEBUG EZ MAJD NEM KELL

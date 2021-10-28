@@ -760,7 +760,7 @@ float angle(Vector3 v3A, Vector3 v3B)
 
 bool IsEqual(Hit hit1, Hit hit2)
 {
-	if ( distance(Vector3ToFloat3(hit1.v3HitPointInWorld), Vector3ToFloat3(hit2.v3HitPointInWorld)) < 0.001f )
+	if ( distance(Vector3ToFloat3(hit1.v3HitPointInWorld), Vector3ToFloat3(hit2.v3HitPointInWorld)) < 0.05f )
 	{
 		if (angle(hit1.v3Normal, hit2.v3Normal) < (3.141592f / 180.0f)) // 1 degree 
 		{
@@ -1019,10 +1019,10 @@ __kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCoun
 		{
 			// no collision detection with own
 			int id2 = structBVHObject.nRigidBodyId;
+			RigidBody structRigidBody2 = inoutRigidBodies[id2];
 			
-			if (id1 != id2)
+			if ( (id1 < id2) || (structRigidBody2.fMass <= 0.0f) )
 			{
-				RigidBody structRigidBody2 = inoutRigidBodies[id2];
 				BBox bboxRigidBody2 = structRigidBody2.bbox;
 
 				if (true == IsCollide(structRigidBody1.bbox, bboxRigidBody2)) 
