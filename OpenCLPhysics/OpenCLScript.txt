@@ -924,48 +924,92 @@ void SearchHits2(Hits *pHits, RigidBody structRigidBody1/*only dynamic*/, RigidB
 void SearchHits(Hits *pHits, RigidBody structRigidBody1/*only dynamic*/, RigidBody structRigidBody2/*static or dynamic*/, Matrix4 T1, Matrix4 T2, BVHNodeTriangleOffset offset1, BVHNodeTriangleOffset offset2, __global BVHNodeTriangle* pListBVHNodeTriangles)
 {
 	int nTop = -1;
-	int arrStack[64];
+	BVHNodeTriangle arrStack[128];
+
+	BVHNodeTriangle node;
+	node.nLeft = offset1.nOffset;
+	node.nRight = offset2.nOffset;
 
 	nTop++;
-	arrStack[nTop] = offset2.nOffset;
+	arrStack[nTop] = node;
 
-	int nId2;
-	BVHNodeTriangle structNodeOrTriangle;
-
-	while (nTop > -1)
+	while (nTop > -1) 
 	{
-		nId2 = arrStack[nTop];
+		node = arrStack[nTop];
 		nTop--;
 
-		structNodeOrTriangle = pListBVHNodeTriangles[nId2];
-		structNodeOrTriangle.bbox = TransformBBox(T2, structNodeOrTriangle.bbox);
+		BVHNodeTriangle node1 = pListBVHNodeTriangles[node.nLeft];
+		BVHNodeTriangle node2 = pListBVHNodeTriangles[node.nRight];
 
-		if (true == IsLeaf(structNodeOrTriangle))
+		BBox bbox1 = TransformBBox(T1, node1.bbox);
+		BBox bbox2 = TransformBBox(T2, node2.bbox);
+
+		if (false == IsCollide(bbox1, bbox2))
 		{
-			if (true == IsCollide(structRigidBody1.bbox, structNodeOrTriangle.bbox)) 
+			continue;
+		}
+
+		if (true == IsLeaf(node1) && true == IsLeaf(node2)) 
+		{
+			// tri1-tri2
+			Triangle triangle1 = node1.triangle;
+			float3 tri1_a = Vector3ToFloat3(Mult_Mat4Vector3(T1, triangle1.v3A, 1.0f));
+			float3 tri1_b = Vector3ToFloat3(Mult_Mat4Vector3(T1, triangle1.v3B, 1.0f));
+			float3 tri1_c = Vector3ToFloat3(Mult_Mat4Vector3(T1, triangle1.v3C, 1.0f));
+			float3 tri1_n = Vector3ToFloat3(Mult_Mat4Vector3(T1, triangle1.v3N, 0.0f));
+
+			Triangle triangle2 = node2.triangle;
+			float3 tri2_a = Vector3ToFloat3(Mult_Mat4Vector3(T2, triangle2.v3A, 1.0f));
+			float3 tri2_b = Vector3ToFloat3(Mult_Mat4Vector3(T2, triangle2.v3B, 1.0f));
+			float3 tri2_c = Vector3ToFloat3(Mult_Mat4Vector3(T2, triangle2.v3C, 1.0f));
+			float3 tri2_n = Vector3ToFloat3(Mult_Mat4Vector3(T2, triangle2.v3N, 0.0f));
+
+			// CollisionDetection tri1, tri2
+			Intersect_TriangleTriangle(pHits, tri1_a, tri1_b, tri1_c, tri1_n, tri2_a, tri2_b, tri2_c, tri2_n);
+
+			if (pHits->nNumHits >= #MAX_HITS_OBJECT_OBJECT#)
 			{
-				SearchHits2(pHits, structRigidBody1, structRigidBody2, nId2, T1, T2, offset1, offset2, pListBVHNodeTriangles);
-	
-				if (pHits->nNumHits >= #MAX_HITS_OBJECT_OBJECT#)
-				{
-					return;
-				}			
+				return;
 			}
 		}
 		else
 		{
-			if (true == IsCollide(structRigidBody1.bbox, structNodeOrTriangle.bbox))
+			if (-1 != node1.nLeft)
 			{
-				if (structNodeOrTriangle.nLeft != -1)
+				if (-1 != node2.nLeft)
 				{
+					BVHNodeTriangle node;
+					node.nLeft = node1.nLeft;
+					node.nRight = node2.nLeft;
 					nTop++;
-					arrStack[nTop] = structNodeOrTriangle.nLeft;
+					arrStack[nTop] = node;
 				}
-
-				if (structNodeOrTriangle.nRight != -1)
+				if (-1 != node2.nRight)
 				{
+					BVHNodeTriangle node;
+					node.nLeft = node1.nLeft;
+					node.nRight = node2.nRight;
 					nTop++;
-					arrStack[nTop] = structNodeOrTriangle.nRight;
+					arrStack[nTop] = node;
+				}
+			}
+			if (-1 != node1.nRight)
+			{
+				if (-1 != node2.nLeft)
+				{
+					BVHNodeTriangle node;
+					node.nLeft = node1.nRight;
+					node.nRight = node2.nLeft;
+					nTop++;
+					arrStack[nTop] = node;
+				}
+				if (-1 != node2.nRight)
+				{
+					BVHNodeTriangle node;
+					node.nLeft = node1.nRight;
+					node.nRight = node2.nRight;
+					nTop++;
+					arrStack[nTop] = node;
 				}
 			}
 		}
