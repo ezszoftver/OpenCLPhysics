@@ -784,11 +784,19 @@ bool IsContains(Hits *pHits, Hit hit)
 	return false;
 }
 
-void Intersect_LineTriangle(Hits *pHits, bool isInvertNormal, float3 f3LineA, float3 f3LineB, float3 f3TriA, float3 f3TriB, float3 f3TriC, float3 f3TriN)
+bool Intersect_LineTriangle(Hits *pHits, bool isInvertNormal, float3 f3LineA, float3 f3LineB, float3 f3TriA, float3 f3TriB, float3 f3TriC, float3 f3TriN)
 {
 	if (pHits->nNumHits >= #MAX_HITS_OBJECT_OBJECT#)
 	{
-		return;
+		return false;
+	}
+
+	// point plane distance
+	float t1 = dot(f3LineA - f3TriA, f3TriN);
+	float t2 = dot(f3LineB - f3TriA, f3TriN);
+	if ( (t1 > 0.0f && t2 > 0.0f) || (t1 < 0.0f && t2 < 0.0f) )
+	{
+		return false;
 	}
 
 	float3 f3Dir = normalize(f3LineB - f3LineA);
@@ -796,14 +804,14 @@ void Intersect_LineTriangle(Hits *pHits, bool isInvertNormal, float3 f3LineA, fl
 	float cost = dot(f3Dir, f3TriN);
 	if (fabs(cost) < 0.001f)
 	{
-		return;
+		return false;
 	}
 		
 	float t = dot(f3TriA - f3LineA, f3TriN) / cost;
 	float fMaxLenght = distance(f3LineA, f3LineB);
 	if (t < 0.0f || t > fMaxLenght)
 	{
-		return;
+		return false;
 	}
 		
 	float3 f3P = f3LineA + (f3Dir * t);
@@ -839,86 +847,22 @@ void Intersect_LineTriangle(Hits *pHits, bool isInvertNormal, float3 f3LineA, fl
 			pHits->hits[pHits->nNumHits] = hit;
 			pHits->nNumHits++;
 		}
+
+		return true;
 	}
+
+	return false;
 }
 
 void Intersect_TriangleTriangle(Hits *pHits, float3 tri1_a, float3 tri1_b, float3 tri1_c, float3 tri1_n, float3 tri2_a, float3 tri2_b, float3 tri2_c, float3 tri2_n)
 {
-	Intersect_LineTriangle(pHits, false, tri1_a, tri1_b, tri2_a, tri2_b, tri2_c, tri2_n);
-	Intersect_LineTriangle(pHits, false, tri1_b, tri1_c, tri2_a, tri2_b, tri2_c, tri2_n);
-	Intersect_LineTriangle(pHits, false, tri1_c, tri1_a, tri2_a, tri2_b, tri2_c, tri2_n);
+	if (true == Intersect_LineTriangle(pHits, false, tri1_a, tri1_b, tri2_a, tri2_b, tri2_c, tri2_n)) { return; }
+	if (true == Intersect_LineTriangle(pHits, false, tri1_b, tri1_c, tri2_a, tri2_b, tri2_c, tri2_n)) { return; }
+	if (true == Intersect_LineTriangle(pHits, false, tri1_c, tri1_a, tri2_a, tri2_b, tri2_c, tri2_n)) { return; }
 	
-	Intersect_LineTriangle(pHits, true, tri2_a, tri2_b, tri1_a, tri1_b, tri1_c, tri1_n);
-	Intersect_LineTriangle(pHits, true, tri2_b, tri2_c, tri1_a, tri1_b, tri1_c, tri1_n);
-	Intersect_LineTriangle(pHits, true, tri2_c, tri2_a, tri1_a, tri1_b, tri1_c, tri1_n);
-}
-
-void SearchHits2(Hits *pHits, RigidBody structRigidBody1/*only dynamic*/, RigidBody structRigidBody2/*static or dynamic*/, int nId2, Matrix4 T1, Matrix4 T2, BVHNodeTriangleOffset offset1, BVHNodeTriangleOffset offset2, __global BVHNodeTriangle* pListBVHNodeTriangles)
-{
-	BVHNodeTriangle structNodeOrTriangle2 = pListBVHNodeTriangles[nId2];
-	Triangle triangle2 = structNodeOrTriangle2.triangle;
-
-	float3 tri2_a = Vector3ToFloat3(Mult_Mat4Vector3(T2, triangle2.v3A, 1.0f));
-	float3 tri2_b = Vector3ToFloat3(Mult_Mat4Vector3(T2, triangle2.v3B, 1.0f));
-	float3 tri2_c = Vector3ToFloat3(Mult_Mat4Vector3(T2, triangle2.v3C, 1.0f));
-	float3 tri2_n = Vector3ToFloat3(Mult_Mat4Vector3(T2, triangle2.v3N, 0.0f));
-
-	structNodeOrTriangle2.bbox = TransformBBox(T2, structNodeOrTriangle2.bbox);
-
-	int nTop = -1;
-	int arrStack[64];
-
-	nTop++;
-	arrStack[nTop] = offset1.nOffset;
-
-	int nId1;
-	BVHNodeTriangle structNodeOrTriangle;
-	
-	while (nTop > -1)
-	{
-		nId1 = arrStack[nTop];
-		nTop--;
-		
-		structNodeOrTriangle = pListBVHNodeTriangles[nId1];
-		structNodeOrTriangle.bbox = TransformBBox(T1, structNodeOrTriangle.bbox);
-		
-		if (true == IsLeaf(structNodeOrTriangle))
-		{
-			if (true == IsCollide(structNodeOrTriangle2.bbox, structNodeOrTriangle.bbox))
-			{
-				Triangle triangle1 = structNodeOrTriangle.triangle;
-
-				float3 tri1_a = Vector3ToFloat3(Mult_Mat4Vector3(T1, triangle1.v3A, 1.0f));
-				float3 tri1_b = Vector3ToFloat3(Mult_Mat4Vector3(T1, triangle1.v3B, 1.0f));
-				float3 tri1_c = Vector3ToFloat3(Mult_Mat4Vector3(T1, triangle1.v3C, 1.0f));
-				float3 tri1_n = Vector3ToFloat3(Mult_Mat4Vector3(T1, triangle1.v3N, 0.0f));
-
-				Intersect_TriangleTriangle(pHits, tri1_a, tri1_b, tri1_c, tri1_n, tri2_a, tri2_b, tri2_c, tri2_n);
-
-				if (pHits->nNumHits >= #MAX_HITS_OBJECT_OBJECT#)
-				{
-					return;
-				}
-			}
-		}
-		else
-		{
-			if (true == IsCollide(structNodeOrTriangle2.bbox, structNodeOrTriangle.bbox))
-			{
-				if (structNodeOrTriangle.nLeft != -1)
-				{
-					nTop++;
-					arrStack[nTop] = structNodeOrTriangle.nLeft;
-				}
-
-				if (structNodeOrTriangle.nRight != -1)
-				{
-					nTop++;
-					arrStack[nTop] = structNodeOrTriangle.nRight;
-				}
-			}
-		}
-	}
+	if (true == Intersect_LineTriangle(pHits, true, tri2_a, tri2_b, tri1_a, tri1_b, tri1_c, tri1_n)) { return; }
+	if (true == Intersect_LineTriangle(pHits, true, tri2_b, tri2_c, tri1_a, tri1_b, tri1_c, tri1_n)) { return; }
+	if (true == Intersect_LineTriangle(pHits, true, tri2_c, tri2_a, tri1_a, tri1_b, tri1_c, tri1_n)) { return; }
 }
 
 void SearchHits(Hits *pHits, RigidBody structRigidBody1/*only dynamic*/, RigidBody structRigidBody2/*static or dynamic*/, Matrix4 T1, Matrix4 T2, BVHNodeTriangleOffset offset1, BVHNodeTriangleOffset offset2, __global BVHNodeTriangle* pListBVHNodeTriangles)
