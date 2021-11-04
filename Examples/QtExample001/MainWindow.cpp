@@ -105,8 +105,7 @@ bool MainWindow::Init()
     // 2/2 - physics
     Model physicsmodel;
     physicsmodel.Load("Scene", "Physics.obj", glm::mat4(1.0f), false);
-    static_id = m_physics.CreateTriMesh(physicsmodel.GetAllVertices(), false);
-    m_physics.SetMass(static_id, 0.0f); // static
+    static_id = m_physics.CreateTriMesh(physicsmodel.GetAllVertices(), Physics::TriMeshType::Static, false);
 
     // dynamic
     // 1/2 - draw
@@ -133,7 +132,7 @@ bool MainWindow::Init()
                 int dynamic_id = -1;
                 if (-1 == from_dynamic_id)
                 {
-                    from_dynamic_id = m_physics.CreateTriMesh(m_dynamicmodel.GetAllVertices(), false);
+                    from_dynamic_id = m_physics.CreateTriMesh(m_dynamicmodel.GetAllVertices(), Physics::TriMeshType::Dynamic, false);
                     dynamic_id = from_dynamic_id;
                 }
                 else 
@@ -145,7 +144,7 @@ bool MainWindow::Init()
                 //m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 10 + (y * fScale), z * fScale));
                 m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 1.0f + (y * fScale), 12));
                 m_physics.SetEulerRotate(dynamic_id, glm::vec3(0.0f, 0.0f, 0.0f));
-                m_physics.SetMass(dynamic_id, 85.0f); // dynamic
+                m_physics.SetMass(dynamic_id, 85.0f);
                 m_physics.SetLinearVelocity(dynamic_id, glm::vec3(0.0f, 0.0f, 0.0f));
                 m_physics.SetAngularVelocity(dynamic_id, glm::vec3(0.0f, 0.0f, 0.0f));
                 m_physics.SetRestitution(dynamic_id, 0.0f);

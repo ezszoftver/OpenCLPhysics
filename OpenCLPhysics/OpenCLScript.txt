@@ -357,7 +357,7 @@ typedef struct
 	int nId;
 	int nTriMeshId;
 	int nIsEnabled;
-	int nIsIntegrateEnabled;
+	int nIsConvex;
 
 	BBox inBBox;
 	BBox bbox;
@@ -377,9 +377,6 @@ typedef struct
 	Vector3 v3AngularAcceleration;
 	Vector3 v3AngularVelocity;
 	Vector3 v3Rotate;
-
-	Vector3 v3ElapsedPosition;
-	Vector3 v3ElapsedRotate;
 }
 RigidBody;
 
@@ -595,19 +592,14 @@ __kernel void Integrate(__global RigidBody* inoutRigidBodies, int nCount, float 
 		return;
 	}
 
-	if (0 == rigidBody.nIsIntegrateEnabled)
+	// if static mesh ?
+	if (rigidBody.nIsConvex != 1)
 	{
 		return;
 	}
 
 	// init
 	float fMass = rigidBody.fMass;
-
-	// if static mesh ?
-	if (fMass <= 0.0f)
-	{
-		return;
-	}
 
 	// get
 	float3 f3Gravity = Vector3ToFloat3(v3Gravity);
@@ -621,8 +613,6 @@ __kernel void Integrate(__global RigidBody* inoutRigidBodies, int nCount, float 
 	float3 f3Rotate          = Vector3ToFloat3(rigidBody.v3Rotate);
 
 	// calc
-	inoutRigidBodies[id].v3ElapsedPosition = Float3ToVector3(f3Position);
-	inoutRigidBodies[id].v3ElapsedRotate   = Float3ToVector3(f3Rotate);
 	float3 f3LinearAcceleration = f3Gravity + (f3Force / fMass);
 	float3 f3AngularAcceleration = (f3Torque / fMass);
 
@@ -984,7 +974,7 @@ __kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCoun
 	}
 
 	// if static, then return
-	if (structRigidBody1.fMass <= 0.0f)
+	if (structRigidBody1.nIsConvex != 1)
 	{
 		return;
 	}
@@ -1019,7 +1009,7 @@ __kernel void CollisionDetection(__global RigidBody* inoutRigidBodies, int nCoun
 			int id2 = structBVHObject.nRigidBodyId;
 			RigidBody structRigidBody2 = inoutRigidBodies[id2];
 			
-			if ( (id1 < id2) || (structRigidBody2.fMass <= 0.0f) )
+			if ( (id1 < id2) || (structRigidBody2.nIsConvex != 1) )
 			{
 				BBox bboxRigidBody2 = structRigidBody2.bbox;
 
