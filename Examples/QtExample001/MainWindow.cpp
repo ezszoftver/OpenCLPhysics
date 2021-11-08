@@ -105,7 +105,7 @@ bool MainWindow::Init()
     // 2/2 - physics
     Model physicsmodel;
     physicsmodel.Load("Scene", "Physics.obj", glm::mat4(1.0f), false);
-    static_id = m_physics.CreateTriMesh(physicsmodel.GetAllVertices(), Physics::TriMeshType::Static, false);
+    static_id = m_physics.CreateTriMesh(physicsmodel.GetAllVertices(), Physics::TriMeshType::Dynamic, false);
 
     // dynamic
     // 1/2 - draw
@@ -122,7 +122,7 @@ bool MainWindow::Init()
 
     // 2/2 - physics
     int from_dynamic_id = -1;
-    for (int x = -5; x < 5; x++)
+    for (int x = -5; x < -4; x++)
     {
         //for (int z = -5; z < 5; z++)
         {
@@ -160,7 +160,7 @@ bool MainWindow::Init()
     m_physics.Commit();
 
     // gravity
-    m_physics.SetGravity(glm::vec3(0, -0.1f, 0));
+    m_physics.SetGravity(glm::vec3(0, 0.0f, 0));
 
     // Avatar
     m_Camera.Init(glm::vec3(15, 3, 15), glm::vec3(0, 0, 0));

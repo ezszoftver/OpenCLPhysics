@@ -1175,7 +1175,7 @@ namespace OpenCLPhysics
 		if (false == CollisionDetection()) { return false; }
 
 		// 6. CollisionResponse
-		CollisionResponse(dt);
+		//CollisionResponse(dt);
 
 		// 7. read to RAM for CPU
 		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), &(m_listRigidBodies[0]), 0, NULL, NULL);
@@ -1461,7 +1461,7 @@ namespace OpenCLPhysics
 		return true;
 	}
 
-	// DEBUG - EZ MAJD NEM KELL
+	//// DEBUG - EZ MAJD NEM KELL
 	bool IsCollide(structBBox bbox1, structBBox bbox2)
 	{
 		if (bbox1.v3Max.x < bbox2.v3Min.x || bbox1.v3Min.x > bbox2.v3Max.x) return false;
@@ -1480,274 +1480,542 @@ namespace OpenCLPhysics
 		return false;
 	}
 	
-	structBBox TransformBBox(glm::mat4 T, structBBox bbox)
-	{
-		structBBox ret;
-	
-		glm::vec3 v3Min = ToVector3(bbox.v3Min);
-		glm::vec3 v3Max = ToVector3(bbox.v3Max);
-	
-		glm::vec3 v3In1 = glm::vec3(v3Min.x, v3Min.y, v3Min.z);
-		glm::vec3 v3In2 = glm::vec3(v3Max.x, v3Min.y, v3Min.z);
-		glm::vec3 v3In3 = glm::vec3(v3Max.x, v3Min.y, v3Max.z);
-		glm::vec3 v3In4 = glm::vec3(v3Min.x, v3Min.y, v3Max.z);
-		glm::vec3 v3In5 = glm::vec3(v3Min.x, v3Max.y, v3Min.z);
-		glm::vec3 v3In6 = glm::vec3(v3Max.x, v3Max.y, v3Min.z);
-		glm::vec3 v3In7 = glm::vec3(v3Max.x, v3Max.y, v3Max.z);
-		glm::vec3 v3In8 = glm::vec3(v3Min.x, v3Max.y, v3Max.z);
-	
-		glm::vec3 v3Out1 = glm::vec3(T * glm::vec4(v3In1, 1.0f));
-		glm::vec3 v3Out2 = glm::vec3(T * glm::vec4(v3In2, 1.0f));
-		glm::vec3 v3Out3 = glm::vec3(T * glm::vec4(v3In3, 1.0f));
-		glm::vec3 v3Out4 = glm::vec3(T * glm::vec4(v3In4, 1.0f));
-		glm::vec3 v3Out5 = glm::vec3(T * glm::vec4(v3In5, 1.0f));
-		glm::vec3 v3Out6 = glm::vec3(T * glm::vec4(v3In6, 1.0f));
-		glm::vec3 v3Out7 = glm::vec3(T * glm::vec4(v3In7, 1.0f));
-		glm::vec3 v3Out8 = glm::vec3(T * glm::vec4(v3In8, 1.0f));
-	
-		// 1
-		v3Min = v3Out1;
-		v3Max = v3Out1;
-	
-		// 2
-		v3Min.x = std::fmin(v3Min.x, v3Out2.x);
-		v3Min.y = std::fmin(v3Min.y, v3Out2.y);
-		v3Min.z = std::fmin(v3Min.z, v3Out2.z);
-		v3Max.x = std::fmax(v3Max.x, v3Out2.x);
-		v3Max.y = std::fmax(v3Max.y, v3Out2.y);
-		v3Max.z = std::fmax(v3Max.z, v3Out2.z);
-	
-		// 3
-		v3Min.x = std::fmin(v3Min.x, v3Out3.x);
-		v3Min.y = std::fmin(v3Min.y, v3Out3.y);
-		v3Min.z = std::fmin(v3Min.z, v3Out3.z);
-		v3Max.x = std::fmax(v3Max.x, v3Out3.x);
-		v3Max.y = std::fmax(v3Max.y, v3Out3.y);
-		v3Max.z = std::fmax(v3Max.z, v3Out3.z);
-	
-		// 4
-		v3Min.x = std::fmin(v3Min.x, v3Out4.x);
-		v3Min.y = std::fmin(v3Min.y, v3Out4.y);
-		v3Min.z = std::fmin(v3Min.z, v3Out4.z);
-		v3Max.x = std::fmax(v3Max.x, v3Out4.x);
-		v3Max.y = std::fmax(v3Max.y, v3Out4.y);
-		v3Max.z = std::fmax(v3Max.z, v3Out4.z);
-	
-		// 5
-		v3Min.x = std::fmin(v3Min.x, v3Out5.x);
-		v3Min.y = std::fmin(v3Min.y, v3Out5.y);
-		v3Min.z = std::fmin(v3Min.z, v3Out5.z);
-		v3Max.x = std::fmax(v3Max.x, v3Out5.x);
-		v3Max.y = std::fmax(v3Max.y, v3Out5.y);
-		v3Max.z = std::fmax(v3Max.z, v3Out5.z);
-	
-		// 6
-		v3Min.x = std::fmin(v3Min.x, v3Out6.x);
-		v3Min.y = std::fmin(v3Min.y, v3Out6.y);
-		v3Min.z = std::fmin(v3Min.z, v3Out6.z);
-		v3Max.x = std::fmax(v3Max.x, v3Out6.x);
-		v3Max.y = std::fmax(v3Max.y, v3Out6.y);
-		v3Max.z = std::fmax(v3Max.z, v3Out6.z);
-	
-		// 7
-		v3Min.x = std::fmin(v3Min.x, v3Out7.x);
-		v3Min.y = std::fmin(v3Min.y, v3Out7.y);
-		v3Min.z = std::fmin(v3Min.z, v3Out7.z);
-		v3Max.x = std::fmax(v3Max.x, v3Out7.x);
-		v3Max.y = std::fmax(v3Max.y, v3Out7.y);
-		v3Max.z = std::fmax(v3Max.z, v3Out7.z);
-	
-		// 8
-		v3Min.x = std::fmin(v3Min.x, v3Out8.x);
-		v3Min.y = std::fmin(v3Min.y, v3Out8.y);
-		v3Min.z = std::fmin(v3Min.z, v3Out8.z);
-		v3Max.x = std::fmax(v3Max.x, v3Out8.x);
-		v3Max.y = std::fmax(v3Max.y, v3Out8.y);
-		v3Max.z = std::fmax(v3Max.z, v3Out8.z);
-	
-		ret.v3Min = ToVector3(v3Min);
-		ret.v3Max = ToVector3(v3Max);
-	
-		return ret;
-	}
-	
-	
-	float angle(structVector3 v3A, structVector3 v3B)
-	{
-		float fAngle = std::acosf(glm::dot(ToVector3(v3A), ToVector3(v3B)));
-	
-		return fAngle;
-	}
-	
-	bool IsEqual(structHit hit1, structHit hit2)
-	{
-		if (glm::distance(ToVector3(hit1.m_v3HitPointInWorld), ToVector3(hit2.m_v3HitPointInWorld)) < 0.05f)
-		{
-			if (angle(hit1.m_v3Normal, hit2.m_v3Normal) < (3.141592f / 180.0f)) // 1 degree 
-			{
-				return true;
-			}
-		}
-	
-		return false;
-	}
-	
-	bool IsContains(structHits* pHits, structHit hit)
-	{
-		for (int i = 0; i < pHits->m_nNumHits; i++)
-		{
-			if (true == IsEqual(pHits->m_hits[i], hit))
-			{
-				return true;
-			}
-		}
-	
-		return false;
-	}
-	
-	void Intersect_LineTriangle(structHits* pHits, bool isInvertNormal, glm::vec3 v3LineA, glm::vec3 v3LineB, glm::vec3 v3TriA, glm::vec3 v3TriB, glm::vec3 v3TriC, glm::vec3 v3TriN)
-	{
-		if (pHits->m_nNumHits >= MAX_HITS_OBJECT_OBJECT)
-		{
-			return;
-		}
-	
-		glm::vec3 v3Dir = glm::normalize(v3LineB - v3LineA);
-	
-		float cost = glm::dot(v3Dir, v3TriN);
-		if (std::fabs(cost) < 0.001f)
-		{
-			return;
-		}
-			
-		float t = glm::dot(v3TriA - v3LineA, v3TriN) / cost;
-		float fMaxLenght = glm::distance(v3LineA, v3LineB);
-		if (t < 0.0f || t > fMaxLenght)
-		{
-			return;
-		}
-			
-		glm::vec3 v3P = v3LineA + (v3Dir * t);
-	
-		glm::vec3 v3N2;
-		v3N2 = glm::cross(v3TriB - v3TriA, v3P - v3TriA);
-		float c1 = glm::dot(v3TriN, v3N2);
-	
-		v3N2 = glm::cross(v3TriC - v3TriB, v3P - v3TriB);
-		float c2 = glm::dot(v3TriN, v3N2);
-	
-		v3N2 = glm::cross(v3TriA - v3TriC, v3P - v3TriC);
-		float c3 = glm::dot(v3TriN, v3N2);
-	
-		if ((c1 > 0.0f && c2 > 0.0f && c3 > 0.0f) || (c1 < 0.0f && c2 < 0.0f && c3 < 0.0f))
-		{
-			structHit hit;
+	//structBBox TransformBBox(glm::mat4 T, structBBox bbox)
+	//{
+	//	structBBox ret;
+	//
+	//	glm::vec3 v3Min = ToVector3(bbox.v3Min);
+	//	glm::vec3 v3Max = ToVector3(bbox.v3Max);
+	//
+	//	glm::vec3 v3In1 = glm::vec3(v3Min.x, v3Min.y, v3Min.z);
+	//	glm::vec3 v3In2 = glm::vec3(v3Max.x, v3Min.y, v3Min.z);
+	//	glm::vec3 v3In3 = glm::vec3(v3Max.x, v3Min.y, v3Max.z);
+	//	glm::vec3 v3In4 = glm::vec3(v3Min.x, v3Min.y, v3Max.z);
+	//	glm::vec3 v3In5 = glm::vec3(v3Min.x, v3Max.y, v3Min.z);
+	//	glm::vec3 v3In6 = glm::vec3(v3Max.x, v3Max.y, v3Min.z);
+	//	glm::vec3 v3In7 = glm::vec3(v3Max.x, v3Max.y, v3Max.z);
+	//	glm::vec3 v3In8 = glm::vec3(v3Min.x, v3Max.y, v3Max.z);
+	//
+	//	glm::vec3 v3Out1 = glm::vec3(T * glm::vec4(v3In1, 1.0f));
+	//	glm::vec3 v3Out2 = glm::vec3(T * glm::vec4(v3In2, 1.0f));
+	//	glm::vec3 v3Out3 = glm::vec3(T * glm::vec4(v3In3, 1.0f));
+	//	glm::vec3 v3Out4 = glm::vec3(T * glm::vec4(v3In4, 1.0f));
+	//	glm::vec3 v3Out5 = glm::vec3(T * glm::vec4(v3In5, 1.0f));
+	//	glm::vec3 v3Out6 = glm::vec3(T * glm::vec4(v3In6, 1.0f));
+	//	glm::vec3 v3Out7 = glm::vec3(T * glm::vec4(v3In7, 1.0f));
+	//	glm::vec3 v3Out8 = glm::vec3(T * glm::vec4(v3In8, 1.0f));
+	//
+	//	// 1
+	//	v3Min = v3Out1;
+	//	v3Max = v3Out1;
+	//
+	//	// 2
+	//	v3Min.x = std::fmin(v3Min.x, v3Out2.x);
+	//	v3Min.y = std::fmin(v3Min.y, v3Out2.y);
+	//	v3Min.z = std::fmin(v3Min.z, v3Out2.z);
+	//	v3Max.x = std::fmax(v3Max.x, v3Out2.x);
+	//	v3Max.y = std::fmax(v3Max.y, v3Out2.y);
+	//	v3Max.z = std::fmax(v3Max.z, v3Out2.z);
+	//
+	//	// 3
+	//	v3Min.x = std::fmin(v3Min.x, v3Out3.x);
+	//	v3Min.y = std::fmin(v3Min.y, v3Out3.y);
+	//	v3Min.z = std::fmin(v3Min.z, v3Out3.z);
+	//	v3Max.x = std::fmax(v3Max.x, v3Out3.x);
+	//	v3Max.y = std::fmax(v3Max.y, v3Out3.y);
+	//	v3Max.z = std::fmax(v3Max.z, v3Out3.z);
+	//
+	//	// 4
+	//	v3Min.x = std::fmin(v3Min.x, v3Out4.x);
+	//	v3Min.y = std::fmin(v3Min.y, v3Out4.y);
+	//	v3Min.z = std::fmin(v3Min.z, v3Out4.z);
+	//	v3Max.x = std::fmax(v3Max.x, v3Out4.x);
+	//	v3Max.y = std::fmax(v3Max.y, v3Out4.y);
+	//	v3Max.z = std::fmax(v3Max.z, v3Out4.z);
+	//
+	//	// 5
+	//	v3Min.x = std::fmin(v3Min.x, v3Out5.x);
+	//	v3Min.y = std::fmin(v3Min.y, v3Out5.y);
+	//	v3Min.z = std::fmin(v3Min.z, v3Out5.z);
+	//	v3Max.x = std::fmax(v3Max.x, v3Out5.x);
+	//	v3Max.y = std::fmax(v3Max.y, v3Out5.y);
+	//	v3Max.z = std::fmax(v3Max.z, v3Out5.z);
+	//
+	//	// 6
+	//	v3Min.x = std::fmin(v3Min.x, v3Out6.x);
+	//	v3Min.y = std::fmin(v3Min.y, v3Out6.y);
+	//	v3Min.z = std::fmin(v3Min.z, v3Out6.z);
+	//	v3Max.x = std::fmax(v3Max.x, v3Out6.x);
+	//	v3Max.y = std::fmax(v3Max.y, v3Out6.y);
+	//	v3Max.z = std::fmax(v3Max.z, v3Out6.z);
+	//
+	//	// 7
+	//	v3Min.x = std::fmin(v3Min.x, v3Out7.x);
+	//	v3Min.y = std::fmin(v3Min.y, v3Out7.y);
+	//	v3Min.z = std::fmin(v3Min.z, v3Out7.z);
+	//	v3Max.x = std::fmax(v3Max.x, v3Out7.x);
+	//	v3Max.y = std::fmax(v3Max.y, v3Out7.y);
+	//	v3Max.z = std::fmax(v3Max.z, v3Out7.z);
+	//
+	//	// 8
+	//	v3Min.x = std::fmin(v3Min.x, v3Out8.x);
+	//	v3Min.y = std::fmin(v3Min.y, v3Out8.y);
+	//	v3Min.z = std::fmin(v3Min.z, v3Out8.z);
+	//	v3Max.x = std::fmax(v3Max.x, v3Out8.x);
+	//	v3Max.y = std::fmax(v3Max.y, v3Out8.y);
+	//	v3Max.z = std::fmax(v3Max.z, v3Out8.z);
+	//
+	//	ret.v3Min = ToVector3(v3Min);
+	//	ret.v3Max = ToVector3(v3Max);
+	//
+	//	return ret;
+	//}
+	//
+	//
+	//float angle(structVector3 v3A, structVector3 v3B)
+	//{
+	//	float fAngle = std::acosf(glm::dot(ToVector3(v3A), ToVector3(v3B)));
+	//
+	//	return fAngle;
+	//}
+	//
+	//bool IsEqual(structHit hit1, structHit hit2)
+	//{
+	//	if (glm::distance(ToVector3(hit1.m_v3HitPointInWorld), ToVector3(hit2.m_v3HitPointInWorld)) < 0.05f)
+	//	{
+	//		if (angle(hit1.m_v3Normal, hit2.m_v3Normal) < (3.141592f / 180.0f)) // 1 degree 
+	//		{
+	//			return true;
+	//		}
+	//	}
+	//
+	//	return false;
+	//}
+	//
+	//bool IsContains(structHits* pHits, structHit hit)
+	//{
+	//	for (int i = 0; i < pHits->m_nNumHits; i++)
+	//	{
+	//		if (true == IsEqual(pHits->m_hits[i], hit))
+	//		{
+	//			return true;
+	//		}
+	//	}
+	//
+	//	return false;
+	//}
+	//
+	//void Intersect_LineTriangle(structHits* pHits, bool isInvertNormal, glm::vec3 v3LineA, glm::vec3 v3LineB, glm::vec3 v3TriA, glm::vec3 v3TriB, glm::vec3 v3TriC, glm::vec3 v3TriN)
+	//{
+	//	if (pHits->m_nNumHits >= MAX_HITS_OBJECT_OBJECT)
+	//	{
+	//		return;
+	//	}
+	//
+	//	glm::vec3 v3Dir = glm::normalize(v3LineB - v3LineA);
+	//
+	//	float cost = glm::dot(v3Dir, v3TriN);
+	//	if (std::fabs(cost) < 0.001f)
+	//	{
+	//		return;
+	//	}
+	//		
+	//	float t = glm::dot(v3TriA - v3LineA, v3TriN) / cost;
+	//	float fMaxLenght = glm::distance(v3LineA, v3LineB);
+	//	if (t < 0.0f || t > fMaxLenght)
+	//	{
+	//		return;
+	//	}
+	//		
+	//	glm::vec3 v3P = v3LineA + (v3Dir * t);
+	//
+	//	glm::vec3 v3N2;
+	//	v3N2 = glm::cross(v3TriB - v3TriA, v3P - v3TriA);
+	//	float c1 = glm::dot(v3TriN, v3N2);
+	//
+	//	v3N2 = glm::cross(v3TriC - v3TriB, v3P - v3TriB);
+	//	float c2 = glm::dot(v3TriN, v3N2);
+	//
+	//	v3N2 = glm::cross(v3TriA - v3TriC, v3P - v3TriC);
+	//	float c3 = glm::dot(v3TriN, v3N2);
+	//
+	//	if ((c1 > 0.0f && c2 > 0.0f && c3 > 0.0f) || (c1 < 0.0f && c2 < 0.0f && c3 < 0.0f))
+	//	{
+	//		structHit hit;
+	//
+	//		//hit.m_v3HitPointInWorld = ToVector3(v3P);
+	//		if (glm::dot(v3LineA - v3TriA, v3TriN) < 0.0f)
+	//		{
+	//			hit.m_v3HitPointInWorld = ToVector3(v3LineA);
+	//		}
+	//		else
+	//		{
+	//			hit.m_v3HitPointInWorld = ToVector3(v3LineB);
+	//		}
+	//
+	//		if (false == isInvertNormal) { hit.m_v3Normal = ToVector3(v3TriN); }
+	//		else { hit.m_v3Normal = ToVector3(-1.0f * v3TriN); }
+	//
+	//		if (false == IsContains(pHits, hit))
+	//		{
+	//			pHits->m_hits[pHits->m_nNumHits] = hit;
+	//			pHits->m_nNumHits++;
+	//		}
+	//	}
+	//}
+	//
+	//void Intersect_TriangleTriangle(structHits* pHits, glm::vec3 tri1_a, glm::vec3 tri1_b, glm::vec3 tri1_c, glm::vec3 tri1_n, glm::vec3 tri2_a, glm::vec3 tri2_b, glm::vec3 tri2_c, glm::vec3 tri2_n)
+	//{
+	//	Intersect_LineTriangle(pHits, false, tri1_a, tri1_b, tri2_a, tri2_b, tri2_c, tri2_n);
+	//	Intersect_LineTriangle(pHits, false, tri1_b, tri1_c, tri2_a, tri2_b, tri2_c, tri2_n);
+	//	Intersect_LineTriangle(pHits, false, tri1_c, tri1_a, tri2_a, tri2_b, tri2_c, tri2_n);
+	//
+	//	Intersect_LineTriangle(pHits, true, tri2_a, tri2_b, tri1_a, tri1_b, tri1_c, tri1_n);
+	//	Intersect_LineTriangle(pHits, true, tri2_b, tri2_c, tri1_a, tri1_b, tri1_c, tri1_n);
+	//	Intersect_LineTriangle(pHits, true, tri2_c, tri2_a, tri1_a, tri1_b, tri1_c, tri1_n);
+	//}									  
+	//
+	//// hordó - pálya egy háromszöge
+	//void SearchHits2(structHits* pHits, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, int32_t nId2, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles)
+	//{
+	//	structBVHNodeTriangle structNodeOrTriangle2 = pListBVHNodeTriangles[nId2];
+	//	structTriangle triangle2 = structNodeOrTriangle2.m_Triangle;
+	//	glm::vec3 tri2_a = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3PosA), 1.0f));
+	//	glm::vec3 tri2_b = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3PosB), 1.0f));
+	//	glm::vec3 tri2_c = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3PosC), 1.0f));
+	//	glm::vec3 tri2_n = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3Normal), 0.0f));
+	//
+	//	structNodeOrTriangle2.m_BBox = TransformBBox(T2, structNodeOrTriangle2.m_BBox);
+	//
+	//	int nTop = -1;
+	//	int arrStack[64];
+	//
+	//	nTop++;
+	//	arrStack[nTop] = offset1.m_nOffset;
+	//
+	//	int nId1;
+	//	structBVHNodeTriangle structNodeOrTriangle;
+	//
+	//	while (nTop > -1)
+	//	{
+	//		nId1 = arrStack[nTop];
+	//		nTop--;
+	//
+	//		structNodeOrTriangle = pListBVHNodeTriangles[nId1];
+	//		structNodeOrTriangle.m_BBox = TransformBBox(T1, structNodeOrTriangle.m_BBox);
+	//
+	//		if (true == IsLeaf(structNodeOrTriangle)) 
+	//		{
+	//			if (true == IsCollide(structNodeOrTriangle2.m_BBox, structNodeOrTriangle.m_BBox))
+	//			{
+	//				// TRANSFORM TRIANGLE 1
+	//				structTriangle triangle1 = structNodeOrTriangle.m_Triangle;
+	//				glm::vec3 tri1_a = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3PosA), 1.0f));
+	//				glm::vec3 tri1_b = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3PosB), 1.0f));
+	//				glm::vec3 tri1_c = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3PosC), 1.0f));
+	//				glm::vec3 tri1_n = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3Normal), 0.0f));
+	//
+	//				// CollisionDetection tri1, tri2
+	//				Intersect_TriangleTriangle(pHits, tri1_a, tri1_b, tri1_c, tri1_n, tri2_a, tri2_b, tri2_c, tri2_n);
+	//
+	//				if (pHits->m_nNumHits >= MAX_HITS_OBJECT_OBJECT)
+	//				{
+	//					return;
+	//				}
+	//
+	//			}
+	//		}
+	//		else 
+	//		{
+	//			if (true == IsCollide(structNodeOrTriangle2.m_BBox, structNodeOrTriangle.m_BBox))
+	//			{
+	//				if (structNodeOrTriangle.m_nLeft != -1)
+	//				{
+	//					nTop++;
+	//					arrStack[nTop] = structNodeOrTriangle.m_nLeft;
+	//				}
+	//
+	//				if (structNodeOrTriangle.m_nRight != -1)
+	//				{
+	//					nTop++;
+	//					arrStack[nTop] = structNodeOrTriangle.m_nRight;
+	//				}
+	//			}
+	//		}
+	//	}
+	//
+	//}
 
-			//hit.m_v3HitPointInWorld = ToVector3(v3P);
-			if (glm::dot(v3LineA - v3TriA, v3TriN) < 0.0f)
-			{
-				hit.m_v3HitPointInWorld = ToVector3(v3LineA);
-			}
-			else
-			{
-				hit.m_v3HitPointInWorld = ToVector3(v3LineB);
-			}
-
-			if (false == isInvertNormal) { hit.m_v3Normal = ToVector3(v3TriN); }
-			else { hit.m_v3Normal = ToVector3(-1.0f * v3TriN); }
-	
-			if (false == IsContains(pHits, hit))
-			{
-				pHits->m_hits[pHits->m_nNumHits] = hit;
-				pHits->m_nNumHits++;
-			}
-		}
-	}
-	
-	void Intersect_TriangleTriangle(structHits* pHits, glm::vec3 tri1_a, glm::vec3 tri1_b, glm::vec3 tri1_c, glm::vec3 tri1_n, glm::vec3 tri2_a, glm::vec3 tri2_b, glm::vec3 tri2_c, glm::vec3 tri2_n)
+	float Intersect_DirBBox(glm::vec3 v3Dir, structBBox bbox)
 	{
-		Intersect_LineTriangle(pHits, false, tri1_a, tri1_b, tri2_a, tri2_b, tri2_c, tri2_n);
-		Intersect_LineTriangle(pHits, false, tri1_b, tri1_c, tri2_a, tri2_b, tri2_c, tri2_n);
-		Intersect_LineTriangle(pHits, false, tri1_c, tri1_a, tri2_a, tri2_b, tri2_c, tri2_n);
-	
-		Intersect_LineTriangle(pHits, true, tri2_a, tri2_b, tri1_a, tri1_b, tri1_c, tri1_n);
-		Intersect_LineTriangle(pHits, true, tri2_b, tri2_c, tri1_a, tri1_b, tri1_c, tri1_n);
-		Intersect_LineTriangle(pHits, true, tri2_c, tri2_a, tri1_a, tri1_b, tri1_c, tri1_n);
-	}									  
-	
-	// hordó - pálya egy háromszöge
-	void SearchHits2(structHits* pHits, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, int32_t nId2, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles)
-	{
-		structBVHNodeTriangle structNodeOrTriangle2 = pListBVHNodeTriangles[nId2];
-		structTriangle triangle2 = structNodeOrTriangle2.m_Triangle;
-		glm::vec3 tri2_a = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3PosA), 1.0f));
-		glm::vec3 tri2_b = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3PosB), 1.0f));
-		glm::vec3 tri2_c = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3PosC), 1.0f));
-		glm::vec3 tri2_n = glm::vec3(T2 * glm::vec4(ToVector3(triangle2.m_v3Normal), 0.0f));
-	
-		structNodeOrTriangle2.m_BBox = TransformBBox(T2, structNodeOrTriangle2.m_BBox);
-	
-		int nTop = -1;
-		int arrStack[64];
-	
-		nTop++;
-		arrStack[nTop] = offset1.m_nOffset;
-	
-		int nId1;
-		structBVHNodeTriangle structNodeOrTriangle;
-	
-		while (nTop > -1)
+		if ((0 > bbox.v3Min.x && 0 > bbox.v3Min.y && 0 > bbox.v3Min.z) && (0 < bbox.v3Max.x && 0 < bbox.v3Max.y && 0 < bbox.v3Max.z))
 		{
-			nId1 = arrStack[nTop];
-			nTop--;
-	
-			structNodeOrTriangle = pListBVHNodeTriangles[nId1];
-			structNodeOrTriangle.m_BBox = TransformBBox(T1, structNodeOrTriangle.m_BBox);
-	
-			if (true == IsLeaf(structNodeOrTriangle)) 
+			return 0.0f;
+		}
+		
+		float t[10];
+		t[1] = (bbox.v3Min.x) / v3Dir.x;
+		t[2] = (bbox.v3Max.x) / v3Dir.x;
+		t[3] = (bbox.v3Min.y) / v3Dir.y;
+		t[4] = (bbox.v3Max.y) / v3Dir.y;
+		t[5] = (bbox.v3Min.z) / v3Dir.z;
+		t[6] = (bbox.v3Max.z) / v3Dir.z;
+		t[7] = fmax(fmax(fmin(t[1], t[2]), fmin(t[3], t[4])), fmin(t[5], t[6]));
+		t[8] = fmin(fmin(fmax(t[1], t[2]), fmax(t[3], t[4])), fmax(t[5], t[6]));
+		t[9] = (t[8] < 0 || t[7] > t[8]) ? -1.0f : t[7];
+		return t[9];
+	}
+
+	glm::vec3 FindFurthestPoint(glm::vec3 v3Dir, glm::mat4 T, structRigidBody structRigidBody, structBVHNodeTriangleOffset offset, structBVHNodeTriangle* pListBVHNodeTriangles)
+	{
+		v3Dir = glm::inverse(T) * glm::vec4(v3Dir, 0.0f);
+
+		glm::vec3 furthest_point(0, 0, 0);
+		float max_dot = -FLT_MAX;
+
+		structBVHNodeTriangle node;
+		
+		for (int i = offset.m_nOffset; i < (offset.m_nOffset + offset.m_nCount); i++)
+		{
+			node = pListBVHNodeTriangles[i];
+
+			if (true == IsLeaf(node))
 			{
-				if (true == IsCollide(structNodeOrTriangle2.m_BBox, structNodeOrTriangle.m_BBox))
+				structTriangle triangle = node.m_Triangle;
+
+				// A
 				{
-					// TRANSFORM TRIANGLE 1
-					structTriangle triangle1 = structNodeOrTriangle.m_Triangle;
-					glm::vec3 tri1_a = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3PosA), 1.0f));
-					glm::vec3 tri1_b = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3PosB), 1.0f));
-					glm::vec3 tri1_c = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3PosC), 1.0f));
-					glm::vec3 tri1_n = glm::vec3(T1 * glm::vec4(ToVector3(triangle1.m_v3Normal), 0.0f));
-	
-					// CollisionDetection tri1, tri2
-					Intersect_TriangleTriangle(pHits, tri1_a, tri1_b, tri1_c, tri1_n, tri2_a, tri2_b, tri2_c, tri2_n);
-	
-					if (pHits->m_nNumHits >= MAX_HITS_OBJECT_OBJECT)
+					glm::vec3 v = ToVector3(triangle.m_v3PosB);
+					float d = glm::dot(v, v3Dir);
+					if (d > max_dot)
 					{
-						return;
+						max_dot = d;
+						furthest_point = v;
 					}
-	
 				}
+
+				// B
+				{
+					glm::vec3 v = ToVector3(triangle.m_v3PosB);
+					float d = glm::dot(v, v3Dir);
+					if (d > max_dot)
+					{
+						max_dot = d;
+						furthest_point = v;
+					}
+				}
+
+				// C
+				{
+					glm::vec3 v = ToVector3(triangle.m_v3PosC);
+					float d = glm::dot(v, v3Dir);
+					if (d > max_dot)
+					{
+						max_dot = d;
+						furthest_point = v;
+					}
+				}
+			}
+		}
+
+		glm::vec3 v3Ret = T * glm::vec4(furthest_point, 1); //convert support to world space
+		return v3Ret;
+	}
+	
+	glm::vec3 Support(structRigidBody structRigidBody1, structRigidBody structRigidBody2, glm::vec3 v3Direction, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles)
+	{
+		return (FindFurthestPoint(v3Direction, T2, structRigidBody2, offset2, pListBVHNodeTriangles) - FindFurthestPoint(-v3Direction, T1, structRigidBody1, offset1, pListBVHNodeTriangles));
+	}
+
+	void push_front(glm::vec3* pPoints, glm::vec3 v) 
+	{
+		pPoints[3] = pPoints[2];
+		pPoints[2] = pPoints[1];
+		pPoints[1] = pPoints[0];
+		pPoints[0] = v;
+	}
+
+	bool SameDirection(glm::vec3 direction, glm::vec3 ao) 
+	{
+		return ( glm::dot(direction, ao) > 0.0f );
+	}
+
+	bool FuncLine(glm::vec3* pPoints, glm::vec3* pDirection, int32_t* pPointsSize) 
+	{
+		glm::vec3 a = pPoints[0];
+		glm::vec3 b = pPoints[1];
+
+		glm::vec3 ab = b - a;
+		glm::vec3 ao = -a;
+
+		if (SameDirection(ab, ao)) 
+		{
+			*pDirection = glm::cross(glm::cross(ab, ao), ab);
+		}
+		else 
+		{
+			pPoints[0] = a;
+			*pPointsSize = 1;
+
+			*pDirection = ao;
+		}
+
+		return false;
+	}
+
+	bool FuncTriangle(glm::vec3* pPoints, glm::vec3* pDirection, int32_t* pPointsSize)
+	{
+		glm::vec3 a = pPoints[0];
+		glm::vec3 b = pPoints[1];
+		glm::vec3 c = pPoints[2];
+
+		glm::vec3 ab = b - a;
+		glm::vec3 ac = c - a;
+		glm::vec3 ao = -a;
+
+		glm::vec3 abc = glm::cross(ab, ac);
+
+		if (SameDirection(glm::cross(abc, ac), ao)) 
+		{
+			if (SameDirection(ac, ao)) 
+			{
+				pPoints[0] = a;
+				pPoints[1] = c;
+				*pPointsSize = 2;
+
+				*pDirection = glm::cross(glm::cross(ac, ao), ac);
 			}
 			else 
 			{
-				if (true == IsCollide(structNodeOrTriangle2.m_BBox, structNodeOrTriangle.m_BBox))
+				pPoints[0] = a;
+				pPoints[1] = b;
+				*pPointsSize = 2;
+				return FuncLine(pPoints, pDirection, pPointsSize);
+			}
+		}
+		else 
+		{
+			if (SameDirection(glm::cross(ab, abc), ao)) 
+			{
+				pPoints[0] = a;
+				pPoints[1] = b;
+				*pPointsSize = 2;
+				return FuncLine(pPoints, pDirection, pPointsSize);
+			}
+			else 
+			{
+				if (SameDirection(abc, ao)) 
 				{
-					if (structNodeOrTriangle.m_nLeft != -1)
-					{
-						nTop++;
-						arrStack[nTop] = structNodeOrTriangle.m_nLeft;
-					}
-	
-					if (structNodeOrTriangle.m_nRight != -1)
-					{
-						nTop++;
-						arrStack[nTop] = structNodeOrTriangle.m_nRight;
-					}
+					*pDirection = abc;
+				}
+				else 
+				{
+					pPoints[0] = a;
+					pPoints[1] = c;
+					pPoints[2] = b;
+					*pPointsSize = 3;
+
+					*pDirection = -abc;
 				}
 			}
 		}
-	
+
+		return false;
 	}
-	
-	void SearchHits_ConvexConvex(structHits* pHits, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles)
+
+	bool FuncTetrahedron(glm::vec3* pPoints, glm::vec3* pDirection, int32_t* pPointsSize)
 	{
+		glm::vec3 a = pPoints[0];
+		glm::vec3 b = pPoints[1];
+		glm::vec3 c = pPoints[2];
+		glm::vec3 d = pPoints[3];
+
+		glm::vec3 ab = b - a;
+		glm::vec3 ac = c - a;
+		glm::vec3 ad = d - a;
+		glm::vec3 ao = -a;
+
+		glm::vec3 abc = glm::cross(ab, ac);
+		glm::vec3 acd = glm::cross(ac, ad);
+		glm::vec3 adb = glm::cross(ad, ab);
+
+		if (SameDirection(abc, ao)) 
+		{
+			pPoints[0] = a;
+			pPoints[1] = b;
+			pPoints[2] = c;
+			*pPointsSize = 3;
+
+			return FuncTriangle(pPoints, pDirection, pPointsSize);
+		}
+
+		if (SameDirection(acd, ao))
+		{
+			pPoints[0] = a;
+			pPoints[1] = c;
+			pPoints[2] = d;
+			*pPointsSize = 3;
+
+			return FuncTriangle(pPoints, pDirection, pPointsSize);
+		}
+
+		if (SameDirection(adb, ao))
+		{
+			pPoints[0] = a;
+			pPoints[1] = d;
+			pPoints[2] = b;
+			*pPointsSize = 3;
+
+			return FuncTriangle(pPoints, pDirection, pPointsSize);
+		}
+
+		return true;
+	}
+
+	bool NextSimplex(glm::vec3 *pPoints, glm::vec3 *pDirection, int32_t *pPointsSize)
+	{
+		switch (*pPointsSize)
+		{
+		case(2): { return FuncLine(pPoints, pDirection, pPointsSize); }
+		case(3): { return FuncTriangle(pPoints, pDirection, pPointsSize); }
+		case(4): { return FuncTetrahedron(pPoints, pDirection, pPointsSize); }
+		}
+
+		return false;
+	}
+
+	// GJK
+	bool SearchHits_ConvexConvex(structHits* pHits, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles)
+	{
+		glm::vec3 support = Support(structRigidBody1, structRigidBody2, glm::vec3(1, 0, 0), T1, T2, offset1, offset2, pListBVHNodeTriangles);
+
+		int32_t nPointsSize = 0;
+		glm::vec3 pPoints[4];
+
+		push_front(pPoints, support);
+		nPointsSize++;
+
+		glm::vec3 direction = -support;
+
+		while (true) 
+		{
+			support = Support(structRigidBody1, structRigidBody2, direction, T1, T2, offset1, offset2, pListBVHNodeTriangles);
+
+			if (glm::dot(support, direction) <= 0.0f) 
+			{
+				return false;
+			}
+
+			push_front(pPoints, support);
+			nPointsSize++;
+
+			if (true == NextSimplex(pPoints, &direction, &nPointsSize))
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	void SearchHits_ConvexConcave(structHits* pHits, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles) 
@@ -1994,7 +2262,12 @@ namespace OpenCLPhysics
 							}
 							else if (1 == structRigidBody1.m_nIsConvex && 1 == structRigidBody2.m_nIsConvex)
 							{
-								SearchHits_ConvexConvex(&hits, structRigidBody1, structRigidBody2, T1, T2, m_listBVHNodeTrianglesOffsets[structRigidBody1.m_nTriMeshId], m_listBVHNodeTrianglesOffsets[structRigidBody2.m_nTriMeshId], &m_listBVHNodeTriangles[0]);
+								bool bIsColl = SearchHits_ConvexConvex(&hits, structRigidBody1, structRigidBody2, T1, T2, m_listBVHNodeTrianglesOffsets[structRigidBody1.m_nTriMeshId], m_listBVHNodeTrianglesOffsets[structRigidBody2.m_nTriMeshId], &m_listBVHNodeTriangles[0]);
+
+								if (true == bIsColl) 
+								{
+									//std::cout << "coll" << std::endl;
+								}
 							}
 		
 							for (int i = 0; i < hits.m_nNumHits; i++)
