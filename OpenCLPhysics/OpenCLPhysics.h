@@ -115,6 +115,7 @@ namespace OpenCLPhysics
 
 		structVector3 m_v3HitPointInWorld;
 		structVector3 m_v3Normal;
+		float m_fPenetrationDepth;
 	}
 	structHit;
 

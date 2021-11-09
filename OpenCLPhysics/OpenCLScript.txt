@@ -342,6 +342,7 @@ typedef struct
 
 	Vector3 v3HitPointInWorld;
 	Vector3 v3Normal;
+	float fPenetrationDepth;
 }
 Hit;
 
