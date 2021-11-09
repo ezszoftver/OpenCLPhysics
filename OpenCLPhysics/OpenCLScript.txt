@@ -340,7 +340,8 @@ typedef struct
 	int nRigidBodyAId;
 	int nRigidBodyBId;
 
-	Vector3 v3HitPointInWorld;
+	Vector3 v3HitPointInWorld1;
+	Vector3 v3HitPointInWorld2;
 	Vector3 v3Normal;
 	float fPenetrationDepth;
 }
@@ -751,7 +752,7 @@ float angle(Vector3 v3A, Vector3 v3B)
 
 bool IsEqual(Hit hit1, Hit hit2)
 {
-	if ( distance(Vector3ToFloat3(hit1.v3HitPointInWorld), Vector3ToFloat3(hit2.v3HitPointInWorld)) < 0.05f )
+	if ( distance(Vector3ToFloat3(hit1.v3HitPointInWorld1), Vector3ToFloat3(hit2.v3HitPointInWorld1)) < 0.05f )
 	{
 		if (angle(hit1.v3Normal, hit2.v3Normal) < (3.141592f / 180.0f)) // 1 degree 
 		{
@@ -821,14 +822,14 @@ bool Intersect_LineTriangle(Hits *pHits, bool isInvertNormal, float3 f3LineA, fl
 	{
 		Hit hit;
 
-		//hit.v3HitPointInWorld = Float3ToVector3(f3P);
+		//hit.v3HitPointInWorld1 = Float3ToVector3(f3P);
 		if (dot(f3LineA - f3TriA, f3TriN) < 0.0f)
 		{
-			hit.v3HitPointInWorld = Float3ToVector3(f3LineA);
+			hit.v3HitPointInWorld1 = Float3ToVector3(f3LineA);
 		}
 		else
 		{
-			hit.v3HitPointInWorld = Float3ToVector3(f3LineB);
+			hit.v3HitPointInWorld1 = Float3ToVector3(f3LineB);
 		}
 
 		if (false == isInvertNormal) { hit.v3Normal = Float3ToVector3(f3TriN); } else { hit.v3Normal = Float3ToVector3(-1.0f * f3TriN); }

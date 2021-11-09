@@ -7,6 +7,12 @@
 #include <algorithm>    // std::sort
 #include <vector>       // std::vector
 
+#define GJK_MAX_NUM_ITERATIONS 64
+#define EPA_TOLERANCE 0.0001f
+#define EPA_MAX_NUM_FACES 64
+#define EPA_MAX_NUM_LOOSE_EDGES 32
+#define EPA_MAX_NUM_ITERATIONS 64
+
 namespace OpenCLPhysics 
 {
 	structVector3 ToVector3(glm::vec3 v) 
@@ -1746,27 +1752,27 @@ namespace OpenCLPhysics
 	//
 	//}
 
-	float Intersect_DirBBox(glm::vec3 v3Dir, structBBox bbox)
-	{
-		if ((0 > bbox.v3Min.x && 0 > bbox.v3Min.y && 0 > bbox.v3Min.z) && (0 < bbox.v3Max.x && 0 < bbox.v3Max.y && 0 < bbox.v3Max.z))
-		{
-			return 0.0f;
-		}
-		
-		float t[10];
-		t[1] = (bbox.v3Min.x) / v3Dir.x;
-		t[2] = (bbox.v3Max.x) / v3Dir.x;
-		t[3] = (bbox.v3Min.y) / v3Dir.y;
-		t[4] = (bbox.v3Max.y) / v3Dir.y;
-		t[5] = (bbox.v3Min.z) / v3Dir.z;
-		t[6] = (bbox.v3Max.z) / v3Dir.z;
-		t[7] = fmax(fmax(fmin(t[1], t[2]), fmin(t[3], t[4])), fmin(t[5], t[6]));
-		t[8] = fmin(fmin(fmax(t[1], t[2]), fmax(t[3], t[4])), fmax(t[5], t[6]));
-		t[9] = (t[8] < 0 || t[7] > t[8]) ? -1.0f : t[7];
-		return t[9];
-	}
+	//float Intersect_DirBBox(glm::vec3 v3Dir, structBBox bbox)
+	//{
+	//	if ((0 > bbox.v3Min.x && 0 > bbox.v3Min.y && 0 > bbox.v3Min.z) && (0 < bbox.v3Max.x && 0 < bbox.v3Max.y && 0 < bbox.v3Max.z))
+	//	{
+	//		return 0.0f;
+	//	}
+	//	
+	//	float t[10];
+	//	t[1] = (bbox.v3Min.x) / v3Dir.x;
+	//	t[2] = (bbox.v3Max.x) / v3Dir.x;
+	//	t[3] = (bbox.v3Min.y) / v3Dir.y;
+	//	t[4] = (bbox.v3Max.y) / v3Dir.y;
+	//	t[5] = (bbox.v3Min.z) / v3Dir.z;
+	//	t[6] = (bbox.v3Max.z) / v3Dir.z;
+	//	t[7] = fmax(fmax(fmin(t[1], t[2]), fmin(t[3], t[4])), fmin(t[5], t[6]));
+	//	t[8] = fmin(fmin(fmax(t[1], t[2]), fmax(t[3], t[4])), fmax(t[5], t[6]));
+	//	t[9] = (t[8] < 0 || t[7] > t[8]) ? -1.0f : t[7];
+	//	return t[9];
+	//}
 
-	glm::vec3 FindFurthestPoint(glm::vec3 v3Dir, glm::mat4 T, structRigidBody structRigidBody, structBVHNodeTriangleOffset offset, structBVHNodeTriangle* pListBVHNodeTriangles)
+	glm::vec3 Support(glm::vec3 v3Dir, glm::mat4 T, structRigidBody structRigidBody, structBVHNodeTriangleOffset offset, structBVHNodeTriangle* pListBVHNodeTriangles)
 	{
 		v3Dir = glm::inverse(T) * glm::vec4(v3Dir, 0.0f);
 
@@ -1822,209 +1828,266 @@ namespace OpenCLPhysics
 		return v3Ret;
 	}
 	
-	glm::vec3 Support(structRigidBody structRigidBody1, structRigidBody structRigidBody2, glm::vec3 v3Direction, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles)
+	//glm::vec3 Support(structRigidBody structRigidBody1, structRigidBody structRigidBody2, glm::vec3 v3Direction, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles)
+	//{
+	//	return (FindFurthestPoint(v3Direction, T2, structRigidBody2, offset2, pListBVHNodeTriangles) - FindFurthestPoint(-v3Direction, T1, structRigidBody1, offset1, pListBVHNodeTriangles));
+	//}
+	//
+	//void push_front(glm::vec3* pPoints, glm::vec3 v) 
+	//{
+	//	pPoints[3] = pPoints[2];
+	//	pPoints[2] = pPoints[1];
+	//	pPoints[1] = pPoints[0];
+	//	pPoints[0] = v;
+	//}
+	//
+	//bool SameDirection(glm::vec3 direction, glm::vec3 ao) 
+	//{
+	//	return ( glm::dot(direction, ao) > 0.0f );
+	//}
+	//
+	//bool FuncLine(glm::vec3* pPoints, glm::vec3* pDirection, int32_t* pPointsSize) 
+	//{
+	//	glm::vec3 a = pPoints[0];
+	//	glm::vec3 b = pPoints[1];
+	//
+	//	glm::vec3 ab = b - a;
+	//	glm::vec3 ao = -a;
+	//
+	//	if (SameDirection(ab, ao)) 
+	//	{
+	//		*pDirection = glm::cross(glm::cross(ab, ao), ab);
+	//	}
+	//	else 
+	//	{
+	//		pPoints[0] = a;
+	//		*pPointsSize = 1;
+	//
+	//		*pDirection = ao;
+	//	}
+	//
+	//	return false;
+	//}
+	//
+	//bool FuncTriangle(glm::vec3* pPoints, glm::vec3* pDirection, int32_t* pPointsSize)
+	//{
+	//	glm::vec3 a = pPoints[0];
+	//	glm::vec3 b = pPoints[1];
+	//	glm::vec3 c = pPoints[2];
+	//
+	//	glm::vec3 ab = b - a;
+	//	glm::vec3 ac = c - a;
+	//	glm::vec3 ao = -a;
+	//
+	//	glm::vec3 abc = glm::cross(ab, ac);
+	//
+	//	if (SameDirection(glm::cross(abc, ac), ao)) 
+	//	{
+	//		if (SameDirection(ac, ao)) 
+	//		{
+	//			pPoints[0] = a;
+	//			pPoints[1] = c;
+	//			*pPointsSize = 2;
+	//
+	//			*pDirection = glm::cross(glm::cross(ac, ao), ac);
+	//		}
+	//		else 
+	//		{
+	//			pPoints[0] = a;
+	//			pPoints[1] = b;
+	//			*pPointsSize = 2;
+	//			return FuncLine(pPoints, pDirection, pPointsSize);
+	//		}
+	//	}
+	//	else 
+	//	{
+	//		if (SameDirection(glm::cross(ab, abc), ao)) 
+	//		{
+	//			pPoints[0] = a;
+	//			pPoints[1] = b;
+	//			*pPointsSize = 2;
+	//			return FuncLine(pPoints, pDirection, pPointsSize);
+	//		}
+	//		else 
+	//		{
+	//			if (SameDirection(abc, ao)) 
+	//			{
+	//				*pDirection = abc;
+	//			}
+	//			else 
+	//			{
+	//				pPoints[0] = a;
+	//				pPoints[1] = c;
+	//				pPoints[2] = b;
+	//				*pPointsSize = 3;
+	//
+	//				*pDirection = -abc;
+	//			}
+	//		}
+	//	}
+	//
+	//	return false;
+	//}
+	//
+	//bool FuncTetrahedron(glm::vec3* pPoints, glm::vec3* pDirection, int32_t* pPointsSize)
+	//{
+	//	glm::vec3 a = pPoints[0];
+	//	glm::vec3 b = pPoints[1];
+	//	glm::vec3 c = pPoints[2];
+	//	glm::vec3 d = pPoints[3];
+	//
+	//	glm::vec3 ab = b - a;
+	//	glm::vec3 ac = c - a;
+	//	glm::vec3 ad = d - a;
+	//	glm::vec3 ao = -a;
+	//
+	//	glm::vec3 abc = glm::cross(ab, ac);
+	//	glm::vec3 acd = glm::cross(ac, ad);
+	//	glm::vec3 adb = glm::cross(ad, ab);
+	//
+	//	if (SameDirection(abc, ao)) 
+	//	{
+	//		pPoints[0] = a;
+	//		pPoints[1] = b;
+	//		pPoints[2] = c;
+	//		*pPointsSize = 3;
+	//
+	//		return FuncTriangle(pPoints, pDirection, pPointsSize);
+	//	}
+	//
+	//	if (SameDirection(acd, ao))
+	//	{
+	//		pPoints[0] = a;
+	//		pPoints[1] = c;
+	//		pPoints[2] = d;
+	//		*pPointsSize = 3;
+	//
+	//		return FuncTriangle(pPoints, pDirection, pPointsSize);
+	//	}
+	//
+	//	if (SameDirection(adb, ao))
+	//	{
+	//		pPoints[0] = a;
+	//		pPoints[1] = d;
+	//		pPoints[2] = b;
+	//		*pPointsSize = 3;
+	//
+	//		return FuncTriangle(pPoints, pDirection, pPointsSize);
+	//	}
+	//
+	//	return true;
+	//}
+	//
+	//bool NextSimplex(glm::vec3 *pPoints, glm::vec3 *pDirection, int32_t *pPointsSize)
+	//{
+	//	switch (*pPointsSize)
+	//	{
+	//	case(2): { return FuncLine(pPoints, pDirection, pPointsSize); }
+	//	case(3): { return FuncTriangle(pPoints, pDirection, pPointsSize); }
+	//	case(4): { return FuncTetrahedron(pPoints, pDirection, pPointsSize); }
+	//	}
+	//
+	//	return false;
+	//}
+
+	struct Point 
 	{
-		return (FindFurthestPoint(v3Direction, T2, structRigidBody2, offset2, pListBVHNodeTriangles) - FindFurthestPoint(-v3Direction, T1, structRigidBody1, offset1, pListBVHNodeTriangles));
+		glm::vec3 p; //Conserve Minkowski Difference
+		glm::vec3 a; //Result coordinate of object A's support function 
+		glm::vec3 b; //Result coordinate of object B's support function 
+	};
+
+	struct Plane 
+	{
+		//Unit-length plane normal
+		glm::vec3 normal;
+		//Distance from origin
+		float	distance;
+	};
+
+	Plane PlaneFromTri(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2)
+	{
+		glm::vec3 v1v0 = v1 - v0;
+		glm::vec3 v2v0 = v2 - v0;
+
+		glm::vec3 normal = glm::normalize(glm::cross(v1v0, v2v0));
+
+		float d = -glm::dot(v0, normal);
+
+		Plane plane;
+		plane.normal = normal;
+		plane.distance = d;
+
+		return plane;
 	}
 
-	void push_front(glm::vec3* pPoints, glm::vec3 v) 
+	float DistanceFromPlane(Plane plane, glm::vec3 in)
 	{
-		pPoints[3] = pPoints[2];
-		pPoints[2] = pPoints[1];
-		pPoints[1] = pPoints[0];
-		pPoints[0] = v;
+		return glm::dot(in, plane.normal) + plane.distance;
 	}
 
-	bool SameDirection(glm::vec3 direction, glm::vec3 ao) 
+	glm::vec3 ProjectPointOntoPlane(Plane plane, glm::vec3 point)
 	{
-		return ( glm::dot(direction, ao) > 0.0f );
+		float distance = DistanceFromPlane(plane, point);
+
+		return point - (plane.normal * distance);
 	}
 
-	bool FuncLine(glm::vec3* pPoints, glm::vec3* pDirection, int32_t* pPointsSize) 
+	void Barycentric(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 p, float* u, float* v, float* w)
 	{
-		glm::vec3 a = pPoints[0];
-		glm::vec3 b = pPoints[1];
-
-		glm::vec3 ab = b - a;
-		glm::vec3 ao = -a;
-
-		if (SameDirection(ab, ao)) 
-		{
-			*pDirection = glm::cross(glm::cross(ab, ao), ab);
-		}
-		else 
-		{
-			pPoints[0] = a;
-			*pPointsSize = 1;
-
-			*pDirection = ao;
-		}
-
-		return false;
+		glm::vec3 v0 = b - a, v1 = c - a, v2 = p - a;
+		float d00 = glm::dot(v0, v0);
+		float d01 = glm::dot(v0, v1);
+		float d11 = glm::dot(v1, v1);
+		float d20 = glm::dot(v2, v0);
+		float d21 = glm::dot(v2, v1);
+		float denom = d00 * d11 - d01 * d01;
+		*v = (d11 * d20 - d01 * d21) / denom;
+		*w = (d00 * d21 - d01 * d20) / denom;
+		*u = 1.0f - *v - *w;
 	}
 
-	bool FuncTriangle(glm::vec3* pPoints, glm::vec3* pDirection, int32_t* pPointsSize)
+	void CalculateSearchPoint(Point* pPoint, glm::vec3 search_dir, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles)
 	{
-		glm::vec3 a = pPoints[0];
-		glm::vec3 b = pPoints[1];
-		glm::vec3 c = pPoints[2];
-
-		glm::vec3 ab = b - a;
-		glm::vec3 ac = c - a;
-		glm::vec3 ao = -a;
-
-		glm::vec3 abc = glm::cross(ab, ac);
-
-		if (SameDirection(glm::cross(abc, ac), ao)) 
-		{
-			if (SameDirection(ac, ao)) 
-			{
-				pPoints[0] = a;
-				pPoints[1] = c;
-				*pPointsSize = 2;
-
-				*pDirection = glm::cross(glm::cross(ac, ao), ac);
-			}
-			else 
-			{
-				pPoints[0] = a;
-				pPoints[1] = b;
-				*pPointsSize = 2;
-				return FuncLine(pPoints, pDirection, pPointsSize);
-			}
-		}
-		else 
-		{
-			if (SameDirection(glm::cross(ab, abc), ao)) 
-			{
-				pPoints[0] = a;
-				pPoints[1] = b;
-				*pPointsSize = 2;
-				return FuncLine(pPoints, pDirection, pPointsSize);
-			}
-			else 
-			{
-				if (SameDirection(abc, ao)) 
-				{
-					*pDirection = abc;
-				}
-				else 
-				{
-					pPoints[0] = a;
-					pPoints[1] = c;
-					pPoints[2] = b;
-					*pPointsSize = 3;
-
-					*pDirection = -abc;
-				}
-			}
-		}
-
-		return false;
+		pPoint->b = Support(search_dir, T2, structRigidBody2, offset2, pListBVHNodeTriangles);
+		pPoint->a = Support(-search_dir, T1, structRigidBody1, offset1, pListBVHNodeTriangles);//coll1->GetBoundingVolume()->Support(-search_dir, coll1->GetTransform());
+		pPoint->p = pPoint->b - pPoint->a;
 	}
 
-	bool FuncTetrahedron(glm::vec3* pPoints, glm::vec3* pDirection, int32_t* pPointsSize)
+	void EPA(structHits* pHits, Point a, Point b, Point c, Point d, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles)
 	{
-		glm::vec3 a = pPoints[0];
-		glm::vec3 b = pPoints[1];
-		glm::vec3 c = pPoints[2];
-		glm::vec3 d = pPoints[3];
+		Point faces[EPA_MAX_NUM_FACES][4]; //Array of faces, each with 3 verts and a normal
 
-		glm::vec3 ab = b - a;
-		glm::vec3 ac = c - a;
-		glm::vec3 ad = d - a;
-		glm::vec3 ao = -a;
-
-		glm::vec3 abc = glm::cross(ab, ac);
-		glm::vec3 acd = glm::cross(ac, ad);
-		glm::vec3 adb = glm::cross(ad, ab);
-
-		if (SameDirection(abc, ao)) 
-		{
-			pPoints[0] = a;
-			pPoints[1] = b;
-			pPoints[2] = c;
-			*pPointsSize = 3;
-
-			return FuncTriangle(pPoints, pDirection, pPointsSize);
-		}
-
-		if (SameDirection(acd, ao))
-		{
-			pPoints[0] = a;
-			pPoints[1] = c;
-			pPoints[2] = d;
-			*pPointsSize = 3;
-
-			return FuncTriangle(pPoints, pDirection, pPointsSize);
-		}
-
-		if (SameDirection(adb, ao))
-		{
-			pPoints[0] = a;
-			pPoints[1] = d;
-			pPoints[2] = b;
-			*pPointsSize = 3;
-
-			return FuncTriangle(pPoints, pDirection, pPointsSize);
-		}
-
-		return true;
-	}
-
-	bool NextSimplex(glm::vec3 *pPoints, glm::vec3 *pDirection, int32_t *pPointsSize)
-	{
-		switch (*pPointsSize)
-		{
-		case(2): { return FuncLine(pPoints, pDirection, pPointsSize); }
-		case(3): { return FuncTriangle(pPoints, pDirection, pPointsSize); }
-		case(4): { return FuncTetrahedron(pPoints, pDirection, pPointsSize); }
-		}
-
-		return false;
-	}
-
-	glm::vec3 EPA(glm::vec3* pSimplex, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles) 
-	{
-		const float EPA_TOLERANCE = 0.0001f;
-		const int32_t EPA_MAX_NUM_FACES = 64;
-		const int32_t EPA_MAX_NUM_LOOSE_EDGES = 32;
-		const int32_t EPA_MAX_NUM_ITERATIONS = 64;
-
-		glm::vec3 a = pSimplex[0];
-		glm::vec3 b = pSimplex[1];
-		glm::vec3 c = pSimplex[2];
-		glm::vec3 d = pSimplex[3];
-
-		glm::vec3 faces[EPA_MAX_NUM_FACES][4]; //Array of faces, each with 3 verts and a normal
+		//glm::vec3 VertexA[3];
+		//glm::vec3 VertexB[3];
 
 		//Init with final simplex from GJK
 		faces[0][0] = a;
 		faces[0][1] = b;
 		faces[0][2] = c;
-		faces[0][3] = glm::normalize(glm::cross(b - a, c - a)); //ABC
+		faces[0][3].p = glm::normalize(glm::cross(b.p - a.p, c.p - a.p)); //ABC
 		faces[1][0] = a;
 		faces[1][1] = c;
 		faces[1][2] = d;
-		faces[1][3] = glm::normalize(glm::cross(c - a, d - a)); //ACD
+		faces[1][3].p = glm::normalize(glm::cross(c.p - a.p, d.p - a.p)); //ACD
 		faces[2][0] = a;
 		faces[2][1] = d;
 		faces[2][2] = b;
-		faces[2][3] = glm::normalize(glm::cross(d - a, b - a)); //ADB
+		faces[2][3].p = glm::normalize(glm::cross(d.p - a.p, b.p - a.p)); //ADB
 		faces[3][0] = b;
 		faces[3][1] = d;
 		faces[3][2] = c;
-		faces[3][3] = glm::normalize(glm::cross(d - b, c - b)); //BDC
+		faces[3][3].p = glm::normalize(glm::cross(d.p - b.p, c.p - b.p)); //BDC
 
 		int num_faces = 4;
 		int closest_face;
 
 		for (int iterations = 0; iterations < EPA_MAX_NUM_ITERATIONS; iterations++) {
 			//Find face that's closest to origin
-			float min_dist = dot(faces[0][0], faces[0][3]);
+			float min_dist = glm::dot(faces[0][0].p, faces[0][3].p);
 			closest_face = 0;
 			for (int i = 1; i < num_faces; i++) {
-				float dist = dot(faces[i][0], faces[i][3]);
+				float dist = glm::dot(faces[i][0].p, faces[i][3].p);
 				if (dist < min_dist) {
 					min_dist = dist;
 					closest_face = i;
@@ -2032,37 +2095,64 @@ namespace OpenCLPhysics
 			}
 
 			//search normal to face that's closest to origin
-			glm::vec3 search_dir = faces[closest_face][3];
-			//glm::vec3 p = coll2->support(search_dir) - coll1->support(-search_dir);
-			glm::vec3 p = Support(structRigidBody1, structRigidBody2, search_dir, T1, T2, offset1, offset2, pListBVHNodeTriangles);
+			glm::vec3 search_dir = faces[closest_face][3].p;
 
+			Point p;
+			CalculateSearchPoint(&p, search_dir, structRigidBody1, structRigidBody2, T1, T2, offset1, offset2, pListBVHNodeTriangles);
 
-			if (glm::dot(p, search_dir) - min_dist < EPA_TOLERANCE) {
+			if (glm::dot(p.p, search_dir) - min_dist < EPA_TOLERANCE) {
+
+				/*Core of calculating collision information*/
+				Plane closestPlane = PlaneFromTri(faces[closest_face][0].p, faces[closest_face][1].p, faces[closest_face][2].p); //plane of closest triangle face
+				glm::vec3 projectionPoint = ProjectPointOntoPlane(closestPlane, glm::vec3(0, 0, 0)); //projecting the origin onto the triangle(both are in Minkowski space)
+				float u, v, w;
+				Barycentric(faces[closest_face][0].p, faces[closest_face][1].p, faces[closest_face][2].p,
+					projectionPoint, &u, &v, &w); //finding the barycentric coordinate of this projection point to the triangle
+
+				//The contact points just have the same barycentric coordinate in their own triangles which  are composed by result coordinates of support function 
+				glm::vec3 localA = faces[closest_face][0].a * u + faces[closest_face][1].a * v + faces[closest_face][2].a * w;
+				glm::vec3 localB = faces[closest_face][0].b * u + faces[closest_face][1].b * v + faces[closest_face][2].b * w;
+				float penetration = glm::length(localA - localB);
+				glm::vec3 normal = glm::normalize(localA - localB);
+
 				//Convergence (new point is not significantly further from origin)
-				return faces[closest_face][3] * dot(p, search_dir); //dot vertex with normal to resolve collision along normal!
+				//localA -= coll1->GetTransform().GetPosition();
+				//localB -= coll2->GetTransform().GetPosition();
+
+				//collisionInfo.AddContactPoint(localA, localB, normal, penetration);
+				if (pHits->m_nNumHits < MAX_HITS_OBJECT_OBJECT)
+				{
+					structHit hit;
+					hit.m_v3HitPointInWorld1 = ToVector3(localA);
+					hit.m_v3HitPointInWorld2 = ToVector3(localB);
+					hit.m_v3Normal = ToVector3(normal);
+					hit.m_fPenetrationDepth = penetration;
+				
+					pHits->m_hits[pHits->m_nNumHits] = hit;
+					pHits->m_nNumHits++;
+				}
+				/*Core of calculating collision information*/
+
+				return;
 			}
 
-			glm::vec3 loose_edges[EPA_MAX_NUM_LOOSE_EDGES][2]; //keep track of edges we need to fix after removing faces
+			Point loose_edges[EPA_MAX_NUM_LOOSE_EDGES][2]; //keep track of edges we need to fix after removing faces
 			int num_loose_edges = 0;
 
 			//Find all triangles that are facing p
 			for (int i = 0; i < num_faces; i++)
 			{
-				if (dot(faces[i][3], p - faces[i][0]) > 0) //triangle i faces p, remove it
+				if (glm::dot(faces[i][3].p, p.p - faces[i][0].p) > 0) //triangle i faces p, remove it
 				{
 					//Add removed triangle's edges to loose edge list.
 					//If it's already there, remove it (both triangles it belonged to are gone)
 					for (int j = 0; j < 3; j++) //Three edges per face
 					{
-						glm::vec3 current_edge[2] = { faces[i][j], faces[i][(j + 1) % 3] };
+						Point current_edge[2] = { faces[i][j], faces[i][(j + 1) % 3] };
 						bool found_edge = false;
 						for (int k = 0; k < num_loose_edges; k++) //Check if current edge is already in list
 						{
-							if (loose_edges[k][1] == current_edge[0] && loose_edges[k][0] == current_edge[1]) {
-								//Edge is already in the list, remove it
-								//THIS ASSUMES EDGE CAN ONLY BE SHARED BY 2 TRIANGLES (which should be true)
-								//THIS ALSO ASSUMES SHARED EDGE WILL BE REVERSED IN THE TRIANGLES (which 
-								//should be true provided every triangle is wound CCW)
+							if (loose_edges[k][1].p == current_edge[0].p && loose_edges[k][0].p == current_edge[1].p) {
 								loose_edges[k][0] = loose_edges[num_loose_edges - 1][0]; //Overwrite current edge
 								loose_edges[k][1] = loose_edges[num_loose_edges - 1][1]; //with last edge in list
 								num_loose_edges--;
@@ -2098,71 +2188,389 @@ namespace OpenCLPhysics
 				faces[num_faces][0] = loose_edges[i][0];
 				faces[num_faces][1] = loose_edges[i][1];
 				faces[num_faces][2] = p;
-				faces[num_faces][3] = glm::normalize(glm::cross(loose_edges[i][0] - loose_edges[i][1], loose_edges[i][0] - p));
+				faces[num_faces][3].p = glm::normalize(glm::cross(loose_edges[i][0].p - loose_edges[i][1].p, loose_edges[i][0].p - p.p));
 
 				//Check for wrong normal to maintain CCW winding
 				float bias = 0.000001f; //in case dot result is only slightly < 0 (because origin is on face)
-				if (glm::dot(faces[num_faces][0], faces[num_faces][3]) + bias < 0) {
-					glm::vec3 temp = faces[num_faces][0];
+				if (glm::dot(faces[num_faces][0].p, faces[num_faces][3].p) + bias < 0) {
+					Point temp = faces[num_faces][0];
 					faces[num_faces][0] = faces[num_faces][1];
 					faces[num_faces][1] = temp;
-					faces[num_faces][3] = -faces[num_faces][3];
+					faces[num_faces][3].p = -faces[num_faces][3].p;
 				}
 				num_faces++;
 			}
 		} //End for iterations
-
+		printf("EPA did not converge\n");
 		//Return most recent closest point
-		return faces[closest_face][3] * dot(faces[closest_face][0], faces[closest_face][3]);
+		glm::vec3 search_dir = faces[closest_face][3].p;
+
+		Point p;
+		CalculateSearchPoint(&p, search_dir, structRigidBody1, structRigidBody2, T1, T2, offset1, offset2, pListBVHNodeTriangles);
+
+		Plane closestPlane = PlaneFromTri(faces[closest_face][0].p, faces[closest_face][1].p, faces[closest_face][2].p);
+		glm::vec3 projectionPoint = ProjectPointOntoPlane(closestPlane, glm::vec3(0, 0, 0));
+		float u, v, w;
+		Barycentric(faces[closest_face][0].p, faces[closest_face][1].p, faces[closest_face][2].p,
+			projectionPoint, &u, &v, &w);
+		glm::vec3 localA = faces[closest_face][0].a * u + faces[closest_face][1].a * v + faces[closest_face][2].a * w;
+		glm::vec3 localB = faces[closest_face][0].b * u + faces[closest_face][1].b * v + faces[closest_face][2].b * w;
+		float penetration = glm::length(localA - localB);
+		glm::vec3 normal = glm::normalize(localA - localB);
+
+		//collisionInfo.AddContactPoint(localA, localB, normal, penetration);
+		localA += ToVector3(structRigidBody1.m_v3Position);
+		localB += ToVector3(structRigidBody2.m_v3Position);
+
+		if (pHits->m_nNumHits < MAX_HITS_OBJECT_OBJECT)
+		{
+			structHit hit;
+			hit.m_v3HitPointInWorld1 = ToVector3(localA);
+			hit.m_v3HitPointInWorld2 = ToVector3(localB);
+			hit.m_v3Normal = ToVector3(normal);
+			hit.m_fPenetrationDepth = penetration;
+
+			pHits->m_hits[pHits->m_nNumHits] = hit;
+			pHits->m_nNumHits++;
+		}
+
+		return;
+	}
+	//glm::vec3 EPA(glm::vec3* pSimplex, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles) 
+	//{
+	//	const float EPA_TOLERANCE = 0.0001f;
+	//	const int32_t EPA_MAX_NUM_FACES = 64;
+	//	const int32_t EPA_MAX_NUM_LOOSE_EDGES = 32;
+	//	const int32_t EPA_MAX_NUM_ITERATIONS = 64;
+	//	
+	//	glm::vec3 a = pSimplex[0];
+	//	glm::vec3 b = pSimplex[1];
+	//	glm::vec3 c = pSimplex[2];
+	//	glm::vec3 d = pSimplex[3];
+	//	
+	//	glm::vec3 faces[EPA_MAX_NUM_FACES][4]; //Array of faces, each with 3 verts and a normal
+	//	
+	//	//Init with final simplex from GJK
+	//	faces[0][0] = a;
+	//	faces[0][1] = b;
+	//	faces[0][2] = c;
+	//	faces[0][3] = glm::normalize(glm::cross(b - a, c - a)); //ABC
+	//	faces[1][0] = a;
+	//	faces[1][1] = c;
+	//	faces[1][2] = d;
+	//	faces[1][3] = glm::normalize(glm::cross(c - a, d - a)); //ACD
+	//	faces[2][0] = a;
+	//	faces[2][1] = d;
+	//	faces[2][2] = b;
+	//	faces[2][3] = glm::normalize(glm::cross(d - a, b - a)); //ADB
+	//	faces[3][0] = b;
+	//	faces[3][1] = d;
+	//	faces[3][2] = c;
+	//	faces[3][3] = glm::normalize(glm::cross(d - b, c - b)); //BDC
+	//	
+	//	int num_faces = 4;
+	//	int closest_face;
+	//	
+	//	for (int iterations = 0; iterations < EPA_MAX_NUM_ITERATIONS; iterations++) {
+	//		//Find face that's closest to origin
+	//		float min_dist = dot(faces[0][0], faces[0][3]);
+	//		closest_face = 0;
+	//		for (int i = 1; i < num_faces; i++) {
+	//			float dist = dot(faces[i][0], faces[i][3]);
+	//			if (dist < min_dist) {
+	//				min_dist = dist;
+	//				closest_face = i;
+	//			}
+	//		}
+	//	
+	//		//search normal to face that's closest to origin
+	//		glm::vec3 search_dir = faces[closest_face][3];
+	//		//glm::vec3 p = coll2->support(search_dir) - coll1->support(-search_dir);
+	//		glm::vec3 p = Support(structRigidBody1, structRigidBody2, search_dir, T1, T2, offset1, offset2, pListBVHNodeTriangles);
+	//	
+	//	
+	//		if (glm::dot(p, search_dir) - min_dist < EPA_TOLERANCE) {
+	//			//Convergence (new point is not significantly further from origin)
+	//			return faces[closest_face][3] * dot(p, search_dir); //dot vertex with normal to resolve collision along normal!
+	//		}
+	//	
+	//		glm::vec3 loose_edges[EPA_MAX_NUM_LOOSE_EDGES][2]; //keep track of edges we need to fix after removing faces
+	//		int num_loose_edges = 0;
+	//	
+	//		//Find all triangles that are facing p
+	//		for (int i = 0; i < num_faces; i++)
+	//		{
+	//			if (dot(faces[i][3], p - faces[i][0]) > 0) //triangle i faces p, remove it
+	//			{
+	//				//Add removed triangle's edges to loose edge list.
+	//				//If it's already there, remove it (both triangles it belonged to are gone)
+	//				for (int j = 0; j < 3; j++) //Three edges per face
+	//				{
+	//					glm::vec3 current_edge[2] = { faces[i][j], faces[i][(j + 1) % 3] };
+	//					bool found_edge = false;
+	//					for (int k = 0; k < num_loose_edges; k++) //Check if current edge is already in list
+	//					{
+	//						if (loose_edges[k][1] == current_edge[0] && loose_edges[k][0] == current_edge[1]) {
+	//							//Edge is already in the list, remove it
+	//							//THIS ASSUMES EDGE CAN ONLY BE SHARED BY 2 TRIANGLES (which should be true)
+	//							//THIS ALSO ASSUMES SHARED EDGE WILL BE REVERSED IN THE TRIANGLES (which 
+	//							//should be true provided every triangle is wound CCW)
+	//							loose_edges[k][0] = loose_edges[num_loose_edges - 1][0]; //Overwrite current edge
+	//							loose_edges[k][1] = loose_edges[num_loose_edges - 1][1]; //with last edge in list
+	//							num_loose_edges--;
+	//							found_edge = true;
+	//							k = num_loose_edges; //exit loop because edge can only be shared once
+	//						}
+	//					}//endfor loose_edges
+	//	
+	//					if (!found_edge) { //add current edge to list
+	//						// assert(num_loose_edges<EPA_MAX_NUM_LOOSE_EDGES);
+	//						if (num_loose_edges >= EPA_MAX_NUM_LOOSE_EDGES) break;
+	//						loose_edges[num_loose_edges][0] = current_edge[0];
+	//						loose_edges[num_loose_edges][1] = current_edge[1];
+	//						num_loose_edges++;
+	//					}
+	//				}
+	//	
+	//				//Remove triangle i from list
+	//				faces[i][0] = faces[num_faces - 1][0];
+	//				faces[i][1] = faces[num_faces - 1][1];
+	//				faces[i][2] = faces[num_faces - 1][2];
+	//				faces[i][3] = faces[num_faces - 1][3];
+	//				num_faces--;
+	//				i--;
+	//			}//endif p can see triangle i
+	//		}//endfor num_faces
+	//	
+	//		//Reconstruct polytope with p added
+	//		for (int i = 0; i < num_loose_edges; i++)
+	//		{
+	//			// assert(num_faces<EPA_MAX_NUM_FACES);
+	//			if (num_faces >= EPA_MAX_NUM_FACES) break;
+	//			faces[num_faces][0] = loose_edges[i][0];
+	//			faces[num_faces][1] = loose_edges[i][1];
+	//			faces[num_faces][2] = p;
+	//			faces[num_faces][3] = glm::normalize(glm::cross(loose_edges[i][0] - loose_edges[i][1], loose_edges[i][0] - p));
+	//	
+	//			//Check for wrong normal to maintain CCW winding
+	//			float bias = 0.000001f; //in case dot result is only slightly < 0 (because origin is on face)
+	//			if (glm::dot(faces[num_faces][0], faces[num_faces][3]) + bias < 0) {
+	//				glm::vec3 temp = faces[num_faces][0];
+	//				faces[num_faces][0] = faces[num_faces][1];
+	//				faces[num_faces][1] = temp;
+	//				faces[num_faces][3] = -faces[num_faces][3];
+	//			}
+	//			num_faces++;
+	//		}
+	//	} //End for iterations
+	//	
+	//	//Return most recent closest point
+	//	return faces[closest_face][3] * dot(faces[closest_face][0], faces[closest_face][3]);
+	//}
+
+	
+	
+	void update_simplex3(Point* a, Point* b, Point* c, Point* d, int* simp_dim, glm::vec3 *pSearch_dir)
+	{
+		/* Required winding order:
+		   //  b
+		   //  | \
+		   //  |   \
+		   //  |    a
+		   //  |   /
+		   //  | /
+		   //  c
+		   */
+		glm::vec3 n = glm::cross(b->p - a->p, c->p - a->p); //triangle's normal
+		glm::vec3 AO = -a->p; //direction to origin
+
+		//Determine which feature is closest to origin, make that the new simplex
+
+		*simp_dim = 2;
+		if (glm::dot(glm::cross(b->p - a->p, n), AO) > 0) { //Closest to edge AB
+			*c = *a;
+			//simp_dim = 2;
+			*pSearch_dir = glm::cross(glm::cross(b->p - a->p, AO), b->p - a->p);
+			return;
+		}
+		if (glm::dot(glm::cross(n, c->p - a->p), AO) > 0) { //Closest to edge AC
+			*b = *a;
+			//simp_dim = 2;
+			*pSearch_dir = glm::cross(glm::cross(c->p - a->p, AO), c->p - a->p);
+			return;
+		}
+
+		*simp_dim = 3;
+		if (glm::dot(n, AO) > 0) { //Above triangle
+			*d = *c;
+			*c = *b;
+			*b = *a;
+			//simp_dim = 3;
+			*pSearch_dir = n;
+			return;
+		}
+		//else //Below triangle
+		*d = *b;
+		*b = *a;
+		//simp_dim = 3;
+		*pSearch_dir = -n;
+		return;
 	}
 
+	bool update_simplex4(Point* a, Point* b, Point* c, Point* d, int* simp_dim, glm::vec3 *pSearch_dir)
+	{
+		// a is peak/tip of pyramid, BCD is the base (counterclockwise winding order)
+		//We know a priori that origin is above BCD and below a
+
+		//Get normals of three new faces
+		glm::vec3 ABC = glm::cross(b->p - a->p, c->p - a->p);
+		glm::vec3 ACD = glm::cross(c->p - a->p, d->p - a->p);
+		glm::vec3 ADB = glm::cross(d->p - a->p, b->p - a->p);
+
+		glm::vec3 AO = -a->p; //dir to origin
+		*simp_dim = 3; //hoisting this just cause
+
+		//Plane-test origin with 3 faces
+		/*
+		// Note: Kind of primitive approach used here; If origin is in front of a face, just use it as the new simplex.
+		// We just go through the faces sequentially and exit at the first one which satisfies dot product. Not sure this
+		// is optimal or if edges should be considered as possible simplices? Thinking this through in my head I feel like
+		// this method is good enough. Makes no difference for AABBS, should test with more complex colliders.
+		*/
+		if (glm::dot(ABC, AO) > 0) { //In front of ABC
+			*d = *c;
+			*c = *b;
+			*b = *a;
+			*pSearch_dir = ABC;
+			return false;
+		}
+
+		if (glm::dot(ACD, AO) > 0) { //In front of ACD
+			*b = *a;
+			*pSearch_dir = ACD;
+			return false;
+		}
+		if (glm::dot(ADB, AO) > 0) { //In front of ADB
+			*c = *d;
+			*d = *b;
+			*b = *a;
+			*pSearch_dir = ADB;
+			return false;
+		}
+
+		//else inside tetrahedron; enclosed!
+		return true;
+	}
+	
 	// GJK
 	bool SearchHits_ConvexConvex(structHits *pHits, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles)
 	{
-		glm::vec3 support = Support(structRigidBody1, structRigidBody2, glm::vec3(1, 0, 0), T1, T2, offset1, offset2, pListBVHNodeTriangles);
+		//collisionInfo.a = coll1;
+		//collisionInfo.b = coll2;
 
-		int32_t nPointsSize = 0;
-		glm::vec3 pPoints[4];
+		//Vector3* mtv;
 
-		push_front(pPoints, support);
-		nPointsSize++;
+		glm::vec3 coll1Pos = ToVector3(structRigidBody1.m_v3Position);//coll1->GetTransform().GetPosition();
+		glm::vec3 coll2Pos = ToVector3(structRigidBody2.m_v3Position);//coll2->GetTransform().GetPosition();
 
-		glm::vec3 direction = -support;
 
-		while (true) 
-		{
-			support = Support(structRigidBody1, structRigidBody2, direction, T1, T2, offset1, offset2, pListBVHNodeTriangles);
+		Point a, b, c, d; //Simplex: just a set of points (a is always most recently added)
+		glm::vec3 search_dir = coll1Pos - coll2Pos; //initial search direction between colliders
 
-			if (glm::dot(support, direction) <= 0.0f) 
-			{
-				return false;
-			}
+		 //Get initial point for simplex
+		//Point c;
+		CalculateSearchPoint(&c, search_dir, structRigidBody1, structRigidBody2, T1, T2, offset1, offset2, pListBVHNodeTriangles);
+		search_dir = -c.p; //search in direction of origin
 
-			push_front(pPoints, support);
-			nPointsSize++;
+		//Get second point for a line segment simplex
+		//Point b;
+		CalculateSearchPoint(&b, search_dir, structRigidBody1, structRigidBody2, T1, T2, offset1, offset2, pListBVHNodeTriangles);
 
-			if (true == NextSimplex(pPoints, &direction, &nPointsSize))
-			{
-				glm::vec3 v3PenetrationNormal = EPA(pPoints, structRigidBody1, structRigidBody2, T1, T2, offset1, offset2, pListBVHNodeTriangles);
+		if (glm::dot(b.p, search_dir) < 0) {
+			return false;
+		}//we didn't reach the origin, won't enclose it
 
-				if (pHits->m_nNumHits < MAX_HITS_OBJECT_OBJECT)
-				{
-					structHit hit;
-					hit.m_v3HitPointInWorld = ToVector3(glm::vec3(0, 0, 0));
-					hit.m_v3Normal = ToVector3(glm::normalize(-v3PenetrationNormal));
-					hit.m_fPenetrationDepth = glm::length(v3PenetrationNormal);
-
-					pHits->m_hits[pHits->m_nNumHits] = hit;
-					pHits->m_nNumHits++;
-
-					return true;
-				}
-
-				return false;
-			}
+		search_dir = glm::cross(glm::cross(c.p - b.p, -b.p), c.p - b.p); //search perpendicular to line segment towards origin
+		if (search_dir == glm::vec3(0, 0, 0)) { //origin is on this line segment
+			//Apparently any normal search vector will do?
+			search_dir = glm::cross(c.p - b.p, glm::vec3(1, 0, 0)); //normal with x-axis
+			if (search_dir == glm::vec3(0, 0, 0))
+				search_dir = glm::cross(c.p - b.p, glm::vec3(0, 0, -1)); //normal with z-axis
 		}
+		int simp_dim = 2; //simplex dimension
+
+		for (int iterations = 0; iterations < GJK_MAX_NUM_ITERATIONS; iterations++)
+		{
+			//Point a;
+			CalculateSearchPoint(&a, search_dir, structRigidBody1, structRigidBody2, T1, T2, offset1, offset2, pListBVHNodeTriangles);
+
+			if (glm::dot(a.p, search_dir) < 0) {
+				return false;
+			}//we didn't reach the origin, won't enclose it
+
+			simp_dim++;
+			if (simp_dim == 3) {
+				update_simplex3(&a, &b, &c, &d, &simp_dim, &search_dir);
+			}
+			else if (update_simplex4(&a, &b, &c, &d, &simp_dim, &search_dir)) {
+				EPA(pHits, a, b, c, d, structRigidBody1, structRigidBody2, T1, T2, offset1, offset2, pListBVHNodeTriangles);
+				return true;
+			}
+		}//endfor
 
 		return false;
+
+
+
+
+
+
+
+
+		//glm::vec3 support = Support(structRigidBody1, structRigidBody2, glm::vec3(1, 0, 0), T1, T2, offset1, offset2, pListBVHNodeTriangles);
+		//
+		//int32_t nPointsSize = 0;
+		//glm::vec3 pPoints[4];
+		//
+		//push_front(pPoints, support);
+		//nPointsSize++;
+		//
+		//glm::vec3 direction = -support;
+		//
+		//while (true) 
+		//{
+		//	support = Support(structRigidBody1, structRigidBody2, direction, T1, T2, offset1, offset2, pListBVHNodeTriangles);
+		//
+		//	if (glm::dot(support, direction) <= 0.0f) 
+		//	{
+		//		return false;
+		//	}
+		//
+		//	push_front(pPoints, support);
+		//	nPointsSize++;
+		//
+		//	if (true == NextSimplex(pPoints, &direction, &nPointsSize))
+		//	{
+		//		glm::vec3 v3PenetrationNormal = EPA(pPoints, structRigidBody1, structRigidBody2, T1, T2, offset1, offset2, pListBVHNodeTriangles);
+		//
+		//		if (pHits->m_nNumHits < MAX_HITS_OBJECT_OBJECT)
+		//		{
+		//			structHit hit;
+		//			hit.m_v3HitPointInWorld = ToVector3(glm::vec3(0, 0, 0));
+		//			hit.m_v3Normal = ToVector3(glm::normalize(-v3PenetrationNormal));
+		//			hit.m_fPenetrationDepth = glm::length(v3PenetrationNormal);
+		//
+		//			pHits->m_hits[pHits->m_nNumHits] = hit;
+		//			pHits->m_nNumHits++;
+		//
+		//			return true;
+		//		}
+		//
+		//		return false;
+		//	}
+		//}
+		//
+		//return false;
 	}
 
 	void SearchHits_ConvexConcave(structHits* pHits, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles) 
@@ -2530,8 +2938,8 @@ namespace OpenCLPhysics
 				if (1 == rigidBodyB.m_nIsConvex)
 				{
 					// calc contact velocity
-					glm::vec3 rA = ToVector3(hit.m_v3HitPointInWorld) - ToVector3(m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position);
-					glm::vec3 rB = ToVector3(hit.m_v3HitPointInWorld) - ToVector3(m_listRigidBodies[hit.m_nRigidBodyBId].m_v3Position);
+					glm::vec3 rA = ToVector3(hit.m_v3HitPointInWorld1) - ToVector3(m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position);
+					glm::vec3 rB = ToVector3(hit.m_v3HitPointInWorld2) - ToVector3(m_listRigidBodies[hit.m_nRigidBodyBId].m_v3Position);
 					glm::vec3 v3ARelVelocity = GetPointVelocity(rigidBodyA, rA);
 					glm::vec3 v3BRelVelocity = GetPointVelocity(rigidBodyB, rB);
 					glm::vec3 v3RelVelocity = v3ARelVelocity - v3BRelVelocity;
@@ -2570,7 +2978,7 @@ namespace OpenCLPhysics
 				else
 				{
 					// calc contact velocity
-					glm::vec3 rA = ToVector3(hit.m_v3HitPointInWorld) - ToVector3(m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position);
+					glm::vec3 rA = ToVector3(hit.m_v3HitPointInWorld1) - ToVector3(m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position);
 					glm::vec3 v3RelVelocity = GetPointVelocity(rigidBodyA, rA);
 					float fProjVelocity = glm::dot(v3RelVelocity, ToVector3(hit.m_v3Normal));
 

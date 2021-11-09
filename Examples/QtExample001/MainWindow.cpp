@@ -502,8 +502,9 @@ void MainWindow::TimerTick()
     
         for (int32_t j = 0; j < hits.m_nNumHits; j++) 
         {
-            structVector3 p1 = hits.m_hits[j].m_v3HitPointInWorld;
-            structVector3 p2 = hits.m_hits[j].m_v3Normal;
+            structVector3 p1 = hits.m_hits[j].m_v3HitPointInWorld1;
+            structVector3 p2 = hits.m_hits[j].m_v3HitPointInWorld2;
+            structVector3 p3 = hits.m_hits[j].m_v3Normal;
     
             glPointSize(20.0f);
     
@@ -514,12 +515,25 @@ void MainWindow::TimerTick()
                 glColor3f(1.0f, 1.0f, 1.0f);
             }
             glEnd();
+
+            glBegin(GL_POINTS);
+            {
+                glColor3f(1.0f, 0.0f, 0.0f);
+                glVertex3f(p2.x, p2.y, p2.z);
+                glColor3f(1.0f, 1.0f, 1.0f);
+            }
+            glEnd();
     
             glBegin(GL_LINES);
             {
                 glColor3f(0.0f, 1.0f, 0.0f);
+
                 glVertex3f(p1.x, p1.y, p1.z);
-                glVertex3f(p1.x + p2.x, p1.y + p2.y, p1.z + p2.z);
+                glVertex3f(p1.x + p3.x, p1.y + p3.y, p1.z + p3.z);
+
+                glVertex3f(p2.x, p2.y, p2.z);
+                glVertex3f(p2.x + p3.x, p2.y + p3.y, p2.z + p3.z);
+
                 glColor3f(1.0f, 1.0f, 1.0f);
             }
             glEnd();
