@@ -113,8 +113,8 @@ namespace OpenCLPhysics
 		int32_t m_nRigidBodyAId = -1;
 		int32_t m_nRigidBodyBId = -1;
 
-		structVector3 m_v3HitPointInWorld1;
-		structVector3 m_v3HitPointInWorld2;
+		structVector3 m_v3HitPointInWorldA;
+		structVector3 m_v3HitPointInWorldB;
 		structVector3 m_v3Normal;
 		float m_fPenetrationDepth;
 	}

@@ -105,7 +105,7 @@ bool MainWindow::Init()
     // 2/2 - physics
     Model physicsmodel;
     physicsmodel.Load("Scene", "Physics.obj", glm::mat4(1.0f), false);
-    static_id = m_physics.CreateTriMesh(physicsmodel.GetAllVertices(), Physics::TriMeshType::Dynamic, false);
+    static_id = m_physics.CreateTriMesh(physicsmodel.GetAllVertices(), Physics::TriMeshType::Static, false);
 
     // dynamic
     // 1/2 - draw
@@ -502,8 +502,8 @@ void MainWindow::TimerTick()
     
         for (int32_t j = 0; j < hits.m_nNumHits; j++) 
         {
-            structVector3 p1 = hits.m_hits[j].m_v3HitPointInWorld1;
-            structVector3 p2 = hits.m_hits[j].m_v3HitPointInWorld2;
+            structVector3 p1 = hits.m_hits[j].m_v3HitPointInWorldA;
+            structVector3 p2 = hits.m_hits[j].m_v3HitPointInWorldB;
             structVector3 p3 = hits.m_hits[j].m_v3Normal;
     
             glPointSize(20.0f);
