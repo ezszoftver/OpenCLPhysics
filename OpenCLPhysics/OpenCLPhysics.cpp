@@ -1181,7 +1181,7 @@ namespace OpenCLPhysics
 		if (false == CollisionDetection()) { return false; }
 
 		// 6. CollisionResponse
-		//CollisionResponse(dt);
+		CollisionResponse(dt);
 
 		// 7. read to RAM for CPU
 		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), &(m_listRigidBodies[0]), 0, NULL, NULL);
@@ -1978,7 +1978,7 @@ namespace OpenCLPhysics
 					structHit hit;
 					hit.m_v3HitPointInWorldA = ToVector3(localA);
 					hit.m_v3HitPointInWorldB = ToVector3(localB);
-					hit.m_v3Normal = ToVector3(normal);
+					hit.m_v3Normal = ToVector3(-normal);
 					hit.m_fPenetrationDepth = penetration;
 				
 					pHits->m_hits[pHits->m_nNumHits] = hit;
@@ -2054,6 +2054,9 @@ namespace OpenCLPhysics
 				num_faces++;
 			}
 		} //End for iterations
+
+		return;
+
 		printf("EPA did not converge\n");
 		//Return most recent closest point
 		glm::vec3 search_dir = faces[closest_face][3].p;
@@ -2080,7 +2083,7 @@ namespace OpenCLPhysics
 			structHit hit;
 			hit.m_v3HitPointInWorldA = ToVector3(localA);
 			hit.m_v3HitPointInWorldB = ToVector3(localB);
-			hit.m_v3Normal = ToVector3(normal);
+			hit.m_v3Normal = ToVector3(-normal);
 			hit.m_fPenetrationDepth = penetration;
 
 			pHits->m_hits[pHits->m_nNumHits] = hit;
@@ -2373,6 +2376,11 @@ namespace OpenCLPhysics
 		glm::vec3 coll1Pos = ToVector3(structRigidBody1.m_v3Position);//coll1->GetTransform().GetPosition();
 		glm::vec3 coll2Pos = ToVector3(structRigidBody2.m_v3Position);//coll2->GetTransform().GetPosition();
 
+		if (coll1Pos == coll2Pos) 
+		{
+			return false;
+			//coll2Pos.x += 0.001f;
+		}
 
 		Point a, b, c, d; //Simplex: just a set of points (a is always most recently added)
 		glm::vec3 search_dir = coll1Pos - coll2Pos; //initial search direction between colliders
@@ -2392,10 +2400,11 @@ namespace OpenCLPhysics
 
 		search_dir = glm::cross(glm::cross(c.p - b.p, -b.p), c.p - b.p); //search perpendicular to line segment towards origin
 		if (search_dir == glm::vec3(0, 0, 0)) { //origin is on this line segment
-			//Apparently any normal search vector will do?
-			search_dir = glm::cross(c.p - b.p, glm::vec3(1, 0, 0)); //normal with x-axis
-			if (search_dir == glm::vec3(0, 0, 0))
-				search_dir = glm::cross(c.p - b.p, glm::vec3(0, 0, -1)); //normal with z-axis
+			return false;
+			////Apparently any normal search vector will do?
+			//search_dir = glm::cross(c.p - b.p, glm::vec3(1, 0, 0)); //normal with x-axis
+			//if (search_dir == glm::vec3(0, 0, 0))
+			//	search_dir = glm::cross(c.p - b.p, glm::vec3(0, 0, -1)); //normal with z-axis
 		}
 		int simp_dim = 2; //simplex dimension
 
@@ -2428,7 +2437,6 @@ namespace OpenCLPhysics
 		glm::vec3 coll1Pos = ToVector3(structRigidBody1.m_v3Position);//coll1->GetTransform().GetPosition();
 		glm::vec3 coll2Pos = glm::vec3(0,0,0);//coll2->GetTransform().GetPosition();
 
-
 		Point a, b, c, d; //Simplex: just a set of points (a is always most recently added)
 		glm::vec3 search_dir = coll1Pos - coll2Pos; //initial search direction between colliders
 
@@ -2447,10 +2455,11 @@ namespace OpenCLPhysics
 
 		search_dir = glm::cross(glm::cross(c.p - b.p, -b.p), c.p - b.p); //search perpendicular to line segment towards origin
 		if (search_dir == glm::vec3(0, 0, 0)) { //origin is on this line segment
-			//Apparently any normal search vector will do?
-			search_dir = glm::cross(c.p - b.p, glm::vec3(1, 0, 0)); //normal with x-axis
-			if (search_dir == glm::vec3(0, 0, 0))
-				search_dir = glm::cross(c.p - b.p, glm::vec3(0, 0, -1)); //normal with z-axis
+			return false;
+			////Apparently any normal search vector will do?
+			//search_dir = glm::cross(c.p - b.p, glm::vec3(1, 0, 0)); //normal with x-axis
+			//if (search_dir == glm::vec3(0, 0, 0))
+			//	search_dir = glm::cross(c.p - b.p, glm::vec3(0, 0, -1)); //normal with z-axis
 		}
 		int simp_dim = 2; //simplex dimension
 
@@ -2685,13 +2694,27 @@ namespace OpenCLPhysics
 							{
 								SearchHits_ConvexConvex(&hits, structRigidBody1, structRigidBody2, T1, T2, m_listBVHNodeTrianglesOffsets[structRigidBody1.m_nTriMeshId], m_listBVHNodeTrianglesOffsets[structRigidBody2.m_nTriMeshId], &m_listBVHNodeTriangles[0], &m_listBVHNodeTriangles[0]);
 							}
-		
+
 							for (int i = 0; i < hits.m_nNumHits; i++)
 							{
 								if (allHits.m_nNumHits >= MAX_HITS)
 								{
 									continue;
 								}
+
+								//structHit hit = hits.m_hits[i];
+								//if (isnan(hit.m_v3Normal.x) || isnan(hit.m_v3Normal.y) || isnan(hit.m_v3Normal.z))
+								//{
+								//	std::cout << "normal" << std::endl;
+								//}
+								//if (isnan(hit.m_v3HitPointInWorldA.x) || isnan(hit.m_v3HitPointInWorldA.y) || isnan(hit.m_v3HitPointInWorldA.z))
+								//{
+								//	std::cout << "hit a" << std::endl;
+								//}
+								//if (isnan(hit.m_v3HitPointInWorldB.x) || isnan(hit.m_v3HitPointInWorldB.y) || isnan(hit.m_v3HitPointInWorldB.z))
+								//{
+								//	std::cout << "hit b" << std::endl;
+								//}
 
 								allHits.m_hits[allHits.m_nNumHits] = hits.m_hits[i];
 		
@@ -2788,7 +2811,7 @@ namespace OpenCLPhysics
 			{
 				structHit hit = hits.m_hits[i];
 
-				structRigidBody rigidBodyA = m_listRigidBodies[id];
+				structRigidBody rigidBodyA = m_listRigidBodies[hit.m_nRigidBodyAId];
 				glm::vec3 v3LinearVelocityA = ToVector3(rigidBodyA.m_v3LinearVelocity);
 				glm::vec3 v3AngularVelocityA = ToVector3(rigidBodyA.m_v3AngularVelocity);
 
@@ -2828,13 +2851,22 @@ namespace OpenCLPhysics
 					v3LinearVelocityB -= (J * ToVector3(hit.m_v3Normal)) / rigidBodyB.m_fMass;
 					v3AngularVelocityB -= glm::cross(rB, J * ToVector3(hit.m_v3Normal)) / rigidBodyB.m_fMass;
 
-
-
 					m_listRigidBodies[id].m_v3LinearVelocity = ToVector3(v3LinearVelocityA);
 					m_listRigidBodies[id].m_v3AngularVelocity = ToVector3(v3AngularVelocityA);
 
 					m_listRigidBodies[hit.m_nRigidBodyBId].m_v3LinearVelocity = ToVector3(v3LinearVelocityB);
 					m_listRigidBodies[hit.m_nRigidBodyBId].m_v3AngularVelocity = ToVector3(v3AngularVelocityB);
+
+					// separate
+					glm::vec3 v3PositionA = ToVector3(rigidBodyA.m_v3Position);
+					glm::vec3 v3SeparateA = ToVector3(hit.m_v3Normal) * +(hit.m_fPenetrationDepth * 0.5f);
+					glm::vec3 v3NewPosA = v3PositionA + (v3SeparateA * dt);
+					m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position = ToVector3(v3NewPosA);
+
+					glm::vec3 v3PositionB = ToVector3(rigidBodyB.m_v3Position);
+					glm::vec3 v3SeparateB = ToVector3(hit.m_v3Normal) * -(hit.m_fPenetrationDepth * 0.5f);
+					glm::vec3 v3NewPosB = v3PositionB + (v3SeparateB * dt);
+					m_listRigidBodies[hit.m_nRigidBodyBId].m_v3Position = ToVector3(v3NewPosB);
 				}
 				else
 				{
@@ -2860,13 +2892,17 @@ namespace OpenCLPhysics
 					v3LinearVelocityA += (J * ToVector3(hit.m_v3Normal)) / rigidBodyA.m_fMass;
 					v3AngularVelocityA += glm::cross(rA, J * ToVector3(hit.m_v3Normal)) / rigidBodyA.m_fMass;
 
-					m_listRigidBodies[id].m_v3LinearVelocity = ToVector3(v3LinearVelocityA);
-					m_listRigidBodies[id].m_v3AngularVelocity = ToVector3(v3AngularVelocityA);
-				}
-				
-			}
+					m_listRigidBodies[hit.m_nRigidBodyAId].m_v3LinearVelocity = ToVector3(v3LinearVelocityA);
+					m_listRigidBodies[hit.m_nRigidBodyAId].m_v3AngularVelocity = ToVector3(v3AngularVelocityA);
 
-			
+					// separate
+					glm::vec3 v3PositionA = ToVector3(rigidBodyA.m_v3Position);
+					glm::vec3 v3SeparateA = ToVector3(hit.m_v3Normal)* hit.m_fPenetrationDepth;
+					glm::vec3 v3NewPosA = v3PositionA + (v3SeparateA * dt);
+					m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position = ToVector3(v3NewPosA);
+				}
+
+			}
 		}
 		
 		// DEBUG EZ MAJD NEM KELL
