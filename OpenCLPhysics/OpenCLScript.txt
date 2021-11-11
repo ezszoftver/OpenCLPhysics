@@ -628,6 +628,10 @@ __kernel void Integrate(__global RigidBody* inoutRigidBodies, int nCount, float 
 
 		f3AngularVelocity += f3AngularAcceleration * fStepDt;
 		f3Rotate += f3AngularVelocity * fStepDt;
+
+		// damping
+		f3LinearVelocity *= pow(rigidBody.fLinearDamping, fStepDt);
+		f3AngularVelocity *= pow(rigidBody.fAngularDamping, fStepDt);
 	}
 
 	// set	

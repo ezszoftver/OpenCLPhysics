@@ -50,8 +50,8 @@ namespace OpenCLPhysics
 		float m_fMass = 0;
 		float m_fRestitution = 0;
 		float m_fFriction = 0;
-		float m_fLinearDamping = 0;
-		float m_fAngularDamping = 0;
+		float m_fLinearDamping = 1.0f;
+		float m_fAngularDamping = 1.0f;
 
 		structVector3 m_v3Force;
 		structVector3 m_v3LinearAcceleration;

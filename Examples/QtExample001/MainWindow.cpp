@@ -147,6 +147,8 @@ bool MainWindow::Init()
                 m_physics.SetMass(dynamic_id, 85.0f);
                 m_physics.SetLinearVelocity(dynamic_id, glm::vec3(0.0f, 0.0f, 0.0f));
                 m_physics.SetAngularVelocity(dynamic_id, glm::vec3(0.0f, 0.0f, 0.0f));
+                m_physics.SetLinearDamping(dynamic_id, 1.0f);
+                m_physics.SetAngularDamping(dynamic_id, 1.0f);
                 m_physics.SetRestitution(dynamic_id, 0.0f);
 
                 m_listDynamicIds.push_back(dynamic_id);
