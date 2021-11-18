@@ -1891,6 +1891,19 @@ namespace OpenCLPhysics
 		*v = (d11 * d20 - d01 * d21) / denom;
 		*w = (d00 * d21 - d01 * d20) / denom;
 		*u = 1.0f - *v - *w;
+
+		if (isnan(*u) || isnan(*v) || isnan(*w))
+		{
+			*u = 1.0f / 3.0f;
+			*v = 1.0f / 3.0f;
+			*w = 1.0f / 3.0f;
+		}
+		if (isinf(*u) || isinf(*v) || isinf(*w))
+		{
+			*u = 1.0f / 3.0f;
+			*v = 1.0f / 3.0f;
+			*w = 1.0f / 3.0f;
+		}
 	}
 
 	void CalculateSearchPoint(Point* pPoint, glm::vec3 search_dir, structRigidBody structRigidBody1/*only dynamic*/, structRigidBody structRigidBody2/*static or dynamic*/, glm::mat4 T1, glm::mat4 T2, structBVHNodeTriangleOffset offset1, structBVHNodeTriangleOffset offset2, structBVHNodeTriangle* pListBVHNodeTriangles1, structBVHNodeTriangle* pListBVHNodeTriangles2)
@@ -1968,6 +1981,11 @@ namespace OpenCLPhysics
 				float penetration = glm::length(localA - localB);
 				glm::vec3 normal = glm::normalize(localA - localB);
 
+				if (isnan(normal.x) || isnan(normal.y) || isnan(normal.z))
+				{
+					normal = glm::vec3(1, 0, 0);
+				}
+
 				//Convergence (new point is not significantly further from origin)
 				//localA -= coll1->GetTransform().GetPosition();
 				//localB -= coll2->GetTransform().GetPosition();
@@ -2038,10 +2056,17 @@ namespace OpenCLPhysics
 			{
 				// assert(num_faces<EPA_MAX_NUM_FACES);
 				if (num_faces >= EPA_MAX_NUM_FACES) break;
+
+				glm::vec3 v3P = glm::normalize(glm::cross(loose_edges[i][0].p - loose_edges[i][1].p, loose_edges[i][0].p - p.p));
+				if (isnan(v3P.x) || isnan(v3P.y) || isnan(v3P.z)) 
+				{ 
+					continue;
+				}
+
 				faces[num_faces][0] = loose_edges[i][0];
 				faces[num_faces][1] = loose_edges[i][1];
 				faces[num_faces][2] = p;
-				faces[num_faces][3].p = glm::normalize(glm::cross(loose_edges[i][0].p - loose_edges[i][1].p, loose_edges[i][0].p - p.p));
+				faces[num_faces][3].p = v3P;
 
 				//Check for wrong normal to maintain CCW winding
 				float bias = 0.000001f; //in case dot result is only slightly < 0 (because origin is on face)
@@ -2055,9 +2080,9 @@ namespace OpenCLPhysics
 			}
 		} //End for iterations
 
-		return;
+		//return;
 
-		printf("EPA did not converge\n");
+		//printf("EPA did not converge\n");
 		//Return most recent closest point
 		glm::vec3 search_dir = faces[closest_face][3].p;
 
@@ -2073,6 +2098,11 @@ namespace OpenCLPhysics
 		glm::vec3 localB = faces[closest_face][0].b * u + faces[closest_face][1].b * v + faces[closest_face][2].b * w;
 		float penetration = glm::length(localA - localB);
 		glm::vec3 normal = glm::normalize(localA - localB);
+
+		if (isnan(normal.x) || isnan(normal.y) || isnan(normal.z))
+		{
+			normal = glm::vec3(1, 0, 0);
+		}
 
 		//collisionInfo.AddContactPoint(localA, localB, normal, penetration);
 		localA += ToVector3(structRigidBody1.m_v3Position);
@@ -2154,6 +2184,11 @@ namespace OpenCLPhysics
 				float penetration = glm::length(localA - localB);
 				glm::vec3 normal = glm::normalize(localA - localB);
 
+				if (isnan(normal.x) || isnan(normal.y) || isnan(normal.z))
+				{
+					normal = glm::vec3(1, 0, 0);
+				}
+
 				//Convergence (new point is not significantly further from origin)
 				//localA -= coll1->GetTransform().GetPosition();
 				//localB -= coll2->GetTransform().GetPosition();
@@ -2224,10 +2259,17 @@ namespace OpenCLPhysics
 			{
 				// assert(num_faces<EPA_MAX_NUM_FACES);
 				if (num_faces >= EPA_MAX_NUM_FACES) break;
+
+				glm::vec3 v3P = glm::normalize(glm::cross(loose_edges[i][0].p - loose_edges[i][1].p, loose_edges[i][0].p - p.p));
+				if (isnan(v3P.x) || isnan(v3P.y) || isnan(v3P.z)) 
+				{ 
+					continue; 
+				}
+
 				faces[num_faces][0] = loose_edges[i][0];
 				faces[num_faces][1] = loose_edges[i][1];
 				faces[num_faces][2] = p;
-				faces[num_faces][3].p = glm::normalize(glm::cross(loose_edges[i][0].p - loose_edges[i][1].p, loose_edges[i][0].p - p.p));
+				faces[num_faces][3].p = v3P;
 
 				//Check for wrong normal to maintain CCW winding
 				float bias = 0.000001f; //in case dot result is only slightly < 0 (because origin is on face)
@@ -2240,7 +2282,10 @@ namespace OpenCLPhysics
 				num_faces++;
 			}
 		} //End for iterations
-		printf("EPA did not converge\n");
+
+		//return;
+
+		//printf("EPA did not converge\n");
 		//Return most recent closest point
 		glm::vec3 search_dir = faces[closest_face][3].p;
 
@@ -2256,6 +2301,11 @@ namespace OpenCLPhysics
 		glm::vec3 localB = faces[closest_face][0].b * u + faces[closest_face][1].b * v + faces[closest_face][2].b * w;
 		float penetration = glm::length(localA - localB);
 		glm::vec3 normal = glm::normalize(localA - localB);
+
+		if (isnan(normal.x) || isnan(normal.y) || isnan(normal.z))
+		{
+			normal = glm::vec3(1, 0, 0);
+		}
 
 		//collisionInfo.AddContactPoint(localA, localB, normal, penetration);
 		localA += ToVector3(structRigidBody1.m_v3Position);
@@ -2618,21 +2668,25 @@ namespace OpenCLPhysics
 		}
 		
 		// ütközés keresés
-		for (int32_t id1 = 0; id1 < m_listRigidBodies.size(); id1++)
+		//for (int32_t id1 = 0; id1 < m_listRigidBodies.size(); id1++)
+		std::for_each(std::execution::par_unseq, std::begin(m_listRigidBodies), std::end(m_listRigidBodies), [&](structRigidBody structRigidBody1)
 		{
 			// 2 - EZ MEGY MAJD AZ OPENCL FUGGVENYBE
-			structRigidBody structRigidBody1 = m_listRigidBodies.at(id1);
+			//structRigidBody structRigidBody1 = m_listRigidBodies.at(id1);
+			int32_t id1 = structRigidBody1.m_nRigidBodyId;
 		
 			// isEnabled == false, akkor nem kell
 			if (0 == structRigidBody1.m_nIsEnabled) 
 			{
-				continue;
+				//continue;
+				return;
 			}
 		
 			// ha static, akkor nem kell
 			if (structRigidBody1.m_nIsConvex != 1)
 			{
-				continue;
+				//continue;
+				return;
 			}
 		
 			structHits allHits;
@@ -2757,7 +2811,7 @@ namespace OpenCLPhysics
 			{
 				m_listIsCollisionResponse[id1] = 1;
 			}
-		}
+		});
 		
 		return true;
 	}
@@ -2797,14 +2851,16 @@ namespace OpenCLPhysics
 
 	void Physics::CollisionResponse(float dt)
 	{
-		for (int32_t id = 0; id < m_listHits.size(); id++)
+		//for (int32_t id = 0; id < m_listHits.size(); id++)
+		std::for_each(std::execution::par_unseq, std::begin(m_listHits), std::end(m_listHits), [&](structHits hits)
 		{
 			// EZ MEGY AZ OPENCL FUGGVENYBE
-			structHits hits = m_listHits[id];
+			//structHits hits = m_listHits[id];
 			
 			if (0 == hits.m_nNumHits) 
 			{
-				continue;
+				//continue;
+				return;
 			}
 
 			for (int i = 0; i < hits.m_nNumHits; i++)
@@ -2834,8 +2890,11 @@ namespace OpenCLPhysics
 						continue;
 					}
 
+					float fRestitution = rigidBodyA.m_fRestitution * rigidBodyB.m_fRestitution;
+					if (isnan(fRestitution)) { fRestitution = 0.0f; }
+
 					// calc inertia
-					float fNominator = -(1.0f + rigidBodyA.m_fRestitution) * fProjVelocity;
+					float fNominator = -(1.0f + fRestitution) * fProjVelocity;
 
 					glm::vec3 v3Denom1 = (ToVector3(hit.m_v3Normal) / rigidBodyA.m_fMass) + glm::cross(glm::cross(rA, ToVector3(hit.m_v3Normal)), rA) / rigidBodyA.m_fMass;
 					glm::vec3 v3Denom2 = (ToVector3(hit.m_v3Normal) / rigidBodyB.m_fMass) + glm::cross(glm::cross(rB, ToVector3(hit.m_v3Normal)), rB) / rigidBodyB.m_fMass;
@@ -2851,8 +2910,8 @@ namespace OpenCLPhysics
 					v3LinearVelocityB -= (J * ToVector3(hit.m_v3Normal)) / rigidBodyB.m_fMass;
 					v3AngularVelocityB -= glm::cross(rB, J * ToVector3(hit.m_v3Normal)) / rigidBodyB.m_fMass;
 
-					m_listRigidBodies[id].m_v3LinearVelocity = ToVector3(v3LinearVelocityA);
-					m_listRigidBodies[id].m_v3AngularVelocity = ToVector3(v3AngularVelocityA);
+					m_listRigidBodies[hit.m_nRigidBodyAId].m_v3LinearVelocity = ToVector3(v3LinearVelocityA);
+					m_listRigidBodies[hit.m_nRigidBodyAId].m_v3AngularVelocity = ToVector3(v3AngularVelocityA);
 
 					m_listRigidBodies[hit.m_nRigidBodyBId].m_v3LinearVelocity = ToVector3(v3LinearVelocityB);
 					m_listRigidBodies[hit.m_nRigidBodyBId].m_v3AngularVelocity = ToVector3(v3AngularVelocityB);
@@ -2862,7 +2921,7 @@ namespace OpenCLPhysics
 					glm::vec3 v3SeparateA = ToVector3(hit.m_v3Normal) * +(hit.m_fPenetrationDepth * 0.5f);
 					glm::vec3 v3NewPosA = v3PositionA + (v3SeparateA * dt);
 					m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position = ToVector3(v3NewPosA);
-
+					
 					glm::vec3 v3PositionB = ToVector3(rigidBodyB.m_v3Position);
 					glm::vec3 v3SeparateB = ToVector3(hit.m_v3Normal) * -(hit.m_fPenetrationDepth * 0.5f);
 					glm::vec3 v3NewPosB = v3PositionB + (v3SeparateB * dt);
@@ -2903,7 +2962,7 @@ namespace OpenCLPhysics
 				}
 
 			}
-		}
+		});
 		
 		// DEBUG EZ MAJD NEM KELL
 		cl_int err = 0;

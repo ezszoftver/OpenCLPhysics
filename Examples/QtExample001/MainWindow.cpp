@@ -147,9 +147,9 @@ bool MainWindow::Init()
                 m_physics.SetMass(dynamic_id, 85.0f);
                 m_physics.SetLinearVelocity(dynamic_id, glm::vec3(0.0f, 0.0f, 0.0f));
                 m_physics.SetAngularVelocity(dynamic_id, glm::vec3(0.0f, 0.0f, 0.0f));
-                m_physics.SetLinearDamping(dynamic_id, 1.0f);
-                m_physics.SetAngularDamping(dynamic_id, 1.0f);
-                m_physics.SetRestitution(dynamic_id, 0.0f);
+                m_physics.SetLinearDamping(dynamic_id, 0.9f);
+                m_physics.SetAngularDamping(dynamic_id, 0.9f);
+                m_physics.SetRestitution(dynamic_id, 0.1f);
 
                 m_listDynamicIds.push_back(dynamic_id);
 
@@ -162,7 +162,7 @@ bool MainWindow::Init()
     m_physics.Commit();
 
     // gravity
-    m_physics.SetGravity(glm::vec3(0, -0.1f, 0));
+    m_physics.SetGravity(glm::vec3(0, -1.0f, 0));
 
     // Avatar
     m_Camera.Init(glm::vec3(15, 3, 15), glm::vec3(0, 0, 0));
@@ -222,9 +222,9 @@ void MainWindow::TimerTick()
         fSec = 0.0f;
     }
 
-    if (dt > 1.0f / 10.0f)
+    if (dt > 1.0f / 30.0f)
     {
-        dt = 1.0f / 10.0f;
+        dt = 1.0f / 30.0f;
     }
 
     if (true == m_bKeys[Qt::Key_L]) 
