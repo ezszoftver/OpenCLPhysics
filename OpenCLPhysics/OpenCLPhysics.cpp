@@ -2919,6 +2919,8 @@ namespace OpenCLPhysics
 					float J = fNominator / fDenominator;
 					J /= (float)hits.m_nNumHits;
 
+					J *= 0.5f;
+
 					// apply velocity
 					v3LinearVelocityA += (J * ToVector3(hit.m_v3Normal)) / rigidBodyA.m_fMass;
 					v3AngularVelocityA += glm::cross(rA, J * ToVector3(hit.m_v3Normal)) / rigidBodyA.m_fMass;
@@ -2934,7 +2936,7 @@ namespace OpenCLPhysics
 
 					// separate
 					glm::vec3 v3PositionA = ToVector3(rigidBodyA.m_v3Position);
-					glm::vec3 v3SeparateA = ToVector3(hit.m_v3Normal) * hit.m_fPenetrationDepth * 0.75f;
+					glm::vec3 v3SeparateA = ToVector3(hit.m_v3Normal) * hit.m_fPenetrationDepth * 1.0f;
 					glm::vec3 v3NewPosA = v3PositionA + (v3SeparateA);
 					m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position = ToVector3(v3NewPosA);
 					
@@ -2972,7 +2974,7 @@ namespace OpenCLPhysics
 
 					// separate
 					glm::vec3 v3PositionA = ToVector3(rigidBodyA.m_v3Position);
-					glm::vec3 v3SeparateA = ToVector3(hit.m_v3Normal) * hit.m_fPenetrationDepth * 0.75f;
+					glm::vec3 v3SeparateA = ToVector3(hit.m_v3Normal) * hit.m_fPenetrationDepth * 1.0f;
 					glm::vec3 v3NewPosA = v3PositionA + (v3SeparateA);
 					m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position = ToVector3(v3NewPosA);
 				}
