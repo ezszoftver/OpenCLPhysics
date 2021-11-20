@@ -2936,8 +2936,8 @@ namespace OpenCLPhysics
 
 					// separate
 					glm::vec3 v3PositionA = ToVector3(rigidBodyA.m_v3Position);
-					glm::vec3 v3SeparateA = ToVector3(hit.m_v3Normal) * hit.m_fPenetrationDepth * 1.0f;
-					glm::vec3 v3NewPosA = v3PositionA + (v3SeparateA);
+					glm::vec3 v3SeparateA = ToVector3(hit.m_v3Normal) * hit.m_fPenetrationDepth * 0.5f;
+					glm::vec3 v3NewPosA = v3PositionA + (v3SeparateA * dt);
 					m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position = ToVector3(v3NewPosA);
 					
 					//glm::vec3 v3PositionB = ToVector3(rigidBodyB.m_v3Position);
@@ -2975,7 +2975,7 @@ namespace OpenCLPhysics
 					// separate
 					glm::vec3 v3PositionA = ToVector3(rigidBodyA.m_v3Position);
 					glm::vec3 v3SeparateA = ToVector3(hit.m_v3Normal) * hit.m_fPenetrationDepth * 1.0f;
-					glm::vec3 v3NewPosA = v3PositionA + (v3SeparateA);
+					glm::vec3 v3NewPosA = v3PositionA + (v3SeparateA * dt);
 					m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position = ToVector3(v3NewPosA);
 				}
 

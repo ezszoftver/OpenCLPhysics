@@ -124,10 +124,10 @@ bool MainWindow::Init()
     int from_dynamic_id = -1;
     for (int x = -5; x < 5; x++)
     {
-        for (int z = 12; z < 22; z++)
+        for (int z = -5; z < 5; z++)
         {
-            //for (int y = 0; y < (1/*100db*/ * 10/*1000db*/); y++)
-            for (int y = 0; y < 20; y++)
+            for (int y = 0; y < (1/*100db*/ * 10/*1000db*/); y++)
+            //for (int y = 0; y < 20; y++)
             {
                 int dynamic_id = -1;
                 if (-1 == from_dynamic_id)
@@ -140,9 +140,9 @@ bool MainWindow::Init()
                     dynamic_id = m_physics.CreateFromId(from_dynamic_id, false);
                 }
 
-                float fScale = 0.85f;
-                //m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 10 + (y * fScale), z * fScale));
-                m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, -0.6f + (y * fScale), z * fScale));
+                float fScale = 1.0f;
+                m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 10 + (y * fScale), z * fScale));
+                //m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, -0.6f + (y * fScale), z * fScale));
                 m_physics.SetEulerRotate(dynamic_id, glm::vec3(0.0f, 0.0f, 0.0f));
                 m_physics.SetMass(dynamic_id, 85.0f);
                 m_physics.SetLinearVelocity(dynamic_id, glm::vec3(0.0f, 0.0f, 0.0f));
@@ -162,7 +162,7 @@ bool MainWindow::Init()
     m_physics.Commit();
 
     // gravity
-    m_physics.SetGravity(glm::vec3(0, -0.1f, 0));
+    m_physics.SetGravity(glm::vec3(0, -1.0f, 0));
 
     // Avatar
     m_Camera.Init(glm::vec3(15, 3, 15), glm::vec3(0, 2, 10));
