@@ -244,8 +244,8 @@ namespace OpenCLPhysics
 		bool UpdateBVHObjects();
 		void ReleaseBVHObjects();
 		bool Integrate(float dt);
-		bool CollisionDetection();
-		void CollisionResponse(float dt);
+		bool CollisionDetectionAndResponse(float dt);
+		void CollisionResponse(structHits hits, float dt);
 
 		cl_device_id m_device;
 		cl_context m_context;

@@ -1178,10 +1178,10 @@ namespace OpenCLPhysics
 		if (err != CL_SUCCESS) { return false; }
 
 		// 5. CollisionDetection
-		if (false == CollisionDetection()) { return false; }
+		if (false == CollisionDetectionAndResponse(dt)) { return false; }
 
 		// 6. CollisionResponse
-		CollisionResponse(dt);
+		//CollisionResponse(dt);
 
 		// 7. read to RAM for CPU
 		err |= clEnqueueReadBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), &(m_listRigidBodies[0]), 0, NULL, NULL);
@@ -2598,7 +2598,7 @@ namespace OpenCLPhysics
 		}
 	}
 
-	bool Physics::CollisionDetection() 
+	bool Physics::CollisionDetectionAndResponse(float dt) 
 	{
 		//cl_int err = 0;
 		//
@@ -2725,7 +2725,7 @@ namespace OpenCLPhysics
 					int id2 = structBVHObject.m_nRigidBodyId;
 					structRigidBody structRigidBody2 = m_listRigidBodies.at(id2);
 		
-					if ( (id1 < id2) || (structRigidBody2.m_nIsConvex != 1) )
+					if ( (id1 /*<*/!= id2) || (structRigidBody2.m_nIsConvex != 1))
 					{
 						structBBox bboxRigidBody2 = structRigidBody2.m_BBox;
 		
@@ -2738,7 +2738,6 @@ namespace OpenCLPhysics
 		
 							structHits hits;
 							hits.m_nNumHits = 0;
-
 							
 							if (1 == structRigidBody1.m_nIsConvex && 1 != structRigidBody2.m_nIsConvex)
 							{
@@ -2749,34 +2748,42 @@ namespace OpenCLPhysics
 								SearchHits_ConvexConvex(&hits, structRigidBody1, structRigidBody2, T1, T2, m_listBVHNodeTrianglesOffsets[structRigidBody1.m_nTriMeshId], m_listBVHNodeTrianglesOffsets[structRigidBody2.m_nTriMeshId], &m_listBVHNodeTriangles[0], &m_listBVHNodeTriangles[0]);
 							}
 
-							for (int i = 0; i < hits.m_nNumHits; i++)
+							for (int i = 0; i < hits.m_nNumHits; i++) 
 							{
-								if (allHits.m_nNumHits >= MAX_HITS)
-								{
-									continue;
-								}
-
-								//structHit hit = hits.m_hits[i];
-								//if (isnan(hit.m_v3Normal.x) || isnan(hit.m_v3Normal.y) || isnan(hit.m_v3Normal.z))
-								//{
-								//	std::cout << "normal" << std::endl;
-								//}
-								//if (isnan(hit.m_v3HitPointInWorldA.x) || isnan(hit.m_v3HitPointInWorldA.y) || isnan(hit.m_v3HitPointInWorldA.z))
-								//{
-								//	std::cout << "hit a" << std::endl;
-								//}
-								//if (isnan(hit.m_v3HitPointInWorldB.x) || isnan(hit.m_v3HitPointInWorldB.y) || isnan(hit.m_v3HitPointInWorldB.z))
-								//{
-								//	std::cout << "hit b" << std::endl;
-								//}
-
-								allHits.m_hits[allHits.m_nNumHits] = hits.m_hits[i];
-		
-								allHits.m_hits[allHits.m_nNumHits].m_nRigidBodyAId = id1;
-								allHits.m_hits[allHits.m_nNumHits].m_nRigidBodyBId = id2;
-		
-								allHits.m_nNumHits++;
+								hits.m_hits[i].m_nRigidBodyAId = id1;
+								hits.m_hits[i].m_nRigidBodyBId = id2;
 							}
+
+							CollisionResponse(hits, dt);
+
+							//for (int i = 0; i < hits.m_nNumHits; i++)
+							//{
+							//	if (allHits.m_nNumHits >= MAX_HITS)
+							//	{
+							//		continue;
+							//	}
+							//
+							//	//structHit hit = hits.m_hits[i];
+							//	//if (isnan(hit.m_v3Normal.x) || isnan(hit.m_v3Normal.y) || isnan(hit.m_v3Normal.z))
+							//	//{
+							//	//	std::cout << "normal" << std::endl;
+							//	//}
+							//	//if (isnan(hit.m_v3HitPointInWorldA.x) || isnan(hit.m_v3HitPointInWorldA.y) || isnan(hit.m_v3HitPointInWorldA.z))
+							//	//{
+							//	//	std::cout << "hit a" << std::endl;
+							//	//}
+							//	//if (isnan(hit.m_v3HitPointInWorldB.x) || isnan(hit.m_v3HitPointInWorldB.y) || isnan(hit.m_v3HitPointInWorldB.z))
+							//	//{
+							//	//	std::cout << "hit b" << std::endl;
+							//	//}
+							//
+							//	allHits.m_hits[allHits.m_nNumHits] = hits.m_hits[i];
+							//
+							//	allHits.m_hits[allHits.m_nNumHits].m_nRigidBodyAId = id1;
+							//	allHits.m_hits[allHits.m_nNumHits].m_nRigidBodyBId = id2;
+							//
+							//	allHits.m_nNumHits++;
+							//}
 		
 						}
 					}
@@ -2813,6 +2820,15 @@ namespace OpenCLPhysics
 			}
 		});
 		
+		// DEBUG EZ MAJD NEM KELL
+		//cl_int err = 0;
+		err |= clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), m_listRigidBodies.data(), 0, NULL, NULL);
+		err |= clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHits) * m_listHits.size(), m_listHits.data(), 0, NULL, NULL);
+		if (err != CL_SUCCESS) 
+		{ 
+			return false; 
+		}
+
 		return true;
 	}
 
@@ -2849,10 +2865,10 @@ namespace OpenCLPhysics
 		return (ToVector3(rigidBodyA.m_v3LinearVelocity) + glm::cross(ToVector3(rigidBodyA.m_v3AngularVelocity), v3Point));
 	}
 
-	void Physics::CollisionResponse(float dt)
+	void Physics::CollisionResponse(structHits hits, float dt)
 	{
 		//for (int32_t id = 0; id < m_listHits.size(); id++)
-		std::for_each(std::execution::par_unseq, std::begin(m_listHits), std::end(m_listHits), [&](structHits hits)
+		//std::for_each(std::execution::par_unseq, std::begin(m_listHits), std::end(m_listHits), [&](structHits hits)
 		{
 			// EZ MEGY AZ OPENCL FUGGVENYBE
 			//structHits hits = m_listHits[id];
@@ -2918,8 +2934,8 @@ namespace OpenCLPhysics
 
 					// separate
 					glm::vec3 v3PositionA = ToVector3(rigidBodyA.m_v3Position);
-					glm::vec3 v3SeparateA = ToVector3(hit.m_v3Normal) * +(hit.m_fPenetrationDepth);
-					glm::vec3 v3NewPosA = v3PositionA + v3SeparateA;
+					glm::vec3 v3SeparateA = ToVector3(hit.m_v3Normal) * hit.m_fPenetrationDepth * 0.75f;
+					glm::vec3 v3NewPosA = v3PositionA + (v3SeparateA);
 					m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position = ToVector3(v3NewPosA);
 					
 					//glm::vec3 v3PositionB = ToVector3(rigidBodyB.m_v3Position);
@@ -2956,21 +2972,21 @@ namespace OpenCLPhysics
 
 					// separate
 					glm::vec3 v3PositionA = ToVector3(rigidBodyA.m_v3Position);
-					glm::vec3 v3SeparateA = ToVector3(hit.m_v3Normal) * hit.m_fPenetrationDepth;
-					glm::vec3 v3NewPosA = v3PositionA + v3SeparateA;
+					glm::vec3 v3SeparateA = ToVector3(hit.m_v3Normal) * hit.m_fPenetrationDepth * 0.75f;
+					glm::vec3 v3NewPosA = v3PositionA + (v3SeparateA);
 					m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position = ToVector3(v3NewPosA);
 				}
 
 			}
-		});
+		}/*);*/
 		
 		// DEBUG EZ MAJD NEM KELL
-		cl_int err = 0;
-		err |= clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), m_listRigidBodies.data(), 0, NULL, NULL);
-		err |= clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHits) * m_listHits.size(), m_listHits.data(), 0, NULL, NULL);
-		if (err != CL_SUCCESS) 
-		{ 
-			return; 
-		}
+		//cl_int err = 0;
+		//err |= clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutRigidBodies, CL_TRUE, 0, sizeof(structRigidBody) * m_listRigidBodies.size(), m_listRigidBodies.data(), 0, NULL, NULL);
+		//err |= clEnqueueWriteBuffer(m_command_queue, m_clmem_inoutHits, CL_TRUE, 0, sizeof(structHits) * m_listHits.size(), m_listHits.data(), 0, NULL, NULL);
+		//if (err != CL_SUCCESS) 
+		//{ 
+		//	return; 
+		//}
 	}
 }
