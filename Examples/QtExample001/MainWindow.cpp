@@ -105,7 +105,7 @@ bool MainWindow::Init()
     // 2/2 - physics
     Model physicsmodel;
     physicsmodel.Load("Scene", "Physics.obj", glm::mat4(1.0f), false);
-    static_id = m_physics.CreateTriMesh(physicsmodel.GetAllVertices(), Physics::TriMeshType::Static, false);
+    static_id = m_physics.CreateTriMesh(physicsmodel.GetAllVertices(), Physics::TriMeshType::Static);
 
     // dynamic
     // 1/2 - draw
@@ -124,25 +124,24 @@ bool MainWindow::Init()
     int from_dynamic_id = -1;
     for (int x = -5; x < 5; x++)
     {
-        for (int z = -5; z < 5; z++)
+        for (int z = 10; z < 20; z++)
         {
-            for (int y = 0; y < (1/*100db*/ * 10/*1000db*/); y++)
-            //for (int y = 0; y < 20; y++)
+            for (int y = 0; y < (1/*100db*/ * 1/*100db*/); y++)
             {
                 int dynamic_id = -1;
                 if (-1 == from_dynamic_id)
                 {
-                    from_dynamic_id = m_physics.CreateTriMesh(m_dynamicmodel.GetAllVertices(), Physics::TriMeshType::Dynamic, false);
+                    from_dynamic_id = m_physics.CreateTriMesh(m_dynamicmodel.GetAllVertices(), Physics::TriMeshType::Dynamic);
                     dynamic_id = from_dynamic_id;
                 }
                 else 
                 {
-                    dynamic_id = m_physics.CreateFromId(from_dynamic_id, false);
+                    dynamic_id = m_physics.CreateFromId(from_dynamic_id);
                 }
 
                 float fScale = 1.0f;
-                m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 10 + (y * fScale), z * fScale));
-                //m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, -0.6f + (y * fScale), z * fScale));
+                //m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 10 + (y * fScale), z * fScale));
+                m_physics.SetPosition(dynamic_id, glm::vec3(x * fScale, 1.0f + (y * fScale), z * fScale));
                 m_physics.SetEulerRotate(dynamic_id, glm::vec3(0.0f, 0.0f, 0.0f));
                 m_physics.SetMass(dynamic_id, 85.0f);
                 m_physics.SetLinearVelocity(dynamic_id, glm::vec3(0.0f, 0.0f, 0.0f));
@@ -159,10 +158,8 @@ bool MainWindow::Init()
         }
     }
 
-    m_physics.Commit();
-
     // gravity
-    m_physics.SetGravity(glm::vec3(0, -1.0f, 0));
+    m_physics.SetGravity(glm::vec3(0, -9.81f, 0));
 
     // Avatar
     m_Camera.Init(glm::vec3(15, 3, 15), glm::vec3(0, 2, 10));

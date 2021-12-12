@@ -116,7 +116,7 @@ namespace OpenCLPhysics
 		structVector3 m_v3HitPointInWorldA;
 		structVector3 m_v3HitPointInWorldB;
 		structVector3 m_v3Normal;
-		float m_fPenetrationDepth;
+		structVector3 m_v3SeparateVelocity;
 	}
 	structHit;
 
@@ -245,6 +245,7 @@ namespace OpenCLPhysics
 		void ReleaseBVHObjects();
 		bool Integrate(float dt);
 		bool CollisionDetectionAndResponse(float dt);
+		void SeparateObjects(structHits hits, float dt);
 		void CollisionResponse(structHits hits, float dt);
 
 		cl_device_id m_device;

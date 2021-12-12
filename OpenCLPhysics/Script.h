@@ -5,8 +5,8 @@
 #include <fstream>
 #include <vector>
 
-#define MAX_HITS 16
-#define MAX_HITS_OBJECT_OBJECT 8
+#define MAX_HITS 32
+#define MAX_HITS_OBJECT_OBJECT 16
 
 class Script
 {
