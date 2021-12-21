@@ -234,6 +234,28 @@ namespace OpenCLPhysics
 	{
 	}
 
+	glm::mat4 Rotate(float x, float y, float z)
+	{
+		// yaw
+		glm::mat matYaw = glm::rotate(y, glm::vec3(0.0f, 1.0f, 0.0f));
+
+		// pitch
+		glm::vec3 v3UnitX = glm::normalize(glm::vec3(matYaw * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)));
+		glm::mat matPitch = glm::rotate(x, v3UnitX);
+
+		// roll
+		glm::vec3 v3UnitY = glm::normalize(glm::vec3(matPitch * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f)));
+		glm::vec3 v3UnitZ = glm::normalize(glm::cross(v3UnitX, v3UnitY));
+		glm::mat matRoll = glm::rotate(z, v3UnitZ);
+
+		return (matRoll * (matPitch * matYaw));
+	}
+
+	glm::mat4 Rotate(glm::vec3 v3Rotate) 
+	{
+		return Rotate(v3Rotate.x, v3Rotate.y, v3Rotate.z);
+	}
+
 	Physics::Physics()
 	{
 		m_context = nullptr;
@@ -855,7 +877,7 @@ namespace OpenCLPhysics
 		glm::vec3 v3Rotate = ToVector3(m_listRigidBodies[nId].m_v3Rotate);
 		glm::vec3 v3Position = ToVector3(m_listRigidBodies[nId].m_v3Position);
 
-		return (glm::translate(glm::mat4(1.0f), v3Position) * glm::eulerAngleXYZ(v3Rotate.x, v3Rotate.y, v3Rotate.z));
+		return (glm::translate(glm::mat4(1.0f), v3Position) * /*glm::eulerAngleXYZ*/Rotate(v3Rotate.x, v3Rotate.y, v3Rotate.z));
 	}
 
 	void Physics::SetPosition(int32_t nId, glm::vec3 v3Position)
@@ -2001,7 +2023,7 @@ namespace OpenCLPhysics
 					//hit.m_fPenetrationDepth = penetration;
 					if (1 == structRigidBody1.m_nIsConvex && 1 == structRigidBody2.m_nIsConvex) 
 					{
-						hit.m_v3SeparateVelocity = ToVector3((std::fabs(penetration) + 0.001f) * glm::normalize(ToVector3(structRigidBody1.m_v3Position) - ToVector3(structRigidBody2.m_v3Position)));
+						hit.m_v3SeparateVelocity = ToVector3((std::fabs(penetration) + 0.0f) * glm::normalize(ToVector3(structRigidBody1.m_v3Position) - ToVector3(structRigidBody2.m_v3Position)));
 
 						if (std::isnan(hit.m_v3SeparateVelocity.x) || std::isinf(hit.m_v3SeparateVelocity.x)) { hit.m_v3SeparateVelocity.x = 0.0f; }
 						if (std::isnan(hit.m_v3SeparateVelocity.y) || std::isinf(hit.m_v3SeparateVelocity.y)) { hit.m_v3SeparateVelocity.y = 0.0f; }
@@ -2127,7 +2149,7 @@ namespace OpenCLPhysics
 			//hit.m_fPenetrationDepth = penetration;
 			if (1 == structRigidBody1.m_nIsConvex && 1 == structRigidBody2.m_nIsConvex)
 			{
-				hit.m_v3SeparateVelocity = ToVector3((std::fabs(penetration) + 0.001f) * glm::normalize(ToVector3(structRigidBody1.m_v3Position) - ToVector3(structRigidBody2.m_v3Position)));
+				hit.m_v3SeparateVelocity = ToVector3((std::fabs(penetration) + 0.0f) * glm::normalize(ToVector3(structRigidBody1.m_v3Position) - ToVector3(structRigidBody2.m_v3Position)));
 
 				if (std::isnan(hit.m_v3SeparateVelocity.x) || std::isinf(hit.m_v3SeparateVelocity.x)) { hit.m_v3SeparateVelocity.x = 0.0f; }
 				if (std::isnan(hit.m_v3SeparateVelocity.y) || std::isinf(hit.m_v3SeparateVelocity.y)) { hit.m_v3SeparateVelocity.y = 0.0f; }
@@ -2222,7 +2244,7 @@ namespace OpenCLPhysics
 					//hit.m_fPenetrationDepth = penetration;
 					if (1 == structRigidBody1.m_nIsConvex)
 					{
-						hit.m_v3SeparateVelocity = ToVector3((std::fabs(penetration) + 0.001f) * ToVector3(triangle.m_v3Normal));
+						hit.m_v3SeparateVelocity = ToVector3((std::fabs(penetration) + 0.0f) * ToVector3(triangle.m_v3Normal));
 
 						if (std::isnan(hit.m_v3SeparateVelocity.x) || std::isinf(hit.m_v3SeparateVelocity.x)) { hit.m_v3SeparateVelocity.x = 0.0f; }
 						if (std::isnan(hit.m_v3SeparateVelocity.y) || std::isinf(hit.m_v3SeparateVelocity.y)) { hit.m_v3SeparateVelocity.y = 0.0f; }
@@ -2348,7 +2370,7 @@ namespace OpenCLPhysics
 			//hit.m_fPenetrationDepth = penetration;
 			if (1 == structRigidBody1.m_nIsConvex)
 			{
-				hit.m_v3SeparateVelocity = ToVector3((std::fabs(penetration) + 0.001f) * ToVector3(triangle.m_v3Normal));
+				hit.m_v3SeparateVelocity = ToVector3((std::fabs(penetration) + 0.0f) * ToVector3(triangle.m_v3Normal));
 
 				if (std::isnan(hit.m_v3SeparateVelocity.x) || std::isinf(hit.m_v3SeparateVelocity.x)) { hit.m_v3SeparateVelocity.x = 0.0f; }
 				if (std::isnan(hit.m_v3SeparateVelocity.y) || std::isinf(hit.m_v3SeparateVelocity.y)) { hit.m_v3SeparateVelocity.y = 0.0f; }
@@ -2732,7 +2754,7 @@ namespace OpenCLPhysics
 			// TRANSFORM 1
 			glm::vec3 v3Rotate1 = ToVector3(structRigidBody1.m_v3Rotate);
 			glm::vec3 v3Position1 = ToVector3(structRigidBody1.m_v3Position);
-			glm::mat4 T1 = glm::translate(glm::mat4(1.0f), v3Position1) * glm::eulerAngleXYZ(v3Rotate1.x, v3Rotate1.y, v3Rotate1.z);
+			glm::mat4 T1 = glm::translate(glm::mat4(1.0f), v3Position1) * /*glm::eulerAngleXYZ*/Rotate(v3Rotate1.x, v3Rotate1.y, v3Rotate1.z);
 		
 			int nTop = -1;
 			int arrStack[64];
@@ -2770,7 +2792,7 @@ namespace OpenCLPhysics
 							// TRANSFORM 2
 							glm::vec3 v3Rotate2 = ToVector3(structRigidBody2.m_v3Rotate);
 							glm::vec3 v3Position2 = ToVector3(structRigidBody2.m_v3Position);
-							glm::mat4 T2 = glm::translate(glm::mat4(1.0f), v3Position2) * glm::eulerAngleXYZ(v3Rotate2.x, v3Rotate2.y, v3Rotate2.z);
+							glm::mat4 T2 = glm::translate(glm::mat4(1.0f), v3Position2) * /*glm::eulerAngleXYZ*/Rotate(v3Rotate2.x, v3Rotate2.y, v3Rotate2.z);
 		
 							structHits hits;
 							hits.m_nNumHits = 0;
@@ -2921,12 +2943,12 @@ namespace OpenCLPhysics
 			{
 				// separate
 				glm::vec3 v3PositionA = ToVector3(rigidBodyA.m_v3Position);
-				glm::vec3 v3SeparateA = ToVector3(hit.m_v3SeparateVelocity) * 2.5f * dt;
+				glm::vec3 v3SeparateA = ToVector3(hit.m_v3SeparateVelocity) * 10.0f * dt;
 				glm::vec3 v3NewPosA = v3PositionA + (v3SeparateA);
 				m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position = ToVector3(v3NewPosA);
 
 				glm::vec3 v3PositionB = ToVector3(rigidBodyB.m_v3Position);
-				glm::vec3 v3SeparateB = -ToVector3(hit.m_v3SeparateVelocity) * 2.5f * dt;
+				glm::vec3 v3SeparateB = -ToVector3(hit.m_v3SeparateVelocity) * 10.0f * dt;
 				glm::vec3 v3NewPosB = v3PositionB + (v3SeparateB);
 				m_listRigidBodies[hit.m_nRigidBodyBId].m_v3Position = ToVector3(v3NewPosB);
 			}
@@ -2934,7 +2956,7 @@ namespace OpenCLPhysics
 			{
 				// separate
 				glm::vec3 v3PositionA = ToVector3(rigidBodyA.m_v3Position);
-				glm::vec3 v3SeparateA = ToVector3(hit.m_v3SeparateVelocity) * 5.0f * dt;
+				glm::vec3 v3SeparateA = ToVector3(hit.m_v3SeparateVelocity) * 10.0f * dt;
 				glm::vec3 v3NewPosA = v3PositionA + (v3SeparateA);
 				m_listRigidBodies[hit.m_nRigidBodyAId].m_v3Position = ToVector3(v3NewPosA);
 			}
@@ -2977,10 +2999,10 @@ namespace OpenCLPhysics
 					glm::vec3 v3RelVelocity = v3ARelVelocity - v3BRelVelocity;
 					float fProjVelocity = glm::dot(v3RelVelocity, ToVector3(hit.m_v3Normal));
 
-					//if (fProjVelocity >= 0.0f)
-					//{
-					//	continue;
-					//}
+					if (fProjVelocity >= 0.0f)
+					{
+						continue;
+					}
 
 					float fRestitution = rigidBodyA.m_fRestitution * rigidBodyB.m_fRestitution;
 					if (isnan(fRestitution)) { fRestitution = 0.0f; }
@@ -2998,11 +3020,11 @@ namespace OpenCLPhysics
 					J *= 0.5f;
 
 					// apply velocity
-					v3LinearVelocityA += (J * ToVector3(hit.m_v3Normal)) / (rigidBodyA.m_fMass * 5.0f);
-					v3AngularVelocityA += glm::cross(rA, J * ToVector3(hit.m_v3Normal)) / (rigidBodyA.m_fMass * 5.0f);
+					v3LinearVelocityA += (J * ToVector3(hit.m_v3Normal)) / (rigidBodyA.m_fMass * 1.0f);
+					v3AngularVelocityA += glm::cross(rA, J * ToVector3(hit.m_v3Normal)) / (rigidBodyA.m_fMass * 1.0f);
 
-					v3LinearVelocityB -= (J * ToVector3(hit.m_v3Normal)) / (rigidBodyB.m_fMass * 5.0f);
-					v3AngularVelocityB -= glm::cross(rB, J * ToVector3(hit.m_v3Normal)) / (rigidBodyB.m_fMass * 5.0f);
+					v3LinearVelocityB -= (J * ToVector3(hit.m_v3Normal)) / (rigidBodyB.m_fMass * 1.0f);
+					v3AngularVelocityB -= glm::cross(rB, J * ToVector3(hit.m_v3Normal)) / (rigidBodyB.m_fMass * 1.0f);
 
 					m_listRigidBodies[hit.m_nRigidBodyAId].m_v3LinearVelocity = ToVector3(v3LinearVelocityA);
 					m_listRigidBodies[hit.m_nRigidBodyAId].m_v3AngularVelocity = ToVector3(v3AngularVelocityA);
@@ -3031,8 +3053,8 @@ namespace OpenCLPhysics
 					J /= (float)hits.m_nNumHits;
 
 					// apply velocity
-					v3LinearVelocityA += (J * ToVector3(hit.m_v3Normal)) / (rigidBodyA.m_fMass * 5.0f);
-					v3AngularVelocityA += glm::cross(rA, J * ToVector3(hit.m_v3Normal)) / (rigidBodyA.m_fMass * 5.0f);
+					v3LinearVelocityA += (J * ToVector3(hit.m_v3Normal)) / (rigidBodyA.m_fMass * 1.0f);
+					v3AngularVelocityA += glm::cross(rA, J * ToVector3(hit.m_v3Normal)) / (rigidBodyA.m_fMass * 1.0f);
 
 					m_listRigidBodies[hit.m_nRigidBodyAId].m_v3LinearVelocity = ToVector3(v3LinearVelocityA);
 					m_listRigidBodies[hit.m_nRigidBodyAId].m_v3AngularVelocity = ToVector3(v3AngularVelocityA);
